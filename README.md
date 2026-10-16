@@ -2,18 +2,19 @@
 
 Lightweight always-on-top task pin app for Windows, built with **Tauri**.
 
-Write tasks, pin the window so it stays visible while you work, and stay focused. You can also open multiple independent sticky notes.
+Write tasks, pin the window so it stays visible while you work, and stay focused. You can also open multiple independent sticky notes with custom colors.
 
 ## Features
 
 - Always-on-top floating window
 - **Multiple independent notes** (click **+** to open new sticky notes)
+- **Color options per note** (Yellow, Pink, Blue, Green, Purple, Orange)
 - Add / edit / complete / delete tasks
 - Dark mode toggle (persisted)
 - Local storage with Tauri Store plugin
 - Frameless, draggable sticky-note style UI
 - Clear completed tasks
-- Each note has its own title, content, pin and theme controls
+- Each note has its own title, content, color, pin and theme controls
 
 ## Tech Stack
 
@@ -54,8 +55,9 @@ npm run tauri build
 ### Note windows
 - Edit the title at the top
 - Write freely in the body
+- Click the colored circle to change the note color
 - Notes auto-save
-- Each note can be pinned / themed independently
+- Each note can be pinned / themed / colored independently
 
 ---
 
