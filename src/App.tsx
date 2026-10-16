@@ -12,12 +12,24 @@ type Task = {
 
 type Theme = "light" | "dark";
 
+type NoteColor = "yellow" | "pink" | "blue" | "green" | "purple" | "orange";
+
 type Note = {
   id: string;
   title: string;
   content: string;
+  color: NoteColor;
   createdAt: number;
 };
+
+const NOTE_COLORS: { id: NoteColor; label: string; light: string; dark: string }[] = [
+  { id: "yellow", label: "Yellow", light: "#fffde7", dark: "#3d3a1f" },
+  { id: "pink", label: "Pink", light: "#fce4ec", dark: "#3d1f2a" },
+  { id: "blue", label: "Blue", light: "#e3f2fd", dark: "#1f2a3d" },
+  { id: "green", label: "Green", light: "#e8f5e9", dark: "#1f3d24" },
+  { id: "purple", label: "Purple", light: "#f3e5f5", dark: "#2a1f3d" },
+  { id: "orange", label: "Orange", light: "#fff3e0", dark: "#3d2a1f" },
+];
 
 function App() {
   const [windowLabel, setWindowLabel] = useState<string>("main");
@@ -29,10 +41,12 @@ function App() {
   const [theme, setTheme] = useState<Theme>("light");
   const [store, setStore] = useState<Store | null>(null);
 
-  // Note-specific state (for note windows)
+  // Note-specific state
   const [noteTitle, setNoteTitle] = useState("");
   const [noteContent, setNoteContent] = useState("");
+  const [noteColor, setNoteColor] = useState<NoteColor>("yellow");
   const [noteId, setNoteId] = useState<string | null>(null);
+  const [showColorPicker, setShowColorPicker] = useState(false);
 
   // Detect current window label
   useEffect(() => {
@@ -71,6 +85,7 @@ function App() {
         if (note) {
           setNoteTitle(note.title);
           setNoteContent(note.content);
+          setNoteColor(note.color || "yellow");
         }
       }
     }
@@ -94,7 +109,7 @@ function App() {
     document.documentElement.setAttribute("data-theme", theme);
   }, [theme, store]);
 
-  // Auto-save note content
+  // Auto-save note content + color
   useEffect(() => {
     if (store && noteId && windowLabel.startsWith("note-")) {
       const saveNote = async () => {
@@ -105,6 +120,7 @@ function App() {
           id: noteId,
           title: noteTitle || "Untitled",
           content: noteContent,
+          color: noteColor,
           createdAt: existingIndex >= 0 ? notes[existingIndex].createdAt : Date.now(),
         };
 
@@ -121,7 +137,7 @@ function App() {
       const timeout = setTimeout(saveNote, 400);
       return () => clearTimeout(timeout);
     }
-  }, [noteTitle, noteContent, noteId, store, windowLabel]);
+  }, [noteTitle, noteContent, noteColor, noteId, store, windowLabel]);
 
   const toggleTheme = () => {
     setTheme((prev) => (prev === "light" ? "dark" : "light"));
@@ -206,11 +222,19 @@ function App() {
     });
   };
 
+  // Get current color values
+  const currentColor = NOTE_COLORS.find((c) => c.id === noteColor) || NOTE_COLORS[0];
+  const bgColor = theme === "light" ? currentColor.light : currentColor.dark;
+
   // ========== RENDER NOTE WINDOW ==========
   if (windowLabel.startsWith("note-")) {
     return (
-      <div className="pin-window note-window" data-tauri-drag-region>
-        <header className="titlebar" data-tauri-drag-region>
+      <div
+        className="pin-window note-window"
+        data-tauri-drag-region
+        style={{ background: bgColor }}
+      >
+        <header className="titlebar" data-tauri-drag-region style={{ background: bgColor }}>
           <input
             className="note-title-input"
             value={noteTitle}
@@ -219,6 +243,30 @@ function App() {
             data-tauri-drag-region
           />
           <div className="title-actions">
+            <div className="color-picker-wrapper">
+              <button
+                onClick={() => setShowColorPicker(!showColorPicker)}
+                title="Change color"
+                className="color-btn"
+                style={{ background: currentColor.light }}
+              />
+              {showColorPicker && (
+                <div className="color-picker">
+                  {NOTE_COLORS.map((c) => (
+                    <button
+                      key={c.id}
+                      className={`color-option ${noteColor === c.id ? "active" : ""}`}
+                      style={{ background: c.light }}
+                      title={c.label}
+                      onClick={() => {
+                        setNoteColor(c.id);
+                        setShowColorPicker(false);
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
             <button onClick={toggleTheme} title="Toggle theme">
               {theme === "light" ? "🌙" : "☀️"}
             </button>
@@ -237,6 +285,7 @@ function App() {
           onChange={(e) => setNoteContent(e.target.value)}
           placeholder="Write your note here..."
           autoFocus
+          style={{ background: "transparent" }}
         />
       </div>
     );
