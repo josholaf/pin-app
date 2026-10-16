@@ -7,7 +7,10 @@ Write tasks, pin the window so it stays visible while you work, and stay focused
 ## Features
 
 - Always-on-top floating window
-- **Pomodoro timer** (25 min Focus / 5 min Break) with green progress bar
+- **Pomodoro timer** (25 min Focus / 5 min Break)
+  - Green progress bar
+  - **Sound notification** when a session ends
+  - **Auto-switch** between Focus and Break
 - **Multiple independent notes** (click **+** to open new sticky notes)
 - **Color options per note** (Yellow, Pink, Blue, Green, Purple, Orange)
 - Add / edit / complete / delete tasks
@@ -15,7 +18,6 @@ Write tasks, pin the window so it stays visible while you work, and stay focused
 - Local storage with Tauri Store plugin
 - Frameless, draggable sticky-note style UI
 - Clear completed tasks
-- Each note has its own title, content, color, pin and theme controls
 
 ## Tech Stack
 
@@ -50,8 +52,9 @@ npm run tauri build
 - Type a task and press Enter
 - Double-click a task to edit
 - Click **+** to open a new independent sticky note
-- Use the **Pomodoro bar** (Focus 25 / Break 5) with Start, Pause and Reset
-- Green progress bar shows elapsed time
+- Use the **Pomodoro bar** (Focus 25 / Break 5)
+  - Start / Pause / Reset
+  - When a session finishes → sound plays and it auto-switches to the next mode
 - Click the moon/sun to toggle dark mode
 - Click the pin icon to toggle always-on-top
 
@@ -60,7 +63,6 @@ npm run tauri build
 - Write freely in the body
 - Click the colored circle to change the note color
 - Notes auto-save
-- Each note can be pinned / themed / colored independently
 
 ---
 
