@@ -3,98 +3,29 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { Store } from "@tauri-apps/plugin-store";
 import {
-  Pin,
-  PinOff,
-  Moon,
-  Sun,
-  Plus,
-  X,
-  Play,
-  Pause,
-  RotateCcw,
-  StickyNote,
-  PanelRight,
-  PanelRightClose,
-  // Icon bank (50+)
-  Book,
-  Bookmark,
-  Briefcase,
-  Calendar,
-  Camera,
-  Check,
-  CheckCircle,
-  Clock,
-  Code,
-  Coffee,
-  Compass,
-  Cpu,
-  Database,
-  Feather,
-  FileText,
-  Film,
-  Flag,
-  Flame,
-  Folder,
-  Gift,
-  Globe,
-  GraduationCap,
-  Heart,
-  Home,
-  Image,
-  Inbox,
-  Key,
-  Lamp,
-  Laptop,
-  Layers,
-  Leaf,
-  Lightbulb,
-  Link,
-  List,
-  Lock,
-  Mail,
-  Map,
-  MapPin,
-  MessageCircle,
-  Mic,
-  Monitor,
-  Music,
-  Package,
-  Palette,
-  Pencil,
-  Phone,
-  Plane,
-  Rocket,
-  Search,
-  Settings,
-  Shield,
-  ShoppingBag,
-  Smile,
-  Star,
-  Target,
-  Terminal,
-  Thermometer,
-  Trash2,
-  Trophy,
-  Umbrella,
-  User,
-  Users,
-  Video,
-  Wallet,
-  Wrench,
-  Zap,
-  type LucideProps,
+  Pin, PinOff, Moon, Sun, Plus, X, Play, Pause, RotateCcw, StickyNote,
+  PanelRight, PanelRightClose, ChevronDown, ChevronRight, FolderPlus,
+  Book, Bookmark, Briefcase, Calendar, Camera, Check, CheckCircle, Clock,
+  Code, Coffee, Compass, Cpu, Database, Feather, FileText, Film, Flag,
+  Flame, Folder, Gift, Globe, GraduationCap, Heart, Home, Image, Inbox,
+  Key, Lamp, Laptop, Layers, Leaf, Lightbulb, Link, List, Lock, Mail,
+  Map, MapPin, MessageCircle, Mic, Monitor, Music, Package, Palette,
+  Pencil, Phone, Plane, Rocket, Search, Settings, Shield, ShoppingBag,
+  Smile, Star, Target, Terminal, Thermometer, Trash2, Trophy, Umbrella,
+  User, Users, Video, Wallet, Wrench, Zap, type LucideProps,
 } from "lucide-react";
 
-type Task = {
+type Task = { id: string; text: string; done: boolean; createdAt: number };
+type Theme = "light" | "dark";
+type NoteColor = "yellow" | "pink" | "blue" | "green" | "purple" | "orange";
+type PomodoroMode = "focus" | "break";
+
+type NoteFolder = {
   id: string;
-  text: string;
-  done: boolean;
+  name: string;
+  icon: string;
   createdAt: number;
 };
-
-type Theme = "light" | "dark";
-
-type NoteColor = "yellow" | "pink" | "blue" | "green" | "purple" | "orange";
 
 type Note = {
   id: string;
@@ -102,10 +33,9 @@ type Note = {
   content: string;
   color: NoteColor;
   icon: string;
+  folderId: string | null;
   createdAt: number;
 };
-
-type PomodoroMode = "focus" | "break";
 
 const NOTE_COLORS: { id: NoteColor; label: string; light: string; dark: string }[] = [
   { id: "yellow", label: "Yellow", light: "#fffde7", dark: "#3d3a1f" },
@@ -116,9 +46,9 @@ const NOTE_COLORS: { id: NoteColor; label: string; light: string; dark: string }
   { id: "orange", label: "Orange", light: "#fff3e0", dark: "#3d2a1f" },
 ];
 
-/** 50+ Lucide icons available for notes */
 const ICON_BANK: { id: string; Icon: ComponentType<LucideProps>; label: string }[] = [
   { id: "sticky-note", Icon: StickyNote, label: "Note" },
+  { id: "folder", Icon: Folder, label: "Folder" },
   { id: "book", Icon: Book, label: "Book" },
   { id: "bookmark", Icon: Bookmark, label: "Bookmark" },
   { id: "briefcase", Icon: Briefcase, label: "Work" },
@@ -137,7 +67,6 @@ const ICON_BANK: { id: string; Icon: ComponentType<LucideProps>; label: string }
   { id: "film", Icon: Film, label: "Film" },
   { id: "flag", Icon: Flag, label: "Flag" },
   { id: "flame", Icon: Flame, label: "Flame" },
-  { id: "folder", Icon: Folder, label: "Folder" },
   { id: "gift", Icon: Gift, label: "Gift" },
   { id: "globe", Icon: Globe, label: "Globe" },
   { id: "graduation-cap", Icon: GraduationCap, label: "Study" },
@@ -221,12 +150,12 @@ function playBeep() {
   }
 }
 
-function getNoteIcon(iconId: string) {
+function getIcon(iconId: string) {
   return ICON_BANK.find((i) => i.id === iconId) || ICON_BANK[0];
 }
 
 function App() {
-  const [windowLabel, setWindowLabel] = useState<string>("main");
+  const [windowLabel, setWindowLabel] = useState("main");
   const [tasks, setTasks] = useState<Task[]>([]);
   const [input, setInput] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -235,16 +164,27 @@ function App() {
   const [theme, setTheme] = useState<Theme>("light");
   const [store, setStore] = useState<Store | null>(null);
 
-  // Note-specific state
+  // Folders & notes (main window)
+  const [folders, setFolders] = useState<NoteFolder[]>([]);
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+  const [newFolderName, setNewFolderName] = useState("");
+  const [showNewFolder, setShowNewFolder] = useState(false);
+  const [iconPickerFor, setIconPickerFor] = useState<
+    { type: "folder" | "note"; id: string } | null
+  >(null);
+
+  // Note window state
   const [noteTitle, setNoteTitle] = useState("");
   const [noteContent, setNoteContent] = useState("");
   const [noteColor, setNoteColor] = useState<NoteColor>("yellow");
-  const [noteIcon, setNoteIcon] = useState<string>("sticky-note");
+  const [noteIcon, setNoteIcon] = useState("sticky-note");
+  const [noteFolderId, setNoteFolderId] = useState<string | null>(null);
   const [noteId, setNoteId] = useState<string | null>(null);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showIconSidebar, setShowIconSidebar] = useState(false);
 
-  // Pomodoro state
+  // Pomodoro
   const [pomodoroMode, setPomodoroMode] = useState<PomodoroMode>("focus");
   const [secondsLeft, setSecondsLeft] = useState(FOCUS_SECONDS);
   const [isRunning, setIsRunning] = useState(false);
@@ -257,10 +197,9 @@ function App() {
   useEffect(() => {
     async function detectWindow() {
       const win = getCurrentWindow();
-      const label = win.label;
-      setWindowLabel(label);
-      if (label.startsWith("note-")) {
-        setNoteId(label.replace("note-", ""));
+      setWindowLabel(win.label);
+      if (win.label.startsWith("note-")) {
+        setNoteId(win.label.replace("note-", ""));
       }
     }
     detectWindow();
@@ -274,6 +213,12 @@ function App() {
       const savedTasks = await s.get<Task[]>("tasks");
       if (savedTasks) setTasks(savedTasks);
 
+      const savedFolders = await s.get<NoteFolder[]>("folders");
+      if (savedFolders) setFolders(savedFolders);
+
+      const savedNotes = await s.get<Note[]>("notes");
+      if (savedNotes) setNotes(savedNotes);
+
       const savedTheme = await s.get<Theme>("theme");
       if (savedTheme) {
         setTheme(savedTheme);
@@ -281,13 +226,14 @@ function App() {
       }
 
       if (windowLabel.startsWith("note-") && noteId) {
-        const notes = (await s.get<Note[]>("notes")) || [];
-        const note = notes.find((n) => n.id === noteId);
+        const allNotes = (await s.get<Note[]>("notes")) || [];
+        const note = allNotes.find((n) => n.id === noteId);
         if (note) {
           setNoteTitle(note.title);
           setNoteContent(note.content);
           setNoteColor(note.color || "yellow");
           setNoteIcon(note.icon || "sticky-note");
+          setNoteFolderId(note.folderId ?? null);
         }
       }
     }
@@ -297,9 +243,11 @@ function App() {
   useEffect(() => {
     if (store && windowLabel === "main") {
       store.set("tasks", tasks);
+      store.set("folders", folders);
+      store.set("notes", notes);
       store.save();
     }
-  }, [tasks, store, windowLabel]);
+  }, [tasks, folders, notes, store, windowLabel]);
 
   useEffect(() => {
     if (store) {
@@ -312,48 +260,37 @@ function App() {
   useEffect(() => {
     if (store && noteId && windowLabel.startsWith("note-")) {
       const saveNote = async () => {
-        const notes = (await store.get<Note[]>("notes")) || [];
-        const existingIndex = notes.findIndex((n) => n.id === noteId);
-
-        const updatedNote: Note = {
+        const allNotes = (await store.get<Note[]>("notes")) || [];
+        const idx = allNotes.findIndex((n) => n.id === noteId);
+        const updated: Note = {
           id: noteId,
           title: noteTitle || "Untitled",
           content: noteContent,
           color: noteColor,
           icon: noteIcon,
-          createdAt: existingIndex >= 0 ? notes[existingIndex].createdAt : Date.now(),
+          folderId: noteFolderId,
+          createdAt: idx >= 0 ? allNotes[idx].createdAt : Date.now(),
         };
-
-        if (existingIndex >= 0) {
-          notes[existingIndex] = updatedNote;
-        } else {
-          notes.push(updatedNote);
-        }
-
-        await store.set("notes", notes);
+        if (idx >= 0) allNotes[idx] = updated;
+        else allNotes.push(updated);
+        await store.set("notes", allNotes);
         await store.save();
       };
-
-      const timeout = setTimeout(saveNote, 400);
-      return () => clearTimeout(timeout);
+      const t = setTimeout(saveNote, 400);
+      return () => clearTimeout(t);
     }
-  }, [noteTitle, noteContent, noteColor, noteIcon, noteId, store, windowLabel]);
+  }, [noteTitle, noteContent, noteColor, noteIcon, noteFolderId, noteId, store, windowLabel]);
 
   useEffect(() => {
     if (isRunning && secondsLeft > 0) {
-      timerRef.current = window.setInterval(() => {
-        setSecondsLeft((prev) => prev - 1);
-      }, 1000);
+      timerRef.current = window.setInterval(() => setSecondsLeft((p) => p - 1), 1000);
     }
-
     if (secondsLeft === 0 && !justFinishedRef.current) {
       justFinishedRef.current = true;
       setIsRunning(false);
       playBeep();
-
       const nextMode: PomodoroMode = pomodoroMode === "focus" ? "break" : "focus";
       const nextSeconds = nextMode === "focus" ? FOCUS_SECONDS : BREAK_SECONDS;
-
       setTimeout(() => {
         setPomodoroMode(nextMode);
         setSecondsLeft(nextSeconds);
@@ -361,12 +298,8 @@ function App() {
         justFinishedRef.current = false;
       }, 800);
     }
-
     return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
+      if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [isRunning, secondsLeft, pomodoroMode]);
 
@@ -376,73 +309,66 @@ function App() {
     return `${m}:${s}`;
   };
 
-  const startPomodoro = () => setIsRunning(true);
-  const pausePomodoro = () => setIsRunning(false);
-
-  const resetPomodoro = () => {
-    setIsRunning(false);
-    justFinishedRef.current = false;
-    setSecondsLeft(pomodoroMode === "focus" ? FOCUS_SECONDS : BREAK_SECONDS);
-  };
-
-  const switchMode = (mode: PomodoroMode) => {
-    setIsRunning(false);
-    justFinishedRef.current = false;
-    setPomodoroMode(mode);
-    setSecondsLeft(mode === "focus" ? FOCUS_SECONDS : BREAK_SECONDS);
-  };
-
-  const toggleTheme = () => setTheme((prev) => (prev === "light" ? "dark" : "light"));
-
+  const toggleTheme = () => setTheme((p) => (p === "light" ? "dark" : "light"));
   const togglePin = async () => {
     const win = getCurrentWindow();
     await win.setAlwaysOnTop(!pinned);
     setPinned(!pinned);
   };
-
   const closeWindow = async () => {
-    const win = getCurrentWindow();
-    await win.close();
+    await getCurrentWindow().close();
   };
 
-  const addTask = () => {
-    const text = input.trim();
-    if (!text) return;
-    setTasks([
-      { id: crypto.randomUUID(), text, done: false, createdAt: Date.now() },
-      ...tasks,
-    ]);
-    setInput("");
+  const createFolder = () => {
+    const name = newFolderName.trim() || "New Folder";
+    const folder: NoteFolder = {
+      id: crypto.randomUUID(),
+      name,
+      icon: "folder",
+      createdAt: Date.now(),
+    };
+    setFolders([...folders, folder]);
+    setExpandedFolders(new Set([...expandedFolders, folder.id]));
+    setNewFolderName("");
+    setShowNewFolder(false);
   };
 
-  const toggleDone = (id: string) => {
-    setTasks(tasks.map((t) => (t.id === id ? { ...t, done: !t.done } : t)));
+  const deleteFolder = (id: string) => {
+    setFolders(folders.filter((f) => f.id !== id));
+    setNotes(notes.map((n) => (n.folderId === id ? { ...n, folderId: null } : n)));
   };
 
-  const startEditing = (task: Task) => {
-    setEditingId(task.id);
-    setEditText(task.text);
+  const setFolderIcon = (folderId: string, iconId: string) => {
+    setFolders(folders.map((f) => (f.id === folderId ? { ...f, icon: iconId } : f)));
+    setIconPickerFor(null);
   };
 
-  const saveEdit = () => {
-    if (!editingId) return;
-    const text = editText.trim();
-    if (!text) return;
-    setTasks(tasks.map((t) => (t.id === editingId ? { ...t, text } : t)));
-    setEditingId(null);
-    setEditText("");
+  const setNoteIconInList = (id: string, iconId: string) => {
+    setNotes(notes.map((n) => (n.id === id ? { ...n, icon: iconId } : n)));
+    setIconPickerFor(null);
   };
 
-  const deleteTask = (id: string) => setTasks(tasks.filter((t) => t.id !== id));
-  const clearCompleted = () => setTasks(tasks.filter((t) => !t.done));
-
-  const createNewNote = async () => {
+  const createNoteInFolder = async (folderId: string | null) => {
     const id = crypto.randomUUID();
+    const note: Note = {
+      id,
+      title: "Untitled",
+      content: "",
+      color: "yellow",
+      icon: "sticky-note",
+      folderId,
+      createdAt: Date.now(),
+    };
+    setNotes([note, ...notes]);
+    if (folderId) {
+      setExpandedFolders(new Set([...expandedFolders, folderId]));
+    }
+
     const label = `note-${id}`;
-    const newWindow = new WebviewWindow(label, {
+    new WebviewWindow(label, {
       title: "New Note",
-      width: 320,
-      height: 300,
+      width: 340,
+      height: 320,
       decorations: false,
       transparent: true,
       alwaysOnTop: true,
@@ -450,14 +376,55 @@ function App() {
       x: 100 + Math.random() * 200,
       y: 100 + Math.random() * 150,
     });
-    newWindow.once("tauri://error", (e) => console.error("Failed to create note:", e));
+  };
+
+  const openNote = async (note: Note) => {
+    const label = `note-${note.id}`;
+    try {
+      const existing = await WebviewWindow.getByLabel(label);
+      if (existing) {
+        await existing.setFocus();
+        return;
+      }
+    } catch {
+      /* create new */
+    }
+    new WebviewWindow(label, {
+      title: note.title || "Note",
+      width: 340,
+      height: 320,
+      decorations: false,
+      transparent: true,
+      alwaysOnTop: true,
+      center: false,
+      x: 120 + Math.random() * 180,
+      y: 120 + Math.random() * 120,
+    });
+  };
+
+  const deleteNoteFromList = (id: string) => {
+    setNotes(notes.filter((n) => n.id !== id));
+  };
+
+  const toggleFolder = (id: string) => {
+    const next = new Set(expandedFolders);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setExpandedFolders(next);
+  };
+
+  const addTask = () => {
+    const text = input.trim();
+    if (!text) return;
+    setTasks([{ id: crypto.randomUUID(), text, done: false, createdAt: Date.now() }, ...tasks]);
+    setInput("");
   };
 
   const currentColor = NOTE_COLORS.find((c) => c.id === noteColor) || NOTE_COLORS[0];
   const bgColor = theme === "light" ? currentColor.light : currentColor.dark;
-  const SelectedIcon = getNoteIcon(noteIcon).Icon;
+  const SelectedIcon = getIcon(noteIcon).Icon;
 
-  // ========== RENDER NOTE WINDOW ==========
+  // ========== NOTE WINDOW ==========
   if (windowLabel.startsWith("note-")) {
     return (
       <div className="pin-window note-window" data-tauri-drag-region style={{ background: bgColor }}>
@@ -501,12 +468,12 @@ function App() {
                 </div>
                 <button
                   onClick={() => setShowIconSidebar(!showIconSidebar)}
-                  title={showIconSidebar ? "Hide icons" : "Choose icon"}
+                  title="Choose icon"
                   className="icon-btn"
                 >
                   {showIconSidebar ? <PanelRightClose size={16} /> : <PanelRight size={16} />}
                 </button>
-                <button onClick={toggleTheme} title="Toggle theme" className="icon-btn">
+                <button onClick={toggleTheme} title="Theme" className="icon-btn">
                   {theme === "light" ? <Moon size={16} /> : <Sun size={16} />}
                 </button>
                 <button onClick={togglePin} title={pinned ? "Unpin" : "Pin"} className="icon-btn">
@@ -517,7 +484,6 @@ function App() {
                 </button>
               </div>
             </header>
-
             <textarea
               className="note-content"
               value={noteContent}
@@ -527,7 +493,6 @@ function App() {
               style={{ background: "transparent" }}
             />
           </div>
-
           {showIconSidebar && (
             <aside className="icon-sidebar">
               <div className="icon-sidebar-header">Icons</div>
@@ -550,22 +515,29 @@ function App() {
     );
   }
 
-  // ========== RENDER MAIN WINDOW ==========
+  // ========== MAIN WINDOW ==========
   const activeTasks = tasks.filter((t) => !t.done);
   const completedTasks = tasks.filter((t) => t.done);
+  const unfiledNotes = notes.filter((n) => !n.folderId);
 
   return (
     <div className="pin-window" data-tauri-drag-region>
       <header className="titlebar" data-tauri-drag-region>
         <span className="app-title">
-          <StickyNote size={16} />
-          Pin
+          <StickyNote size={16} /> Pin
         </span>
         <div className="title-actions">
-          <button onClick={createNewNote} title="New Note" className="icon-btn">
+          <button onClick={() => createNoteInFolder(null)} title="New Note" className="icon-btn">
             <Plus size={16} />
           </button>
-          <button onClick={toggleTheme} title="Toggle theme" className="icon-btn">
+          <button
+            onClick={() => setShowNewFolder(true)}
+            title="New Folder"
+            className="icon-btn"
+          >
+            <FolderPlus size={16} />
+          </button>
+          <button onClick={toggleTheme} title="Theme" className="icon-btn">
             {theme === "light" ? <Moon size={16} /> : <Sun size={16} />}
           </button>
           <button onClick={togglePin} title={pinned ? "Unpin" : "Pin"} className="icon-btn">
@@ -574,17 +546,28 @@ function App() {
         </div>
       </header>
 
+      {/* Pomodoro */}
       <div className="pomodoro-bar">
         <div className="pomodoro-modes">
           <button
             className={pomodoroMode === "focus" ? "active" : ""}
-            onClick={() => switchMode("focus")}
+            onClick={() => {
+              setIsRunning(false);
+              justFinishedRef.current = false;
+              setPomodoroMode("focus");
+              setSecondsLeft(FOCUS_SECONDS);
+            }}
           >
             Focus 25
           </button>
           <button
             className={pomodoroMode === "break" ? "active" : ""}
-            onClick={() => switchMode("break")}
+            onClick={() => {
+              setIsRunning(false);
+              justFinishedRef.current = false;
+              setPomodoroMode("break");
+              setSecondsLeft(BREAK_SECONDS);
+            }}
           >
             Break 5
           </button>
@@ -595,27 +578,237 @@ function App() {
         </div>
         <div className="pomodoro-controls">
           {!isRunning ? (
-            <button onClick={startPomodoro} className="pomodoro-btn start">
+            <button onClick={() => setIsRunning(true)} className="pomodoro-btn start">
               <Play size={14} /> Start
             </button>
           ) : (
-            <button onClick={pausePomodoro} className="pomodoro-btn pause">
+            <button onClick={() => setIsRunning(false)} className="pomodoro-btn pause">
               <Pause size={14} /> Pause
             </button>
           )}
-          <button onClick={resetPomodoro} className="pomodoro-btn reset">
+          <button
+            onClick={() => {
+              setIsRunning(false);
+              justFinishedRef.current = false;
+              setSecondsLeft(pomodoroMode === "focus" ? FOCUS_SECONDS : BREAK_SECONDS);
+            }}
+            className="pomodoro-btn reset"
+          >
             <RotateCcw size={14} /> Reset
           </button>
         </div>
       </div>
 
+      {/* Folders & Notes */}
+      <div className="library-section">
+        <div className="library-header">
+          <span>Notes & Folders</span>
+        </div>
+
+        {showNewFolder && (
+          <div className="new-folder-row">
+            <input
+              value={newFolderName}
+              onChange={(e) => setNewFolderName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && createFolder()}
+              placeholder="Folder name..."
+              autoFocus
+            />
+            <button onClick={createFolder} className="small-btn">
+              Add
+            </button>
+            <button onClick={() => setShowNewFolder(false)} className="icon-btn">
+              <X size={14} />
+            </button>
+          </div>
+        )}
+
+        <div className="folder-list">
+          {folders.map((folder) => {
+            const FolderIcon = getIcon(folder.icon).Icon;
+            const folderNotes = notes.filter((n) => n.folderId === folder.id);
+            const expanded = expandedFolders.has(folder.id);
+            return (
+              <div key={folder.id} className="folder-block">
+                <div className="folder-row">
+                  <button className="icon-btn expand-btn" onClick={() => toggleFolder(folder.id)}>
+                    {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                  </button>
+                  <button
+                    className="icon-btn folder-icon-btn"
+                    title="Change folder icon"
+                    onClick={() =>
+                      setIconPickerFor(
+                        iconPickerFor?.type === "folder" && iconPickerFor.id === folder.id
+                          ? null
+                          : { type: "folder", id: folder.id }
+                      )
+                    }
+                  >
+                    <FolderIcon size={15} />
+                  </button>
+                  <span className="folder-name">{folder.name}</span>
+                  <span className="folder-count">{folderNotes.length}</span>
+                  <button
+                    className="icon-btn"
+                    title="New note in folder"
+                    onClick={() => createNoteInFolder(folder.id)}
+                  >
+                    <Plus size={14} />
+                  </button>
+                  <button
+                    className="icon-btn delete-btn"
+                    title="Delete folder"
+                    onClick={() => deleteFolder(folder.id)}
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+
+                {iconPickerFor?.type === "folder" && iconPickerFor.id === folder.id && (
+                  <div className="inline-icon-picker">
+                    {ICON_BANK.map(({ id, Icon, label }) => (
+                      <button
+                        key={id}
+                        className={`icon-grid-item ${folder.icon === id ? "active" : ""}`}
+                        title={label}
+                        onClick={() => setFolderIcon(folder.id, id)}
+                      >
+                        <Icon size={16} />
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {expanded && (
+                  <div className="folder-notes">
+                    {folderNotes.length === 0 && (
+                      <div className="empty-hint">No notes yet</div>
+                    )}
+                    {folderNotes.map((note) => {
+                      const NoteIcon = getIcon(note.icon).Icon;
+                      return (
+                        <div key={note.id} className="note-row">
+                          <button
+                            className="icon-btn folder-icon-btn"
+                            title="Change note icon"
+                            onClick={() =>
+                              setIconPickerFor(
+                                iconPickerFor?.type === "note" && iconPickerFor.id === note.id
+                                  ? null
+                                  : { type: "note", id: note.id }
+                              )
+                            }
+                          >
+                            <NoteIcon size={14} />
+                          </button>
+                          <button className="note-open-btn" onClick={() => openNote(note)}>
+                            {note.title || "Untitled"}
+                          </button>
+                          <button
+                            className="icon-btn delete-btn"
+                            onClick={() => deleteNoteFromList(note.id)}
+                          >
+                            <X size={13} />
+                          </button>
+                        </div>
+                      );
+                    })}
+                    {iconPickerFor?.type === "note" &&
+                      folderNotes.some((n) => n.id === iconPickerFor.id) && (
+                        <div className="inline-icon-picker">
+                          {ICON_BANK.map(({ id, Icon, label }) => (
+                            <button
+                              key={id}
+                              className={`icon-grid-item ${
+                                notes.find((n) => n.id === iconPickerFor.id)?.icon === id
+                                  ? "active"
+                                  : ""
+                              }`}
+                              title={label}
+                              onClick={() => setNoteIconInList(iconPickerFor.id, id)}
+                            >
+                              <Icon size={16} />
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          {/* Unfiled notes */}
+          {unfiledNotes.length > 0 && (
+            <div className="folder-block">
+              <div className="folder-row unfiled">
+                <StickyNote size={14} />
+                <span className="folder-name">Unfiled</span>
+                <span className="folder-count">{unfiledNotes.length}</span>
+              </div>
+              <div className="folder-notes">
+                {unfiledNotes.map((note) => {
+                  const NoteIcon = getIcon(note.icon).Icon;
+                  return (
+                    <div key={note.id} className="note-row">
+                      <button
+                        className="icon-btn folder-icon-btn"
+                        title="Change note icon"
+                        onClick={() =>
+                          setIconPickerFor(
+                            iconPickerFor?.type === "note" && iconPickerFor.id === note.id
+                              ? null
+                              : { type: "note", id: note.id }
+                          )
+                        }
+                      >
+                        <NoteIcon size={14} />
+                      </button>
+                      <button className="note-open-btn" onClick={() => openNote(note)}>
+                        {note.title || "Untitled"}
+                      </button>
+                      <button
+                        className="icon-btn delete-btn"
+                        onClick={() => deleteNoteFromList(note.id)}
+                      >
+                        <X size={13} />
+                      </button>
+                    </div>
+                  );
+                })}
+                {iconPickerFor?.type === "note" &&
+                  unfiledNotes.some((n) => n.id === iconPickerFor.id) && (
+                    <div className="inline-icon-picker">
+                      {ICON_BANK.map(({ id, Icon, label }) => (
+                        <button
+                          key={id}
+                          className={`icon-grid-item ${
+                            notes.find((n) => n.id === iconPickerFor.id)?.icon === id
+                              ? "active"
+                              : ""
+                          }`}
+                          title={label}
+                          onClick={() => setNoteIconInList(iconPickerFor.id, id)}
+                        >
+                          <Icon size={16} />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Tasks */}
       <div className="input-area">
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && addTask()}
           placeholder="What are you focusing on?"
-          autoFocus
         />
       </div>
 
@@ -628,10 +821,22 @@ function App() {
                 value={editText}
                 onChange={(e) => setEditText(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") saveEdit();
+                  if (e.key === "Enter") {
+                    const text = editText.trim();
+                    if (text) {
+                      setTasks(tasks.map((t) => (t.id === editingId ? { ...t, text } : t)));
+                    }
+                    setEditingId(null);
+                  }
                   if (e.key === "Escape") setEditingId(null);
                 }}
-                onBlur={saveEdit}
+                onBlur={() => {
+                  const text = editText.trim();
+                  if (text && editingId) {
+                    setTasks(tasks.map((t) => (t.id === editingId ? { ...t, text } : t)));
+                  }
+                  setEditingId(null);
+                }}
                 autoFocus
               />
             ) : (
@@ -640,14 +845,24 @@ function App() {
                   <input
                     type="checkbox"
                     checked={task.done}
-                    onChange={() => toggleDone(task.id)}
+                    onChange={() =>
+                      setTasks(
+                        tasks.map((t) => (t.id === task.id ? { ...t, done: !t.done } : t))
+                      )
+                    }
                   />
-                  <span onDoubleClick={() => startEditing(task)}>{task.text}</span>
+                  <span
+                    onDoubleClick={() => {
+                      setEditingId(task.id);
+                      setEditText(task.text);
+                    }}
+                  >
+                    {task.text}
+                  </span>
                 </label>
                 <button
                   className="delete-btn icon-btn"
-                  onClick={() => deleteTask(task.id)}
-                  title="Delete"
+                  onClick={() => setTasks(tasks.filter((t) => t.id !== task.id))}
                 >
                   <X size={14} />
                 </button>
@@ -661,7 +876,7 @@ function App() {
         <div className="completed-section">
           <div className="completed-header">
             <span>Completed ({completedTasks.length})</span>
-            <button onClick={clearCompleted}>Clear</button>
+            <button onClick={() => setTasks(tasks.filter((t) => !t.done))}>Clear</button>
           </div>
           <ul className="task-list completed">
             {completedTasks.map((task) => (
@@ -670,14 +885,17 @@ function App() {
                   <input
                     type="checkbox"
                     checked={task.done}
-                    onChange={() => toggleDone(task.id)}
+                    onChange={() =>
+                      setTasks(
+                        tasks.map((t) => (t.id === task.id ? { ...t, done: !t.done } : t))
+                      )
+                    }
                   />
                   <span>{task.text}</span>
                 </label>
                 <button
                   className="delete-btn icon-btn"
-                  onClick={() => deleteTask(task.id)}
-                  title="Delete"
+                  onClick={() => setTasks(tasks.filter((t) => t.id !== task.id))}
                 >
                   <X size={14} />
                 </button>
