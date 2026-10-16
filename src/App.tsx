@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type ComponentType } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { Store } from "@tauri-apps/plugin-store";
@@ -13,6 +13,76 @@ import {
   Pause,
   RotateCcw,
   StickyNote,
+  PanelRight,
+  PanelRightClose,
+  // Icon bank (50+)
+  Book,
+  Bookmark,
+  Briefcase,
+  Calendar,
+  Camera,
+  Check,
+  CheckCircle,
+  Clock,
+  Code,
+  Coffee,
+  Compass,
+  Cpu,
+  Database,
+  Feather,
+  FileText,
+  Film,
+  Flag,
+  Flame,
+  Folder,
+  Gift,
+  Globe,
+  GraduationCap,
+  Heart,
+  Home,
+  Image,
+  Inbox,
+  Key,
+  Lamp,
+  Laptop,
+  Layers,
+  Leaf,
+  Lightbulb,
+  Link,
+  List,
+  Lock,
+  Mail,
+  Map,
+  MapPin,
+  MessageCircle,
+  Mic,
+  Monitor,
+  Music,
+  Package,
+  Palette,
+  Pencil,
+  Phone,
+  Plane,
+  Rocket,
+  Search,
+  Settings,
+  Shield,
+  ShoppingBag,
+  Smile,
+  Star,
+  Target,
+  Terminal,
+  Thermometer,
+  Trash2,
+  Trophy,
+  Umbrella,
+  User,
+  Users,
+  Video,
+  Wallet,
+  Wrench,
+  Zap,
+  type LucideProps,
 } from "lucide-react";
 
 type Task = {
@@ -31,6 +101,7 @@ type Note = {
   title: string;
   content: string;
   color: NoteColor;
+  icon: string;
   createdAt: number;
 };
 
@@ -45,29 +116,94 @@ const NOTE_COLORS: { id: NoteColor; label: string; light: string; dark: string }
   { id: "orange", label: "Orange", light: "#fff3e0", dark: "#3d2a1f" },
 ];
 
+/** 50+ Lucide icons available for notes */
+const ICON_BANK: { id: string; Icon: ComponentType<LucideProps>; label: string }[] = [
+  { id: "sticky-note", Icon: StickyNote, label: "Note" },
+  { id: "book", Icon: Book, label: "Book" },
+  { id: "bookmark", Icon: Bookmark, label: "Bookmark" },
+  { id: "briefcase", Icon: Briefcase, label: "Work" },
+  { id: "calendar", Icon: Calendar, label: "Calendar" },
+  { id: "camera", Icon: Camera, label: "Camera" },
+  { id: "check", Icon: Check, label: "Check" },
+  { id: "check-circle", Icon: CheckCircle, label: "Done" },
+  { id: "clock", Icon: Clock, label: "Clock" },
+  { id: "code", Icon: Code, label: "Code" },
+  { id: "coffee", Icon: Coffee, label: "Coffee" },
+  { id: "compass", Icon: Compass, label: "Compass" },
+  { id: "cpu", Icon: Cpu, label: "CPU" },
+  { id: "database", Icon: Database, label: "Database" },
+  { id: "feather", Icon: Feather, label: "Write" },
+  { id: "file-text", Icon: FileText, label: "Document" },
+  { id: "film", Icon: Film, label: "Film" },
+  { id: "flag", Icon: Flag, label: "Flag" },
+  { id: "flame", Icon: Flame, label: "Flame" },
+  { id: "folder", Icon: Folder, label: "Folder" },
+  { id: "gift", Icon: Gift, label: "Gift" },
+  { id: "globe", Icon: Globe, label: "Globe" },
+  { id: "graduation-cap", Icon: GraduationCap, label: "Study" },
+  { id: "heart", Icon: Heart, label: "Heart" },
+  { id: "home", Icon: Home, label: "Home" },
+  { id: "image", Icon: Image, label: "Image" },
+  { id: "inbox", Icon: Inbox, label: "Inbox" },
+  { id: "key", Icon: Key, label: "Key" },
+  { id: "lamp", Icon: Lamp, label: "Idea" },
+  { id: "laptop", Icon: Laptop, label: "Laptop" },
+  { id: "layers", Icon: Layers, label: "Layers" },
+  { id: "leaf", Icon: Leaf, label: "Leaf" },
+  { id: "lightbulb", Icon: Lightbulb, label: "Lightbulb" },
+  { id: "link", Icon: Link, label: "Link" },
+  { id: "list", Icon: List, label: "List" },
+  { id: "lock", Icon: Lock, label: "Lock" },
+  { id: "mail", Icon: Mail, label: "Mail" },
+  { id: "map", Icon: Map, label: "Map" },
+  { id: "map-pin", Icon: MapPin, label: "Location" },
+  { id: "message-circle", Icon: MessageCircle, label: "Chat" },
+  { id: "mic", Icon: Mic, label: "Mic" },
+  { id: "monitor", Icon: Monitor, label: "Monitor" },
+  { id: "music", Icon: Music, label: "Music" },
+  { id: "package", Icon: Package, label: "Package" },
+  { id: "palette", Icon: Palette, label: "Design" },
+  { id: "pencil", Icon: Pencil, label: "Pencil" },
+  { id: "phone", Icon: Phone, label: "Phone" },
+  { id: "plane", Icon: Plane, label: "Travel" },
+  { id: "rocket", Icon: Rocket, label: "Rocket" },
+  { id: "search", Icon: Search, label: "Search" },
+  { id: "settings", Icon: Settings, label: "Settings" },
+  { id: "shield", Icon: Shield, label: "Shield" },
+  { id: "shopping-bag", Icon: ShoppingBag, label: "Shopping" },
+  { id: "smile", Icon: Smile, label: "Smile" },
+  { id: "star", Icon: Star, label: "Star" },
+  { id: "target", Icon: Target, label: "Target" },
+  { id: "terminal", Icon: Terminal, label: "Terminal" },
+  { id: "thermometer", Icon: Thermometer, label: "Health" },
+  { id: "trash", Icon: Trash2, label: "Trash" },
+  { id: "trophy", Icon: Trophy, label: "Trophy" },
+  { id: "umbrella", Icon: Umbrella, label: "Umbrella" },
+  { id: "user", Icon: User, label: "User" },
+  { id: "users", Icon: Users, label: "Team" },
+  { id: "video", Icon: Video, label: "Video" },
+  { id: "wallet", Icon: Wallet, label: "Wallet" },
+  { id: "wrench", Icon: Wrench, label: "Tools" },
+  { id: "zap", Icon: Zap, label: "Energy" },
+];
+
 const FOCUS_SECONDS = 25 * 60;
 const BREAK_SECONDS = 5 * 60;
 
-/** Play a short pleasant beep using Web Audio API */
 function playBeep() {
   try {
     const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
     const oscillator = ctx.createOscillator();
     const gain = ctx.createGain();
-
     oscillator.connect(gain);
     gain.connect(ctx.destination);
-
     oscillator.type = "sine";
     oscillator.frequency.setValueAtTime(880, ctx.currentTime);
     oscillator.frequency.setValueAtTime(1100, ctx.currentTime + 0.1);
-
     gain.gain.setValueAtTime(0.25, ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
-
     oscillator.start(ctx.currentTime);
     oscillator.stop(ctx.currentTime + 0.4);
-
     setTimeout(() => {
       const osc2 = ctx.createOscillator();
       const gain2 = ctx.createGain();
@@ -85,6 +221,10 @@ function playBeep() {
   }
 }
 
+function getNoteIcon(iconId: string) {
+  return ICON_BANK.find((i) => i.id === iconId) || ICON_BANK[0];
+}
+
 function App() {
   const [windowLabel, setWindowLabel] = useState<string>("main");
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -99,8 +239,10 @@ function App() {
   const [noteTitle, setNoteTitle] = useState("");
   const [noteContent, setNoteContent] = useState("");
   const [noteColor, setNoteColor] = useState<NoteColor>("yellow");
+  const [noteIcon, setNoteIcon] = useState<string>("sticky-note");
   const [noteId, setNoteId] = useState<string | null>(null);
   const [showColorPicker, setShowColorPicker] = useState(false);
+  const [showIconSidebar, setShowIconSidebar] = useState(false);
 
   // Pomodoro state
   const [pomodoroMode, setPomodoroMode] = useState<PomodoroMode>("focus");
@@ -112,22 +254,18 @@ function App() {
   const totalSeconds = pomodoroMode === "focus" ? FOCUS_SECONDS : BREAK_SECONDS;
   const progress = ((totalSeconds - secondsLeft) / totalSeconds) * 100;
 
-  // Detect current window label
   useEffect(() => {
     async function detectWindow() {
       const win = getCurrentWindow();
       const label = win.label;
       setWindowLabel(label);
-
       if (label.startsWith("note-")) {
-        const id = label.replace("note-", "");
-        setNoteId(id);
+        setNoteId(label.replace("note-", ""));
       }
     }
     detectWindow();
   }, []);
 
-  // Initialize store + load data
   useEffect(() => {
     async function init() {
       const s = await Store.load("pin-data.json");
@@ -149,13 +287,13 @@ function App() {
           setNoteTitle(note.title);
           setNoteContent(note.content);
           setNoteColor(note.color || "yellow");
+          setNoteIcon(note.icon || "sticky-note");
         }
       }
     }
     init();
   }, [windowLabel, noteId]);
 
-  // Save tasks
   useEffect(() => {
     if (store && windowLabel === "main") {
       store.set("tasks", tasks);
@@ -163,7 +301,6 @@ function App() {
     }
   }, [tasks, store, windowLabel]);
 
-  // Save theme
   useEffect(() => {
     if (store) {
       store.set("theme", theme);
@@ -172,7 +309,6 @@ function App() {
     document.documentElement.setAttribute("data-theme", theme);
   }, [theme, store]);
 
-  // Auto-save note
   useEffect(() => {
     if (store && noteId && windowLabel.startsWith("note-")) {
       const saveNote = async () => {
@@ -184,6 +320,7 @@ function App() {
           title: noteTitle || "Untitled",
           content: noteContent,
           color: noteColor,
+          icon: noteIcon,
           createdAt: existingIndex >= 0 ? notes[existingIndex].createdAt : Date.now(),
         };
 
@@ -200,9 +337,8 @@ function App() {
       const timeout = setTimeout(saveNote, 400);
       return () => clearTimeout(timeout);
     }
-  }, [noteTitle, noteContent, noteColor, noteId, store, windowLabel]);
+  }, [noteTitle, noteContent, noteColor, noteIcon, noteId, store, windowLabel]);
 
-  // Pomodoro timer logic + auto-switch + sound
   useEffect(() => {
     if (isRunning && secondsLeft > 0) {
       timerRef.current = window.setInterval(() => {
@@ -235,9 +371,7 @@ function App() {
   }, [isRunning, secondsLeft, pomodoroMode]);
 
   const formatTime = (secs: number) => {
-    const m = Math.floor(secs / 60)
-      .toString()
-      .padStart(2, "0");
+    const m = Math.floor(secs / 60).toString().padStart(2, "0");
     const s = (secs % 60).toString().padStart(2, "0");
     return `${m}:${s}`;
   };
@@ -258,9 +392,7 @@ function App() {
     setSecondsLeft(mode === "focus" ? FOCUS_SECONDS : BREAK_SECONDS);
   };
 
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === "light" ? "dark" : "light"));
-  };
+  const toggleTheme = () => setTheme((prev) => (prev === "light" ? "dark" : "light"));
 
   const togglePin = async () => {
     const win = getCurrentWindow();
@@ -273,19 +405,13 @@ function App() {
     await win.close();
   };
 
-  // ========== MAIN WINDOW FUNCTIONS ==========
   const addTask = () => {
     const text = input.trim();
     if (!text) return;
-
-    const newTask: Task = {
-      id: crypto.randomUUID(),
-      text,
-      done: false,
-      createdAt: Date.now(),
-    };
-
-    setTasks([newTask, ...tasks]);
+    setTasks([
+      { id: crypto.randomUUID(), text, done: false, createdAt: Date.now() },
+      ...tasks,
+    ]);
     setInput("");
   };
 
@@ -302,28 +428,21 @@ function App() {
     if (!editingId) return;
     const text = editText.trim();
     if (!text) return;
-
     setTasks(tasks.map((t) => (t.id === editingId ? { ...t, text } : t)));
     setEditingId(null);
     setEditText("");
   };
 
-  const deleteTask = (id: string) => {
-    setTasks(tasks.filter((t) => t.id !== id));
-  };
-
-  const clearCompleted = () => {
-    setTasks(tasks.filter((t) => !t.done));
-  };
+  const deleteTask = (id: string) => setTasks(tasks.filter((t) => t.id !== id));
+  const clearCompleted = () => setTasks(tasks.filter((t) => !t.done));
 
   const createNewNote = async () => {
     const id = crypto.randomUUID();
     const label = `note-${id}`;
-
     const newWindow = new WebviewWindow(label, {
       title: "New Note",
-      width: 300,
-      height: 280,
+      width: 320,
+      height: 300,
       decorations: false,
       transparent: true,
       alwaysOnTop: true,
@@ -331,80 +450,102 @@ function App() {
       x: 100 + Math.random() * 200,
       y: 100 + Math.random() * 150,
     });
-
-    newWindow.once("tauri://created", () => {
-      console.log("Note window created:", label);
-    });
-
-    newWindow.once("tauri://error", (e) => {
-      console.error("Failed to create note window:", e);
-    });
+    newWindow.once("tauri://error", (e) => console.error("Failed to create note:", e));
   };
 
   const currentColor = NOTE_COLORS.find((c) => c.id === noteColor) || NOTE_COLORS[0];
   const bgColor = theme === "light" ? currentColor.light : currentColor.dark;
+  const SelectedIcon = getNoteIcon(noteIcon).Icon;
 
   // ========== RENDER NOTE WINDOW ==========
   if (windowLabel.startsWith("note-")) {
     return (
-      <div
-        className="pin-window note-window"
-        data-tauri-drag-region
-        style={{ background: bgColor }}
-      >
-        <header className="titlebar" data-tauri-drag-region style={{ background: bgColor }}>
-          <input
-            className="note-title-input"
-            value={noteTitle}
-            onChange={(e) => setNoteTitle(e.target.value)}
-            placeholder="Note title..."
-            data-tauri-drag-region
-          />
-          <div className="title-actions">
-            <div className="color-picker-wrapper">
-              <button
-                onClick={() => setShowColorPicker(!showColorPicker)}
-                title="Change color"
-                className="color-btn"
-                style={{ background: currentColor.light }}
-              />
-              {showColorPicker && (
-                <div className="color-picker">
-                  {NOTE_COLORS.map((c) => (
-                    <button
-                      key={c.id}
-                      className={`color-option ${noteColor === c.id ? "active" : ""}`}
-                      style={{ background: c.light }}
-                      title={c.label}
-                      onClick={() => {
-                        setNoteColor(c.id);
-                        setShowColorPicker(false);
-                      }}
-                    />
-                  ))}
+      <div className="pin-window note-window" data-tauri-drag-region style={{ background: bgColor }}>
+        <div className="note-layout">
+          <div className="note-main">
+            <header className="titlebar" data-tauri-drag-region style={{ background: bgColor }}>
+              <div className="note-title-row" data-tauri-drag-region>
+                <SelectedIcon size={16} className="note-icon-display" />
+                <input
+                  className="note-title-input"
+                  value={noteTitle}
+                  onChange={(e) => setNoteTitle(e.target.value)}
+                  placeholder="Note title..."
+                  data-tauri-drag-region
+                />
+              </div>
+              <div className="title-actions">
+                <div className="color-picker-wrapper">
+                  <button
+                    onClick={() => setShowColorPicker(!showColorPicker)}
+                    title="Change color"
+                    className="color-btn"
+                    style={{ background: currentColor.light }}
+                  />
+                  {showColorPicker && (
+                    <div className="color-picker">
+                      {NOTE_COLORS.map((c) => (
+                        <button
+                          key={c.id}
+                          className={`color-option ${noteColor === c.id ? "active" : ""}`}
+                          style={{ background: c.light }}
+                          title={c.label}
+                          onClick={() => {
+                            setNoteColor(c.id);
+                            setShowColorPicker(false);
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-            <button onClick={toggleTheme} title="Toggle theme" className="icon-btn">
-              {theme === "light" ? <Moon size={16} /> : <Sun size={16} />}
-            </button>
-            <button onClick={togglePin} title={pinned ? "Unpin" : "Pin"} className="icon-btn">
-              {pinned ? <Pin size={16} /> : <PinOff size={16} />}
-            </button>
-            <button onClick={closeWindow} title="Close" className="icon-btn">
-              <X size={16} />
-            </button>
-          </div>
-        </header>
+                <button
+                  onClick={() => setShowIconSidebar(!showIconSidebar)}
+                  title={showIconSidebar ? "Hide icons" : "Choose icon"}
+                  className="icon-btn"
+                >
+                  {showIconSidebar ? <PanelRightClose size={16} /> : <PanelRight size={16} />}
+                </button>
+                <button onClick={toggleTheme} title="Toggle theme" className="icon-btn">
+                  {theme === "light" ? <Moon size={16} /> : <Sun size={16} />}
+                </button>
+                <button onClick={togglePin} title={pinned ? "Unpin" : "Pin"} className="icon-btn">
+                  {pinned ? <Pin size={16} /> : <PinOff size={16} />}
+                </button>
+                <button onClick={closeWindow} title="Close" className="icon-btn">
+                  <X size={16} />
+                </button>
+              </div>
+            </header>
 
-        <textarea
-          className="note-content"
-          value={noteContent}
-          onChange={(e) => setNoteContent(e.target.value)}
-          placeholder="Write your note here..."
-          autoFocus
-          style={{ background: "transparent" }}
-        />
+            <textarea
+              className="note-content"
+              value={noteContent}
+              onChange={(e) => setNoteContent(e.target.value)}
+              placeholder="Write your note here..."
+              autoFocus
+              style={{ background: "transparent" }}
+            />
+          </div>
+
+          {showIconSidebar && (
+            <aside className="icon-sidebar">
+              <div className="icon-sidebar-header">Icons</div>
+              <div className="icon-grid">
+                {ICON_BANK.map(({ id, Icon, label }) => (
+                  <button
+                    key={id}
+                    className={`icon-grid-item ${noteIcon === id ? "active" : ""}`}
+                    title={label}
+                    onClick={() => setNoteIcon(id)}
+                  >
+                    <Icon size={18} />
+                  </button>
+                ))}
+              </div>
+            </aside>
+          )}
+        </div>
       </div>
     );
   }
@@ -433,7 +574,6 @@ function App() {
         </div>
       </header>
 
-      {/* Pomodoro Bar */}
       <div className="pomodoro-bar">
         <div className="pomodoro-modes">
           <button
@@ -449,31 +589,22 @@ function App() {
             Break 5
           </button>
         </div>
-
         <div className="pomodoro-timer">{formatTime(secondsLeft)}</div>
-
         <div className="pomodoro-progress-track">
-          <div
-            className="pomodoro-progress-fill"
-            style={{ width: `${progress}%` }}
-          />
+          <div className="pomodoro-progress-fill" style={{ width: `${progress}%` }} />
         </div>
-
         <div className="pomodoro-controls">
           {!isRunning ? (
             <button onClick={startPomodoro} className="pomodoro-btn start">
-              <Play size={14} />
-              Start
+              <Play size={14} /> Start
             </button>
           ) : (
             <button onClick={pausePomodoro} className="pomodoro-btn pause">
-              <Pause size={14} />
-              Pause
+              <Pause size={14} /> Pause
             </button>
           )}
           <button onClick={resetPomodoro} className="pomodoro-btn reset">
-            <RotateCcw size={14} />
-            Reset
+            <RotateCcw size={14} /> Reset
           </button>
         </div>
       </div>
@@ -511,9 +642,7 @@ function App() {
                     checked={task.done}
                     onChange={() => toggleDone(task.id)}
                   />
-                  <span onDoubleClick={() => startEditing(task)}>
-                    {task.text}
-                  </span>
+                  <span onDoubleClick={() => startEditing(task)}>{task.text}</span>
                 </label>
                 <button
                   className="delete-btn icon-btn"
