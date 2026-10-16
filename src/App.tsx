@@ -2,6 +2,18 @@ import { useState, useEffect, useRef } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { Store } from "@tauri-apps/plugin-store";
+import {
+  Pin,
+  PinOff,
+  Moon,
+  Sun,
+  Plus,
+  X,
+  Play,
+  Pause,
+  RotateCcw,
+  StickyNote,
+} from "lucide-react";
 
 type Task = {
   id: string;
@@ -47,7 +59,7 @@ function playBeep() {
     gain.connect(ctx.destination);
 
     oscillator.type = "sine";
-    oscillator.frequency.setValueAtTime(880, ctx.currentTime); // A5
+    oscillator.frequency.setValueAtTime(880, ctx.currentTime);
     oscillator.frequency.setValueAtTime(1100, ctx.currentTime + 0.1);
 
     gain.gain.setValueAtTime(0.25, ctx.currentTime);
@@ -56,7 +68,6 @@ function playBeep() {
     oscillator.start(ctx.currentTime);
     oscillator.stop(ctx.currentTime + 0.4);
 
-    // Second short beep for clarity
     setTimeout(() => {
       const osc2 = ctx.createOscillator();
       const gain2 = ctx.createGain();
@@ -96,7 +107,7 @@ function App() {
   const [secondsLeft, setSecondsLeft] = useState(FOCUS_SECONDS);
   const [isRunning, setIsRunning] = useState(false);
   const timerRef = useRef<number | null>(null);
-  const justFinishedRef = useRef(false); // prevent double-trigger
+  const justFinishedRef = useRef(false);
 
   const totalSeconds = pomodoroMode === "focus" ? FOCUS_SECONDS : BREAK_SECONDS;
   const progress = ((totalSeconds - secondsLeft) / totalSeconds) * 100;
@@ -199,15 +210,11 @@ function App() {
       }, 1000);
     }
 
-    // Timer finished
     if (secondsLeft === 0 && !justFinishedRef.current) {
       justFinishedRef.current = true;
       setIsRunning(false);
-
-      // Play sound
       playBeep();
 
-      // Auto-switch mode and start next session after a short delay
       const nextMode: PomodoroMode = pomodoroMode === "focus" ? "break" : "focus";
       const nextSeconds = nextMode === "focus" ? FOCUS_SECONDS : BREAK_SECONDS;
 
@@ -378,14 +385,14 @@ function App() {
                 </div>
               )}
             </div>
-            <button onClick={toggleTheme} title="Toggle theme">
-              {theme === "light" ? "🌙" : "☀️"}
+            <button onClick={toggleTheme} title="Toggle theme" className="icon-btn">
+              {theme === "light" ? <Moon size={16} /> : <Sun size={16} />}
             </button>
-            <button onClick={togglePin} title={pinned ? "Unpin" : "Pin"}>
-              {pinned ? "📍" : "📌"}
+            <button onClick={togglePin} title={pinned ? "Unpin" : "Pin"} className="icon-btn">
+              {pinned ? <Pin size={16} /> : <PinOff size={16} />}
             </button>
-            <button onClick={closeWindow} title="Close">
-              ×
+            <button onClick={closeWindow} title="Close" className="icon-btn">
+              <X size={16} />
             </button>
           </div>
         </header>
@@ -409,16 +416,19 @@ function App() {
   return (
     <div className="pin-window" data-tauri-drag-region>
       <header className="titlebar" data-tauri-drag-region>
-        <span>📌 Pin</span>
+        <span className="app-title">
+          <StickyNote size={16} />
+          Pin
+        </span>
         <div className="title-actions">
-          <button onClick={createNewNote} title="New Note">
-            +
+          <button onClick={createNewNote} title="New Note" className="icon-btn">
+            <Plus size={16} />
           </button>
-          <button onClick={toggleTheme} title="Toggle theme">
-            {theme === "light" ? "🌙" : "☀️"}
+          <button onClick={toggleTheme} title="Toggle theme" className="icon-btn">
+            {theme === "light" ? <Moon size={16} /> : <Sun size={16} />}
           </button>
-          <button onClick={togglePin} title={pinned ? "Unpin" : "Pin"}>
-            {pinned ? "📍" : "📌"}
+          <button onClick={togglePin} title={pinned ? "Unpin" : "Pin"} className="icon-btn">
+            {pinned ? <Pin size={16} /> : <PinOff size={16} />}
           </button>
         </div>
       </header>
@@ -452,14 +462,17 @@ function App() {
         <div className="pomodoro-controls">
           {!isRunning ? (
             <button onClick={startPomodoro} className="pomodoro-btn start">
+              <Play size={14} />
               Start
             </button>
           ) : (
             <button onClick={pausePomodoro} className="pomodoro-btn pause">
+              <Pause size={14} />
               Pause
             </button>
           )}
           <button onClick={resetPomodoro} className="pomodoro-btn reset">
+            <RotateCcw size={14} />
             Reset
           </button>
         </div>
@@ -503,10 +516,11 @@ function App() {
                   </span>
                 </label>
                 <button
-                  className="delete-btn"
+                  className="delete-btn icon-btn"
                   onClick={() => deleteTask(task.id)}
+                  title="Delete"
                 >
-                  ×
+                  <X size={14} />
                 </button>
               </>
             )}
@@ -532,10 +546,11 @@ function App() {
                   <span>{task.text}</span>
                 </label>
                 <button
-                  className="delete-btn"
+                  className="delete-btn icon-btn"
                   onClick={() => deleteTask(task.id)}
+                  title="Delete"
                 >
-                  ×
+                  <X size={14} />
                 </button>
               </li>
             ))}
