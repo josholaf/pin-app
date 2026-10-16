@@ -12,6 +12,7 @@
   --completed-bg: #fff8e1;
   --delete-hover: #c62828;
   --shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+  --pomodoro-track: rgba(0, 0, 0, 0.08);
 }
 
 /* ========== Dark Theme ========== */
@@ -27,6 +28,7 @@
   --completed-bg: #252525;
   --delete-hover: #ef5350;
   --shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  --pomodoro-track: rgba(255, 255, 255, 0.1);
 }
 
 /* ========== Base styles ========== */
@@ -88,6 +90,102 @@ body {
   background: rgba(128, 128, 128, 0.15);
 }
 
+/* ========== Pomodoro Bar ========== */
+.pomodoro-bar {
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pomodoro-modes {
+  display: flex;
+  gap: 6px;
+}
+
+.pomodoro-modes button {
+  flex: 1;
+  padding: 6px 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pomodoro-modes button.active {
+  background: #4caf50;
+  color: white;
+  border-color: #4caf50;
+}
+
+.pomodoro-modes button:hover:not(.active) {
+  background: rgba(76, 175, 80, 0.1);
+}
+
+.pomodoro-timer {
+  font-size: 28px;
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: 1px;
+  font-variant-numeric: tabular-nums;
+}
+
+.pomodoro-progress-track {
+  height: 8px;
+  background: var(--pomodoro-track);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.pomodoro-progress-fill {
+  height: 100%;
+  background: #4caf50;
+  border-radius: 99px;
+  transition: width 0.3s linear;
+}
+
+.pomodoro-controls {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.pomodoro-btn {
+  padding: 6px 16px;
+  border-radius: 8px;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.pomodoro-btn:hover {
+  opacity: 0.85;
+}
+
+.pomodoro-btn.start {
+  background: #4caf50;
+  color: white;
+}
+
+.pomodoro-btn.pause {
+  background: #ff9800;
+  color: white;
+}
+
+.pomodoro-btn.reset {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+/* ========== Input & Tasks ========== */
 .input-area {
   padding: 12px;
 }
