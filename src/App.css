@@ -69,25 +69,37 @@ body {
   gap: 8px;
 }
 
+.app-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+}
+
 .title-actions {
   display: flex;
-  gap: 4px;
+  gap: 2px;
   flex-shrink: 0;
   align-items: center;
 }
 
-.title-actions button {
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: none;
   border: none;
-  font-size: 16px;
   cursor: pointer;
-  padding: 4px 8px;
+  padding: 6px;
   border-radius: 6px;
   color: var(--text);
+  opacity: 0.75;
+  transition: background 0.15s ease, opacity 0.15s ease;
 }
 
-.title-actions button:hover {
+.icon-btn:hover {
   background: rgba(128, 128, 128, 0.15);
+  opacity: 1;
 }
 
 /* ========== Pomodoro Bar ========== */
@@ -156,6 +168,9 @@ body {
 }
 
 .pomodoro-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 6px 16px;
   border-radius: 8px;
   border: none;
@@ -249,15 +264,7 @@ body {
 }
 
 .delete-btn {
-  background: none;
-  border: none;
-  font-size: 18px;
-  cursor: pointer;
-  opacity: 0.35;
-  padding: 2px 6px;
-  border-radius: 4px;
-  line-height: 1;
-  color: var(--text);
+  opacity: 0.4;
 }
 
 .delete-btn:hover {
