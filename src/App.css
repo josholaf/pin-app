@@ -1,0 +1,193 @@
+/* ========== Light Theme (default) ========== */
+:root,
+[data-theme="light"] {
+  --bg: #fffde7;
+  --titlebar-bg: #ffecb3;
+  --input-bg: #ffffff;
+  --input-border: #ffe082;
+  --input-focus: #ffc107;
+  --text: #333333;
+  --text-muted: #666666;
+  --border: rgba(0, 0, 0, 0.06);
+  --completed-bg: #fff8e1;
+  --delete-hover: #c62828;
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+}
+
+/* ========== Dark Theme ========== */
+[data-theme="dark"] {
+  --bg: #1e1e1e;
+  --titlebar-bg: #2d2d2d;
+  --input-bg: #2a2a2a;
+  --input-border: #444444;
+  --input-focus: #ffb300;
+  --text: #e8e8e8;
+  --text-muted: #aaaaaa;
+  --border: rgba(255, 255, 255, 0.08);
+  --completed-bg: #252525;
+  --delete-hover: #ef5350;
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+/* ========== Base styles ========== */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: transparent;
+}
+
+.pin-window {
+  background: var(--bg);
+  color: var(--text);
+  border-radius: 12px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.titlebar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: var(--titlebar-bg);
+  font-weight: 600;
+  user-select: none;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.2s ease;
+}
+
+.title-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.title-actions button {
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  color: var(--text);
+}
+
+.title-actions button:hover {
+  background: rgba(128, 128, 128, 0.15);
+}
+
+.input-area {
+  padding: 12px;
+}
+
+.input-area input {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  font-size: 15px;
+  outline: none;
+  background: var(--input-bg);
+  color: var(--text);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.input-area input:focus {
+  border-color: var(--input-focus);
+  box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.2);
+}
+
+.task-list {
+  list-style: none;
+  padding: 0 12px 8px;
+  margin: 0;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.task-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 4px;
+  border-bottom: 1px solid var(--border);
+  gap: 8px;
+}
+
+.task-list li label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  cursor: pointer;
+}
+
+.task-list li.done span {
+  text-decoration: line-through;
+  opacity: 0.5;
+}
+
+.edit-input {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid var(--input-focus);
+  border-radius: 6px;
+  font-size: 14px;
+  outline: none;
+  background: var(--input-bg);
+  color: var(--text);
+}
+
+.delete-btn {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  opacity: 0.35;
+  padding: 2px 6px;
+  border-radius: 4px;
+  line-height: 1;
+  color: var(--text);
+}
+
+.delete-btn:hover {
+  opacity: 1;
+  color: var(--delete-hover);
+  background: rgba(198, 40, 40, 0.1);
+}
+
+.completed-section {
+  border-top: 1px solid var(--border);
+  background: var(--completed-bg);
+}
+
+.completed-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 14px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.completed-header button {
+  background: none;
+  border: none;
+  color: var(--delete-hover);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 2px 6px;
+}
+
+.completed-header button:hover {
+  text-decoration: underline;
+}
