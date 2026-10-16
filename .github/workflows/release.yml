@@ -39,7 +39,23 @@ jobs:
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
       - name: Install frontend deps
-        run: npm ci
+        run: npm install --no-audit --no-fund
+
+      - name: Generate icons if missing
+        shell: bash
+        run: |
+          mkdir -p src-tauri/icons
+          if [ ! -f src-tauri/icons/32x32.png ]; then
+            # Minimal valid 1x1 green PNG
+            echo 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==' | base64 -d > src-tauri/icons/32x32.png
+            cp src-tauri/icons/32x32.png src-tauri/icons/128x128.png
+            cp src-tauri/icons/32x32.png src-tauri/icons/128x128@2x.png
+            cp src-tauri/icons/32x32.png src-tauri/icons/icon.png
+            # Create empty placeholders for ico/icns (bundler may warn but often continues)
+            touch src-tauri/icons/icon.ico src-tauri/icons/icon.icns
+            echo "Created placeholder icons"
+          fi
+          ls -la src-tauri/icons/
 
       - name: Build Tauri
         uses: tauri-apps/tauri-action@v0
@@ -48,7 +64,13 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: "Pin ${{ github.ref_name }}"
-          releaseBody: "First multi-platform release of Pin — lightweight sticky-note style task & note app."
+          releaseBody: |
+            First multi-platform release of **Pin** — lightweight sticky-note style task & note app.
+
+            ## Downloads
+            - **Windows**: `.msi` or `.exe` (NSIS)
+            - **macOS**: `.dmg`
+            - **Linux**: `.deb` or `.AppImage`
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
