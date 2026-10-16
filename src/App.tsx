@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { Store } from "@tauri-apps/plugin-store";
@@ -22,6 +22,8 @@ type Note = {
   createdAt: number;
 };
 
+type PomodoroMode = "focus" | "break";
+
 const NOTE_COLORS: { id: NoteColor; label: string; light: string; dark: string }[] = [
   { id: "yellow", label: "Yellow", light: "#fffde7", dark: "#3d3a1f" },
   { id: "pink", label: "Pink", light: "#fce4ec", dark: "#3d1f2a" },
@@ -30,6 +32,9 @@ const NOTE_COLORS: { id: NoteColor; label: string; light: string; dark: string }
   { id: "purple", label: "Purple", light: "#f3e5f5", dark: "#2a1f3d" },
   { id: "orange", label: "Orange", light: "#fff3e0", dark: "#3d2a1f" },
 ];
+
+const FOCUS_SECONDS = 25 * 60;
+const BREAK_SECONDS = 5 * 60;
 
 function App() {
   const [windowLabel, setWindowLabel] = useState<string>("main");
@@ -47,6 +52,15 @@ function App() {
   const [noteColor, setNoteColor] = useState<NoteColor>("yellow");
   const [noteId, setNoteId] = useState<string | null>(null);
   const [showColorPicker, setShowColorPicker] = useState(false);
+
+  // Pomodoro state
+  const [pomodoroMode, setPomodoroMode] = useState<PomodoroMode>("focus");
+  const [secondsLeft, setSecondsLeft] = useState(FOCUS_SECONDS);
+  const [isRunning, setIsRunning] = useState(false);
+  const timerRef = useRef<number | null>(null);
+
+  const totalSeconds = pomodoroMode === "focus" ? FOCUS_SECONDS : BREAK_SECONDS;
+  const progress = ((totalSeconds - secondsLeft) / totalSeconds) * 100;
 
   // Detect current window label
   useEffect(() => {
@@ -78,7 +92,6 @@ function App() {
         document.documentElement.setAttribute("data-theme", savedTheme);
       }
 
-      // Load note if this is a note window
       if (windowLabel.startsWith("note-") && noteId) {
         const notes = (await s.get<Note[]>("notes")) || [];
         const note = notes.find((n) => n.id === noteId);
@@ -109,7 +122,7 @@ function App() {
     document.documentElement.setAttribute("data-theme", theme);
   }, [theme, store]);
 
-  // Auto-save note content + color
+  // Auto-save note
   useEffect(() => {
     if (store && noteId && windowLabel.startsWith("note-")) {
       const saveNote = async () => {
@@ -138,6 +151,47 @@ function App() {
       return () => clearTimeout(timeout);
     }
   }, [noteTitle, noteContent, noteColor, noteId, store, windowLabel]);
+
+  // Pomodoro timer logic
+  useEffect(() => {
+    if (isRunning && secondsLeft > 0) {
+      timerRef.current = window.setInterval(() => {
+        setSecondsLeft((prev) => prev - 1);
+      }, 1000);
+    } else if (secondsLeft === 0) {
+      setIsRunning(false);
+      // Optional: auto switch mode when finished
+    }
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [isRunning, secondsLeft]);
+
+  const formatTime = (secs: number) => {
+    const m = Math.floor(secs / 60)
+      .toString()
+      .padStart(2, "0");
+    const s = (secs % 60).toString().padStart(2, "0");
+    return `${m}:${s}`;
+  };
+
+  const startPomodoro = () => setIsRunning(true);
+  const pausePomodoro = () => setIsRunning(false);
+
+  const resetPomodoro = () => {
+    setIsRunning(false);
+    setSecondsLeft(pomodoroMode === "focus" ? FOCUS_SECONDS : BREAK_SECONDS);
+  };
+
+  const switchMode = (mode: PomodoroMode) => {
+    setIsRunning(false);
+    setPomodoroMode(mode);
+    setSecondsLeft(mode === "focus" ? FOCUS_SECONDS : BREAK_SECONDS);
+  };
 
   const toggleTheme = () => {
     setTheme((prev) => (prev === "light" ? "dark" : "light"));
@@ -222,7 +276,6 @@ function App() {
     });
   };
 
-  // Get current color values
   const currentColor = NOTE_COLORS.find((c) => c.id === noteColor) || NOTE_COLORS[0];
   const bgColor = theme === "light" ? currentColor.light : currentColor.dark;
 
@@ -311,6 +364,48 @@ function App() {
           </button>
         </div>
       </header>
+
+      {/* Pomodoro Bar */}
+      <div className="pomodoro-bar">
+        <div className="pomodoro-modes">
+          <button
+            className={pomodoroMode === "focus" ? "active" : ""}
+            onClick={() => switchMode("focus")}
+          >
+            Focus 25
+          </button>
+          <button
+            className={pomodoroMode === "break" ? "active" : ""}
+            onClick={() => switchMode("break")}
+          >
+            Break 5
+          </button>
+        </div>
+
+        <div className="pomodoro-timer">{formatTime(secondsLeft)}</div>
+
+        <div className="pomodoro-progress-track">
+          <div
+            className="pomodoro-progress-fill"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+
+        <div className="pomodoro-controls">
+          {!isRunning ? (
+            <button onClick={startPomodoro} className="pomodoro-btn start">
+              Start
+            </button>
+          ) : (
+            <button onClick={pausePomodoro} className="pomodoro-btn pause">
+              Pause
+            </button>
+          )}
+          <button onClick={resetPomodoro} className="pomodoro-btn reset">
+            Reset
+          </button>
+        </div>
+      </div>
 
       <div className="input-area">
         <input
