@@ -13,6 +13,7 @@
   --delete-hover: #c62828;
   --shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
   --pomodoro-track: rgba(0, 0, 0, 0.08);
+  --sidebar-bg: rgba(255, 255, 255, 0.7);
 }
 
 /* ========== Dark Theme ========== */
@@ -29,6 +30,7 @@
   --delete-hover: #ef5350;
   --shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
   --pomodoro-track: rgba(255, 255, 255, 0.1);
+  --sidebar-bg: rgba(0, 0, 0, 0.35);
 }
 
 /* ========== Base styles ========== */
@@ -306,6 +308,32 @@ body {
   border-bottom: 1px solid rgba(0, 0, 0, 0.06);
 }
 
+.note-layout {
+  display: flex;
+  height: 100%;
+  overflow: hidden;
+}
+
+.note-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.note-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.note-icon-display {
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
 .note-title-input {
   flex: 1;
   background: transparent;
@@ -339,6 +367,67 @@ body {
 
 .note-content::placeholder {
   color: var(--text-muted);
+}
+
+/* ========== Icon Sidebar ========== */
+.icon-sidebar {
+  width: 140px;
+  flex-shrink: 0;
+  border-left: 1px solid var(--border);
+  background: var(--sidebar-bg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.icon-sidebar-header {
+  padding: 8px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+}
+
+.icon-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  padding: 8px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.icon-grid-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 1;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  opacity: 0.7;
+  transition: background 0.12s ease, opacity 0.12s ease, border-color 0.12s ease;
+}
+
+.icon-grid-item:hover {
+  background: rgba(128, 128, 128, 0.15);
+  opacity: 1;
+}
+
+.icon-grid-item.active {
+  background: rgba(76, 175, 80, 0.2);
+  border-color: #4caf50;
+  opacity: 1;
+  color: #2e7d32;
+}
+
+[data-theme="dark"] .icon-grid-item.active {
+  color: #81c784;
 }
 
 /* ========== Color Picker ========== */
