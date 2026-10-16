@@ -36,6 +36,44 @@ const NOTE_COLORS: { id: NoteColor; label: string; light: string; dark: string }
 const FOCUS_SECONDS = 25 * 60;
 const BREAK_SECONDS = 5 * 60;
 
+/** Play a short pleasant beep using Web Audio API */
+function playBeep() {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const oscillator = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    oscillator.connect(gain);
+    gain.connect(ctx.destination);
+
+    oscillator.type = "sine";
+    oscillator.frequency.setValueAtTime(880, ctx.currentTime); // A5
+    oscillator.frequency.setValueAtTime(1100, ctx.currentTime + 0.1);
+
+    gain.gain.setValueAtTime(0.25, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+
+    oscillator.start(ctx.currentTime);
+    oscillator.stop(ctx.currentTime + 0.4);
+
+    // Second short beep for clarity
+    setTimeout(() => {
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.type = "sine";
+      osc2.frequency.value = 1320;
+      gain2.gain.setValueAtTime(0.2, ctx.currentTime);
+      gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+      osc2.start();
+      osc2.stop(ctx.currentTime + 0.3);
+    }, 200);
+  } catch (e) {
+    console.warn("Could not play sound:", e);
+  }
+}
+
 function App() {
   const [windowLabel, setWindowLabel] = useState<string>("main");
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -58,6 +96,7 @@ function App() {
   const [secondsLeft, setSecondsLeft] = useState(FOCUS_SECONDS);
   const [isRunning, setIsRunning] = useState(false);
   const timerRef = useRef<number | null>(null);
+  const justFinishedRef = useRef(false); // prevent double-trigger
 
   const totalSeconds = pomodoroMode === "focus" ? FOCUS_SECONDS : BREAK_SECONDS;
   const progress = ((totalSeconds - secondsLeft) / totalSeconds) * 100;
@@ -152,15 +191,32 @@ function App() {
     }
   }, [noteTitle, noteContent, noteColor, noteId, store, windowLabel]);
 
-  // Pomodoro timer logic
+  // Pomodoro timer logic + auto-switch + sound
   useEffect(() => {
     if (isRunning && secondsLeft > 0) {
       timerRef.current = window.setInterval(() => {
         setSecondsLeft((prev) => prev - 1);
       }, 1000);
-    } else if (secondsLeft === 0) {
+    }
+
+    // Timer finished
+    if (secondsLeft === 0 && !justFinishedRef.current) {
+      justFinishedRef.current = true;
       setIsRunning(false);
-      // Optional: auto switch mode when finished
+
+      // Play sound
+      playBeep();
+
+      // Auto-switch mode and start next session after a short delay
+      const nextMode: PomodoroMode = pomodoroMode === "focus" ? "break" : "focus";
+      const nextSeconds = nextMode === "focus" ? FOCUS_SECONDS : BREAK_SECONDS;
+
+      setTimeout(() => {
+        setPomodoroMode(nextMode);
+        setSecondsLeft(nextSeconds);
+        setIsRunning(true);
+        justFinishedRef.current = false;
+      }, 800);
     }
 
     return () => {
@@ -169,7 +225,7 @@ function App() {
         timerRef.current = null;
       }
     };
-  }, [isRunning, secondsLeft]);
+  }, [isRunning, secondsLeft, pomodoroMode]);
 
   const formatTime = (secs: number) => {
     const m = Math.floor(secs / 60)
@@ -184,11 +240,13 @@ function App() {
 
   const resetPomodoro = () => {
     setIsRunning(false);
+    justFinishedRef.current = false;
     setSecondsLeft(pomodoroMode === "focus" ? FOCUS_SECONDS : BREAK_SECONDS);
   };
 
   const switchMode = (mode: PomodoroMode) => {
     setIsRunning(false);
+    justFinishedRef.current = false;
     setPomodoroMode(mode);
     setSecondsLeft(mode === "focus" ? FOCUS_SECONDS : BREAK_SECONDS);
   };
