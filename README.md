@@ -2,11 +2,12 @@
 
 Lightweight always-on-top task pin app for Windows, built with **Tauri**.
 
-Write tasks, pin the window so it stays visible while you work, and stay focused. You can also open multiple independent sticky notes with custom colors.
+Write tasks, pin the window so it stays visible while you work, and stay focused. You can also open multiple independent sticky notes with custom colors and use a built-in Pomodoro timer.
 
 ## Features
 
 - Always-on-top floating window
+- **Pomodoro timer** (25 min Focus / 5 min Break) with green progress bar
 - **Multiple independent notes** (click **+** to open new sticky notes)
 - **Color options per note** (Yellow, Pink, Blue, Green, Purple, Orange)
 - Add / edit / complete / delete tasks
@@ -49,6 +50,8 @@ npm run tauri build
 - Type a task and press Enter
 - Double-click a task to edit
 - Click **+** to open a new independent sticky note
+- Use the **Pomodoro bar** (Focus 25 / Break 5) with Start, Pause and Reset
+- Green progress bar shows elapsed time
 - Click the moon/sun to toggle dark mode
 - Click the pin icon to toggle always-on-top
 
