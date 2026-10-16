@@ -71,6 +71,7 @@ body {
   display: flex;
   gap: 4px;
   flex-shrink: 0;
+  align-items: center;
 }
 
 .title-actions button {
@@ -197,6 +198,7 @@ body {
 /* ========== Note Window Styles ========== */
 .note-window .titlebar {
   padding: 8px 10px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .note-title-input {
@@ -232,4 +234,56 @@ body {
 
 .note-content::placeholder {
   color: var(--text-muted);
+}
+
+/* ========== Color Picker ========== */
+.color-picker-wrapper {
+  position: relative;
+}
+
+.color-btn {
+  width: 18px !important;
+  height: 18px !important;
+  border-radius: 50% !important;
+  border: 2px solid rgba(0, 0, 0, 0.15) !important;
+  padding: 0 !important;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.color-btn:hover {
+  transform: scale(1.1);
+}
+
+.color-picker {
+  position: absolute;
+  top: 28px;
+  right: 0;
+  display: flex;
+  gap: 6px;
+  padding: 8px;
+  background: var(--input-bg);
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+  z-index: 100;
+  border: 1px solid var(--border);
+}
+
+.color-option {
+  width: 22px !important;
+  height: 22px !important;
+  border-radius: 50% !important;
+  border: 2px solid transparent !important;
+  padding: 0 !important;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.color-option:hover {
+  transform: scale(1.15);
+}
+
+.color-option.active {
+  border-color: var(--text) !important;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
 }
