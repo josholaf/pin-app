@@ -101,7 +101,7 @@ function App() {
         let note = await s.get<Note>(noteKey(noteId));
         if (!note) {
           const all = await loadNotes(s);
-          note = all.find((x) => x.id === noteId) || null;
+          note = all.find((x) => x.id === noteId) ?? undefined;
         }
         if (note) {
           setNoteTitle(note.title); setNoteContent(note.content);

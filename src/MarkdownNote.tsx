@@ -1,7 +1,7 @@
 import { useRef, useState, type MouseEvent, type KeyboardEvent } from "react";
 import {
   Moon, Sun, X, PanelRight, PanelRightClose, Bold, Italic, List, ListOrdered, CheckSquare,
-  Heading, Code, TextQuote, Link as LinkIcon, Strike, Pencil,
+  Heading, Code, TextQuote, Link as LinkIcon, Strikethrough, Pencil,
 } from "lucide-react";
 import {
   NOTE_COLORS, ICON_BANK, markdownToHtml, plainToHtml, getIcon,
@@ -143,7 +143,7 @@ export function MarkdownNote(p: Props) {
             <div className="md-toolbar">
               <button type="button" className="icon-btn" title="Bold (Ctrl+B)" onMouseDown={startToolbarAction} onClick={() => insertMd("**", "**")}><Bold size={14} /></button>
               <button type="button" className="icon-btn" title="Italic (Ctrl+I)" onMouseDown={startToolbarAction} onClick={() => insertMd("*", "*")}><Italic size={14} /></button>
-              <button type="button" className="icon-btn" title="Strikethrough" onMouseDown={startToolbarAction} onClick={() => insertMd("~~", "~~")}><Strike size={14} /></button>
+              <button type="button" className="icon-btn" title="Strikethrough" onMouseDown={startToolbarAction} onClick={() => insertMd("~~", "~~")}><Strikethrough size={14} /></button>
               <button type="button" className="icon-btn" title="Heading" onMouseDown={startToolbarAction} onClick={() => insertMd("## ")}><Heading size={14} /></button>
               <button type="button" className="icon-btn" title="Inline code" onMouseDown={startToolbarAction} onClick={() => insertMd("`", "`")}><Code size={14} /></button>
               <button type="button" className="icon-btn" title="Bullet list" onMouseDown={startToolbarAction} onClick={() => insertMd("- ")}><List size={14} /></button>
