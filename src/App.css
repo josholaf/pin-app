@@ -721,3 +721,45 @@ body {
   text-underline-offset: 2px;
 }
 .note-content-preview s { opacity: 0.6; }
+
+/* ===== Markdown preview v2: tables, images, nesting, code labels ===== */
+.note-content-preview .md-h5 { font-size: 1em; font-style: italic; }
+.note-content-preview .md-h6 { font-size: 0.95em; font-style: italic; opacity: 0.9; }
+.note-content-preview .md-list .md-list { margin: 1px 0; }
+.note-content-preview .md-table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 6px 0;
+  font-size: 0.95em;
+}
+.note-content-preview .md-table th,
+.note-content-preview .md-table td {
+  border: 1px solid var(--border);
+  padding: 4px 8px;
+}
+.note-content-preview .md-table th {
+  background: rgba(128, 128, 128, 0.12);
+  font-weight: 600;
+}
+.note-content-preview .md-table tbody tr:nth-child(even) {
+  background: rgba(128, 128, 128, 0.05);
+}
+.note-content-preview .md-img {
+  max-width: 100%;
+  border-radius: 6px;
+  margin: 4px 0;
+  display: block;
+}
+.note-content-preview .md-code-lang {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  background: rgba(128, 128, 128, 0.12);
+  border-radius: 4px 4px 0 0;
+  padding: 1px 8px;
+  margin-bottom: -6px;
+  margin-top: 4px;
+}

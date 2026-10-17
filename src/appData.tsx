@@ -113,7 +113,7 @@ function escapeHtml(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
-/** Inline markdown: code, bold, italic, strikethrough, links. */
+/** Inline markdown: code, bold, italic, strikethrough, images, links. */
 function inlineMd(s: string): string {
   return s
     .replace(/`([^`\n]+)`/g, '<code class="md-code">$1</code>')
@@ -121,6 +121,7 @@ function inlineMd(s: string): string {
     .replace(/~~(.+?)~~/g, "<s>$1</s>")
     .replace(/(^|[^A-Za-z0-9_])\*([^*\n]+)\*(?!\*)/g, "$1<em>$2</em>")
     .replace(/(^|[^A-Za-z0-9_])_([^_\n]+)_(?!_)/g, "$1<em>$2</em>")
+    .replace(/!\[([^\]\n]*)\]\((https?:\/\/[^\s)]+)\)/g, '<img class="md-img" src="$2" alt="$1" loading="lazy" />')
     .replace(/\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a class="md-link" href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
     .replace(/(^|[\s(])(https?:\/\/[^\s<)]+)/g, function (_all: string, pre: string, url: string) {
       const trimmed = url.replace(/&quot;$/, "");
@@ -129,99 +130,178 @@ function inlineMd(s: string): string {
     });
 }
 
-/** Live markdown to HTML with proper escaping. Supports headings, bold,
- *  italic, strikethrough, inline and fenced code, bullet/numbered lists,
- *  interactive task checkboxes, quotes, links and horizontal rules. */
+/** Split a markdown table row into trimmed cells. */
+function splitTableRow(line: string): string[] {
+  let s = line.trim();
+  if (s.startsWith("|")) s = s.slice(1);
+  if (s.endsWith("|")) s = s.slice(0, -1);
+  return s.split("|").map((c) => c.trim());
+}
+
+/** Column alignment from a table separator row like |:---|:-:|---:| */
+function tableAligns(sep: string): string[] {
+  return splitTableRow(sep).map(function (c) {
+    const left = c.startsWith(":");
+    const right = c.endsWith(":");
+    if (left && right) return "center";
+    if (right) return "right";
+    return "left";
+  });
+}
+
+/** Live markdown to HTML with proper escaping. Supports headings (h1-h6),
+ *  bold, italic, strikethrough, inline and fenced code (with language label),
+ *  nested bullet/numbered lists, interactive task checkboxes, blockquotes
+ *  (multi-line merged), pipe tables with alignment, images, links and
+ *  horizontal rules. */
 export function markdownToHtml(md: string): string {
   if (!md.trim()) return "";
 
   const codeBlocks: string[] = [];
-  let text = md.replace(/```(\w*)\n?([\s\S]*?)```/g, function (_all: string, _lang: string, code: string) {
-    codeBlocks.push(code.replace(/\n+$/, ""));
+  let text = md.replace(/```(\w*)\n?([\s\S]*?)```/g, function (_all: string, lang: string, code: string) {
+    codeBlocks.push(lang + "\u0000LANG" + code.replace(/\n+$/, ""));
     return "\u0000CB" + (codeBlocks.length - 1) + "\u0000";
   });
   text = escapeHtml(text);
 
   const out: string[] = [];
-  let listTag: string | null = null;
   let taskIdx = 0;
-  const closeList = function () {
-    if (listTag) {
-      out.push("</" + listTag + ">");
-      listTag = null;
+  const listStack: { tag: string; indent: number }[] = [];
+  const closeListsTo = function (depth: number) {
+    while (listStack.length > depth) {
+      out.push("</" + (listStack.pop() as { tag: string }).tag + ">");
     }
   };
+  const closeAllLists = function () { closeListsTo(0); };
 
   const lines = text.split("\n");
-  for (const line of lines) {
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+
     const cb = line.match(/^\u0000CB(\d+)\u0000$/);
     if (cb) {
-      closeList();
+      closeAllLists();
       out.push(cb[0]);
+      i += 1;
       continue;
     }
     if (!line.trim()) {
-      closeList();
+      closeAllLists();
+      i += 1;
       continue;
     }
     if (/^\s*(-{3,}|\*{3,}|_{3,})\s*$/.test(line)) {
-      closeList();
+      closeAllLists();
       out.push('<hr class="md-hr">');
+      i += 1;
       continue;
     }
-    const head = line.match(/^(#{1,4})\s+(.*)$/);
-    if (head) {
-      closeList();
-      out.push('<div class="md-h md-h' + head[1].length + '">' + inlineMd(head[2]) + "</div>");
-      continue;
-    }
-    const task = line.match(/^(\s*)[-*]\s+\[( |x|X)\]\s+(.*)$/);
-    if (task) {
-      if (listTag !== "ul") {
-        closeList();
-        out.push('<ul class="md-list md-task-list">');
-        listTag = "ul";
-      }
-      const done = task[2].toLowerCase() === "x";
-      out.push(
-        '<li class="md-task' + (done ? " done" : "") + '"><span class="md-checkbox" data-task="' + taskIdx +
-        '" data-done="' + (done ? 1 : 0) + '">' + (done ? "☑" : "☐") + "</span>" + inlineMd(task[3]) + "</li>"
-      );
-      taskIdx += 1;
-      continue;
-    }
-    const bullet = line.match(/^(\s*)[-*]\s+(.*)$/);
-    if (bullet) {
-      if (listTag !== "ul") {
-        closeList();
-        out.push('<ul class="md-list">');
-        listTag = "ul";
-      }
-      out.push("<li>" + inlineMd(bullet[2]) + "</li>");
-      continue;
-    }
-    const num = line.match(/^\s*\d+[.)]\s+(.*)$/);
-    if (num) {
-      if (listTag !== "ol") {
-        closeList();
-        out.push('<ol class="md-list">');
-        listTag = "ol";
-      }
-      out.push("<li>" + inlineMd(num[1]) + "</li>");
-      continue;
-    }
-    const quote = line.match(/^\s*&gt;\s?(.*)$/);
-    if (quote) {
-      closeList();
-      out.push('<div class="md-quote">' + inlineMd(quote[1]) + "</div>");
-      continue;
-    }
-    closeList();
-    out.push('<div class="md-p">' + inlineMd(line) + "</div>");
-  }
-  closeList();
 
-  return out.join("").replace(/\u0000CB(\d+)\u0000/g, function (_all: string, i: string) {
-    return '<pre class="md-code-block"><code>' + escapeHtml(codeBlocks[Number(i)]) + "</code></pre>";
+    // Table: a header row containing | followed by a separator row
+    if (
+      line.includes("|") &&
+      i + 1 < lines.length &&
+      lines[i + 1].includes("-") &&
+      /^\s*\|?[\s:|-]*-[\s:|-]*\|?\s*$/.test(lines[i + 1])
+    ) {
+      closeAllLists();
+      const headerCells = splitTableRow(line);
+      const aligns = tableAligns(lines[i + 1]);
+      let html = '<table class="md-table"><thead><tr>';
+      headerCells.forEach(function (c, ci) {
+        html += '<th style="text-align:' + (aligns[ci] || "left") + '">' + inlineMd(c) + "</th>";
+      });
+      html += "</tr></thead><tbody>";
+      let j = i + 2;
+      while (j < lines.length && lines[j].trim() && lines[j].includes("|")) {
+        const cells = splitTableRow(lines[j]);
+        html += "<tr>";
+        cells.forEach(function (c, ci) {
+          html += '<td style="text-align:' + (aligns[ci] || "left") + '">' + inlineMd(c) + "</td>";
+        });
+        html += "</tr>";
+        j += 1;
+      }
+      html += "</tbody></table>";
+      out.push(html);
+      i = j;
+      continue;
+    }
+
+    // Blockquote: merge consecutive > lines into one block
+    const q = line.match(/^\s*&gt;\s?(.*)$/);
+    if (q) {
+      closeAllLists();
+      const quoted: string[] = [q[1]];
+      let j = i + 1;
+      while (j < lines.length) {
+        const q2 = lines[j].match(/^\s*&gt;\s?(.*)$/);
+        if (!q2) break;
+        quoted.push(q2[1]);
+        j += 1;
+      }
+      out.push('<div class="md-quote">' + inlineMd(quoted.join(" ")) + "</div>");
+      i = j;
+      continue;
+    }
+
+    const headMatch = line.match(/^(#{1,6})\s+(.*)$/);
+    if (headMatch) {
+      closeAllLists();
+      out.push('<div class="md-h md-h' + headMatch[1].length + '">' + inlineMd(headMatch[2]) + "</div>");
+      i += 1;
+      continue;
+    }
+
+    const task = line.match(/^(\s*)[-*]\s+\[( |x|X)\]\s+(.*)$/);
+    const bullet = line.match(/^(\s*)[-*]\s+(.*)$/);
+    const num = line.match(/^(\s*)\d+[.)]\s+(.*)$/);
+    const listMatch = task || bullet || num;
+    if (listMatch) {
+      const lead = (listMatch[1] || "").replace(/\t/g, "  ");
+      const indent = Math.floor(lead.length / 2);
+      const tag = num ? "ol" : "ul";
+      while (listStack.length && listStack[listStack.length - 1].indent > indent) {
+        out.push("</" + (listStack.pop() as { tag: string }).tag + ">");
+      }
+      const top = listStack[listStack.length - 1];
+      if (!top || top.indent < indent) {
+        listStack.push({ tag: tag, indent: indent });
+        out.push("<" + tag + ' class="md-list' + (task ? " md-task-list" : "") + '">');
+      } else if (top.indent === indent && top.tag !== tag) {
+        out.push("</" + (listStack.pop() as { tag: string }).tag + ">");
+        listStack.push({ tag: tag, indent: indent });
+        out.push("<" + tag + ' class="md-list' + (task ? " md-task-list" : "") + '">');
+      }
+      if (task) {
+        const done = task[2].toLowerCase() === "x";
+        out.push(
+          '<li class="md-task' + (done ? " done" : "") + '"><span class="md-checkbox" data-task="' + taskIdx +
+          '" data-done="' + (done ? 1 : 0) + '">' + (done ? "\u2611" : "\u2610") + "</span>" + inlineMd(task[3]) + "</li>"
+        );
+        taskIdx += 1;
+      } else if (num) {
+        out.push("<li>" + inlineMd(num[2]) + "</li>");
+      } else if (bullet) {
+        out.push("<li>" + inlineMd(bullet[2]) + "</li>");
+      }
+      i += 1;
+      continue;
+    }
+
+    closeAllLists();
+    out.push('<div class="md-p">' + inlineMd(line) + "</div>");
+    i += 1;
+  }
+  closeAllLists();
+
+  return out.join("").replace(/\u0000CB(\d+)\u0000/g, function (_all: string, idx: string) {
+    const raw = codeBlocks[Number(idx)];
+    const sep = raw.indexOf("\u0000LANG");
+    const lang = sep >= 0 ? raw.slice(0, sep) : "";
+    const code = sep >= 0 ? raw.slice(sep + 5) : raw;
+    const label = lang ? '<div class="md-code-lang">' + lang + "</div>" : "";
+    return label + '<pre class="md-code-block"><code>' + escapeHtml(code) + "</code></pre>";
   });
 }
