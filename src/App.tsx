@@ -198,7 +198,7 @@ function App() {
     setNotes(notes.map((n) => (n.id === id ? { ...n, title: title.trim() || "Untitled" } : n)));
     setRenamingId(null);
   };
-  const startRename = (type: "folder" | "note", id: string, current: string) => {
+  const startRename = (_type: "folder" | "note", id: string, current: string) => {
     setRenamingId(id); setRenameText(current); setContextMenu(null);
   };
   const createNoteInFolder = async (folderId: string | null) => {
