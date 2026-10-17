@@ -231,7 +231,14 @@ function App() {
   const formatTime = (secs: number) =>
     `${Math.floor(secs / 60).toString().padStart(2, "0")}:${(secs % 60).toString().padStart(2, "0")}`;
   const toggleTheme = () => setTheme((p) => (p === "light" ? "dark" : "light"));
-  const closeWindow = async () => { await getCurrentWindow().close(); };
+  const closeWindow = async () => {
+    const win = getCurrentWindow();
+    try {
+      await win.close();
+    } catch {
+      try { await win.destroy(); } catch { /* ignore */ }
+    }
+  };
 
   const openSettingsWindow = async () => {
     const existing = await WebviewWindow.getByLabel("settings");
