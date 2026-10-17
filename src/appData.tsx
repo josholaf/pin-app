@@ -27,6 +27,7 @@ export type Note = {
   icon: string;
   folderId: string | null;
   createdAt: number;
+  format?: "md" | "txt";
 };
 
 export const NOTE_COLORS: { id: NoteColor; label: string; light: string; dark: string }[] = [
@@ -304,4 +305,13 @@ export function markdownToHtml(md: string): string {
     const label = lang ? '<div class="md-code-lang">' + lang + "</div>" : "";
     return label + '<pre class="md-code-block"><code>' + escapeHtml(code) + "</code></pre>";
   });
+}
+
+/** Render plain text (no markdown parsing) as escaped paragraphs. */
+export function plainToHtml(text: string): string {
+  if (!text.trim()) return "";
+  return text
+    .split("\n")
+    .map(function (l) { return '<div class="md-p">' + escapeHtml(l) + "</div>"; })
+    .join("");
 }

@@ -763,3 +763,45 @@ body {
   margin-bottom: -6px;
   margin-top: 4px;
 }
+
+/* ===== Single-pane auto-preview note editor ===== */
+.note-editor-single {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+.note-editor-single .note-content {
+  flex: 1;
+  min-height: 0;
+}
+.note-editor-single .note-content-edit {
+  cursor: text;
+}
+.note-editor-single .note-content-preview {
+  cursor: text;
+}
+.md-edit-hint {
+  position: absolute;
+  right: 10px;
+  bottom: 8px;
+  font-size: 10px;
+  opacity: 0.45;
+  pointer-events: none;
+  user-select: none;
+}
+.md-format-btn {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  background: rgba(128, 128, 128, 0.15);
+  color: inherit;
+}
+.md-format-btn.active-mode {
+  background: var(--accent);
+  color: #fff;
+}
