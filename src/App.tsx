@@ -16,6 +16,19 @@ import {
 import { MarkdownNote } from "./MarkdownNote";
 import { SettingsWindow } from "./SettingsWindow";
 
+const noteKey = (id: string) => "note:" + id;
+
+async function loadNotes(s: Store): Promise<Note[]> {
+  const ids = (await s.get<string[]>("noteIds")) || [];
+  const out: Note[] = [];
+  for (const id of ids) {
+    const n = await s.get<Note>(noteKey(id));
+    if (n) out.push(n);
+  }
+  out.sort((a, b) => b.createdAt - a.createdAt);
+  return out;
+}
+
 function App() {
   const [windowLabel, setWindowLabel] = useState("main");
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -35,6 +48,7 @@ function App() {
   const [noteColor, setNoteColor] = useState<NoteColor>("yellow");
   const [noteIcon, setNoteIcon] = useState("sticky-note");
   const [noteFolderId, setNoteFolderId] = useState<string | null>(null);
+  const [noteFormat, setNoteFormat] = useState<"md" | "txt">("md");
   const [noteId, setNoteId] = useState<string | null>(null);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showIconSidebar, setShowIconSidebar] = useState(false);
@@ -57,35 +71,70 @@ function App() {
     })();
   }, []);
 
+  // Init store + migrate legacy whole-array notes to per-note keys
   useEffect(() => {
     (async () => {
       const s = await Store.load("pin-data.json");
       setStore(s);
+
+      const legacy = await s.get<Note[]>("notes");
+      const existingIds = await s.get<string[]>("noteIds");
+      if (legacy && legacy.length && !existingIds) {
+        for (const n of legacy) await s.set(noteKey(n.id), n);
+        await s.set("noteIds", legacy.map((n) => n.id));
+        await s.delete("notes");
+        await s.save();
+      }
+
       const t = await s.get<Task[]>("tasks"); if (t) setTasks(t);
       const f = await s.get<NoteFolder[]>("folders"); if (f) setFolders(f);
-      const n = await s.get<Note[]>("notes"); if (n) setNotes(n);
       const th = await s.get<Theme>("theme");
       if (th) { setTheme(th); document.documentElement.setAttribute("data-theme", th); }
       const st = await s.get<AppSettings>("settings"); if (st) setSettings({ ...DEFAULT_SETTINGS, ...st });
       const sk = await s.get<number>("streak"); if (typeof sk === "number") setStreak(sk);
       const la = await s.get<string>("lastActiveDate"); if (la) setLastActiveDate(la);
+
+      if (windowLabel === "main") {
+        setNotes(await loadNotes(s));
+      }
       if (windowLabel.startsWith("note-") && noteId) {
-        const all = (await s.get<Note[]>("notes")) || [];
-        const note = all.find((x) => x.id === noteId);
+        let note = await s.get<Note>(noteKey(noteId));
+        if (!note) {
+          const all = await loadNotes(s);
+          note = all.find((x) => x.id === noteId) || null;
+        }
         if (note) {
           setNoteTitle(note.title); setNoteContent(note.content);
           setNoteColor(note.color || "yellow"); setNoteIcon(note.icon || "sticky-note");
-          setNoteFolderId(note.folderId ?? null);
+          setNoteFolderId(note.folderId ?? null); setNoteFormat(note.format || "md");
         }
       }
     })();
   }, [windowLabel, noteId]);
 
+  // Main window: persist tasks + folders (notes are per-key, see below)
   useEffect(() => {
     if (store && windowLabel === "main") {
-      store.set("tasks", tasks); store.set("folders", folders); store.set("notes", notes); store.save();
+      store.set("tasks", tasks);
+      store.set("folders", folders);
+      store.save();
     }
-  }, [tasks, folders, notes, store, windowLabel]);
+  }, [tasks, folders, store, windowLabel]);
+
+  // Main window: live-refresh notes from disk so edits made in note windows
+  // (content, title, icon, color) appear immediately in the folder tree.
+  useEffect(() => {
+    if (!store || windowLabel !== "main") return;
+    let stopped = false;
+    const tick = async () => {
+      const fresh = await loadNotes(store);
+      if (stopped) return;
+      setNotes((prev) => (JSON.stringify(prev) === JSON.stringify(fresh) ? prev : fresh));
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => { stopped = true; clearInterval(id); };
+  }, [store, windowLabel]);
 
   useEffect(() => {
     if (store) { store.set("theme", theme); store.save(); }
@@ -99,6 +148,7 @@ function App() {
     document.documentElement.style.setProperty("--accent", settings.accentColor);
   }, [settings, store]);
 
+  // Settings window: poll for changes made in other windows
   useEffect(() => {
     if (windowLabel !== "settings" || !store) return;
     const id = setInterval(async () => {
@@ -128,23 +178,38 @@ function App() {
     setLastActiveDate(today);
   };
 
+  // Note window: automatic debounced save of THIS note only (single source of
+  // truth per note-key; no whole-array read-modify-write, so windows can't
+  // clobber each other's saves).
   useEffect(() => {
     if (!store || !noteId || !windowLabel.startsWith("note-")) return;
     const t = setTimeout(async () => {
-      const all = (await store.get<Note[]>("notes")) || [];
-      const idx = all.findIndex((n) => n.id === noteId);
+      const existing = await store.get<Note>(noteKey(noteId));
       const updated: Note = {
-        id: noteId, title: noteTitle || "Untitled", content: noteContent,
-        color: noteColor, icon: noteIcon, folderId: noteFolderId,
-        createdAt: idx >= 0 ? all[idx].createdAt : Date.now(),
+        id: noteId,
+        title: noteTitle || "Untitled",
+        content: noteContent,
+        color: noteColor,
+        icon: noteIcon,
+        folderId: noteFolderId,
+        createdAt: existing?.createdAt ?? Date.now(),
+        format: noteFormat,
       };
-      if (idx >= 0) all[idx] = updated; else all.push(updated);
-      await store.set("notes", all);
-      if (noteContent.trim() || (noteTitle && noteTitle !== "Untitled")) recordActivity();
+      await store.set(noteKey(noteId), updated);
+      const ids = (await store.get<string[]>("noteIds")) || [];
+      if (!ids.includes(noteId)) { ids.unshift(noteId); await store.set("noteIds", ids); }
+      const today = new Date().toISOString().slice(0, 10);
+      const savedLast = await store.get<string>("lastActiveDate");
+      if ((noteContent.trim() || noteTitle.trim()) && savedLast !== today) {
+        const y = new Date(); y.setDate(y.getDate() - 1);
+        const prev = (await store.get<number>("streak")) || 0;
+        await store.set("streak", savedLast === y.toISOString().slice(0, 10) ? prev + 1 : 1);
+        await store.set("lastActiveDate", today);
+      }
       await store.save();
     }, 400);
     return () => clearTimeout(t);
-  }, [noteTitle, noteContent, noteColor, noteIcon, noteFolderId, noteId, store, windowLabel]);
+  }, [noteTitle, noteContent, noteColor, noteIcon, noteFolderId, noteFormat, noteId, store, windowLabel]);
 
   useEffect(() => {
     if (isRunning && secondsLeft > 0) {
@@ -179,6 +244,21 @@ function App() {
     });
   };
 
+  const persistNote = async (n: Note) => {
+    if (!store) return;
+    await store.set(noteKey(n.id), n);
+    const ids = (await store.get<string[]>("noteIds")) || [];
+    if (!ids.includes(n.id)) { ids.unshift(n.id); await store.set("noteIds", ids); }
+    await store.save();
+  };
+  const removeNotePersist = async (id: string) => {
+    if (!store) return;
+    const ids = ((await store.get<string[]>("noteIds")) || []).filter((x) => x !== id);
+    await store.set("noteIds", ids);
+    await store.delete(noteKey(id));
+    await store.save();
+  };
+
   const createFolder = () => {
     const folder: NoteFolder = { id: crypto.randomUUID(), name: newFolderName.trim() || "New Folder", icon: "folder", createdAt: Date.now() };
     setFolders([...folders, folder]);
@@ -187,7 +267,9 @@ function App() {
   };
   const deleteFolder = (id: string) => {
     setFolders(folders.filter((f) => f.id !== id));
+    const moved = notes.filter((n) => n.folderId === id);
     setNotes(notes.map((n) => (n.folderId === id ? { ...n, folderId: null } : n)));
+    moved.forEach((n) => { persistNote({ ...n, folderId: null }); });
   };
   const renameFolder = (id: string, name: string) => {
     if (!name.trim()) return;
@@ -195,17 +277,22 @@ function App() {
     setRenamingId(null);
   };
   const renameNote = (id: string, title: string) => {
-    setNotes(notes.map((n) => (n.id === id ? { ...n, title: title.trim() || "Untitled" } : n)));
+    const n = notes.find((x) => x.id === id);
+    if (!n) { setRenamingId(null); return; }
+    const updated = { ...n, title: title.trim() || "Untitled" };
+    setNotes(notes.map((x) => (x.id === id ? updated : x)));
+    persistNote(updated);
     setRenamingId(null);
   };
   const startRename = (_type: "folder" | "note", id: string, current: string) => {
     setRenamingId(id); setRenameText(current); setContextMenu(null);
   };
-  const createNoteInFolder = async (folderId: string | null) => {
+  const createNoteInFolder = (folderId: string | null) => {
     const id = crypto.randomUUID();
-    const note: Note = { id, title: "Untitled", content: "", color: "yellow", icon: "sticky-note", folderId, createdAt: Date.now() };
+    const note: Note = { id, title: "Untitled", content: "", color: "yellow", icon: "sticky-note", folderId, createdAt: Date.now(), format: "md" };
     setNotes([note, ...notes]);
     if (folderId) setExpandedFolders(new Set([...expandedFolders, folderId]));
+    persistNote(note);
     recordActivity();
     const onTop = settings.alwaysOnTopDefault && !settings.stickToDesktop;
     new WebviewWindow(`note-${id}`, { title: "New Note", width: 340, height: 400, decorations: false, transparent: true, alwaysOnTop: onTop });
@@ -214,7 +301,10 @@ function App() {
     const onTop = settings.alwaysOnTopDefault && !settings.stickToDesktop;
     new WebviewWindow(`note-${note.id}`, { title: note.title || "Note", width: 340, height: 400, decorations: false, transparent: true, alwaysOnTop: onTop });
   };
-  const deleteNoteFromList = (id: string) => setNotes(notes.filter((n) => n.id !== id));
+  const deleteNoteFromList = (id: string) => {
+    setNotes(notes.filter((n) => n.id !== id));
+    removeNotePersist(id);
+  };
   const toggleFolder = (id: string) => {
     const next = new Set(expandedFolders);
     if (next.has(id)) next.delete(id); else next.add(id);
@@ -255,6 +345,8 @@ function App() {
         setNoteColor={setNoteColor}
         noteIcon={noteIcon}
         setNoteIcon={setNoteIcon}
+        noteFormat={noteFormat}
+        setNoteFormat={setNoteFormat}
         showColorPicker={showColorPicker}
         setShowColorPicker={setShowColorPicker}
         showIconSidebar={showIconSidebar}
