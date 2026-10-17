@@ -1,1 +1,59 @@
-RESTORE_NEEDED
+/* ========== Light Theme (default) ========== */
+:root,
+[data-theme="light"] {
+  --bg: #fffde7;
+  --titlebar-bg: #ffecb3;
+  --input-bg: #ffffff;
+  --input-border: #ffe082;
+  --input-focus: #ffc107;
+  --text: #333333;
+  --text-muted: #666666;
+  --border: rgba(0, 0, 0, 0.06);
+  --completed-bg: #fff8e1;
+  --delete-hover: #c62828;
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+  --pomodoro-track: rgba(0, 0, 0, 0.08);
+  --sidebar-bg: rgba(255, 255, 255, 0.7);
+  --accent: #4caf50;
+  --app-font-size: 14px;
+  --app-font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+[data-theme="dark"] {
+  --bg: #1e1e1e;
+  --titlebar-bg: #2d2d2d;
+  --input-bg: #2a2a2a;
+  --input-border: #444444;
+  --input-focus: #ffb300;
+  --text: #e8e8e8;
+  --text-muted: #aaaaaa;
+  --border: rgba(255, 255, 255, 0.08);
+  --completed-bg: #252525;
+  --delete-hover: #ef5350;
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  --pomodoro-track: rgba(255, 255, 255, 0.1);
+  --sidebar-bg: rgba(0, 0, 0, 0.35);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: transparent;
+}
+
+.pin-window {
+  background: var(--bg);
+  color: var(--text);
+  border-radius: 12px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--app-font-family);
+  font-size: var(--app-font-size);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  transition: background 0.2s ease, color 0.2s ease;
+}
