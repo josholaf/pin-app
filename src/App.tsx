@@ -43,8 +43,7 @@ const NOTE_COLORS: { id: NoteColor; label: string; light: string; dark: string }
   { id: "yellow", label: "Yellow", light: "#fffde7", dark: "#3d3a1f" },
   { id: "pink", label: "Pink", light: "#fce4ec", dark: "#3d1f2a" },
   { id: "blue", label: "Blue", light: "#e3f2fd", dark: "#1f2a3d" },
-  { id: "green", label: "Green", light
-: "#e8f5e9", dark: "#1f3d24" },
+  { id: "green", label: "Green", light: "#e8f5e9", dark: "#1f3d24" },
   { id: "purple", label: "Purple", light: "#f3e5f5", dark: "#2a1f3d" },
   { id: "orange", label: "Orange", light: "#fff3e0", dark: "#3d2a1f" },
 ];
@@ -84,8 +83,7 @@ const ICON_BANK: { id: string; Icon: ComponentType<LucideProps>; label: string }
   { id: "leaf", Icon: Leaf, label: "Leaf" },
   { id: "lightbulb", Icon: Lightbulb, label: "Lightbulb" },
   { id: "link", Icon: Link, label: "Link" },
-  { id: "list", Icon
-: List, label: "List" },
+  { id: "list", Icon: List, label: "List" },
   { id: "lock", Icon: Lock, label: "Lock" },
   { id: "mail", Icon: Mail, label: "Mail" },
   { id: "map", Icon: Map, label: "Map" },
@@ -132,8 +130,7 @@ const FONT_OPTIONS = [
   {
     id: "system",
     label: "System",
-    value: 'system-ui, -apple-system, BlinkMacSystem
-Font, "Segoe UI", sans-serif',
+    value: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
   },
   {
     id: "serif",
@@ -208,8 +205,7 @@ function getIcon(iconId: string) {
 
 function App() {
   const [windowLabel, setWindowLabel] = useState("main");
-  const [tasks, setTasks] = useState<Task[]>(
-[]);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [input, setInput] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
@@ -249,8 +245,7 @@ function App() {
   const progress = ((totalSeconds - secondsLeft) / totalSeconds) * 100;
 
   useEffect(() => {
-    async function detectWindow(
-) {
+    async function detectWindow() {
       const win = getCurrentWindow();
       setWindowLabel(win.label);
       if (win.label.startsWith("note-")) {
@@ -313,8 +308,7 @@ function App() {
   }, [tasks, folders, notes, store, windowLabel]);
 
   useEffect(() => {
-   
- if (store) {
+    if (store) {
       store.set("theme", theme);
       store.save();
     }
@@ -375,7 +369,6 @@ function App() {
         else allNotes.push(updated);
         await store.set("notes", allNotes);
 
-
         // Update streak when user writes content
         if (noteContent.trim().length > 0 || (noteTitle && noteTitle !== "Untitled")) {
           const today = new Date().toISOString().slice(0, 10);
@@ -428,8 +421,7 @@ function App() {
     return `${m}:${s}`;
   };
 
-  c
-onst toggleTheme = () => setTheme((p) => (p === "light" ? "dark" : "light"));
+  const toggleTheme = () => setTheme((p) => (p === "light" ? "dark" : "light"));
   const togglePin = async () => {
     const win = getCurrentWindow();
     await win.setAlwaysOnTop(!pinned);
@@ -493,8 +485,7 @@ onst toggleTheme = () => setTheme((p) => (p === "light" ? "dark" : "light"));
       height: 320,
       decorations: false,
       transparent: true,
-      alwaysOn
-Top: onTop,
+      alwaysOnTop: onTop,
       center: false,
       x: 100 + Math.random() * 200,
       y: 100 + Math.random() * 150,
@@ -557,8 +548,7 @@ Top: onTop,
           <div className="note-main">
             <header className="titlebar" data-tauri-drag-region style={{ background: bgColor }}>
               <div className="note-title-row" data-tauri-drag-region>
-                <SelectedIcon size={16} className="note-icon-display" 
-/>
+                <SelectedIcon size={16} className="note-icon-display" />
                 <input
                   className="note-title-input"
                   value={noteTitle}
@@ -607,8 +597,7 @@ Top: onTop,
             <textarea
               className="note-content"
               value={noteContent}
-              onChange={(e) => setNoteConte
-nt(e.target.value)}
+              onChange={(e) => setNoteContent(e.target.value)}
               placeholder="Write your note..."
             />
           </div>
@@ -664,8 +653,7 @@ nt(e.target.value)}
           </button>
           <button
             onClick={() => setShowSettings(!showSettings)}
-   
-         title="Settings"
+            title="Settings"
             className="icon-btn"
           >
             <Settings size={16} />
@@ -722,8 +710,7 @@ nt(e.target.value)}
           </label>
 
           <div className="settings-row">
-         
-   <span>Accent color</span>
+            <span>Accent color</span>
             <div className="accent-swatches">
               {ACCENT_OPTIONS.map((c) => (
                 <button
@@ -778,8 +765,7 @@ nt(e.target.value)}
             className={pomodoroMode === "focus" ? "active" : ""}
             onClick={() => {
               setIsRunning(false);
-              justFinishedRef.current = 
-false;
+              justFinishedRef.current = false;
               setPomodoroMode("focus");
               setSecondsLeft(FOCUS_SECONDS);
             }}
@@ -839,8 +825,7 @@ false;
               placeholder="Folder name..."
               autoFocus
             />
-  
-          <button className="small-btn" onClick={createFolder}>Create</button>
+            <button className="small-btn" onClick={createFolder}>Create</button>
             <button className="icon-btn" onClick={() => setShowNewFolder(false)}><X size={14} /></button>
           </div>
         )}
@@ -877,8 +862,7 @@ false;
                     {ICON_BANK.map(({ id, Icon, label }) => (
                       <button
                         key={id}
-                        className={`icon
--grid-item ${folder.icon === id ? "active" : ""}`}
+                        className={`icon-grid-item ${folder.icon === id ? "active" : ""}`}
                         title={label}
                         onClick={() => setFolderIcon(folder.id, id)}
                       >
@@ -895,6 +879,165 @@ false;
                       return (
                         <div key={note.id} className="note-row">
                           <button
-     
+                            className="icon-btn"
+                            onClick={() => setIconPickerFor({ type: "note", id: note.id })}
+                            title="Change note icon"
+                          >
+                            <NoteIcon size={13} />
+                          </button>
+                          <button className="note-open-btn" onClick={() => openNote(note)}>
+                            {note.title || "Untitled"}
+                          </button>
+                          <button className="icon-btn delete-btn" onClick={() => deleteNoteFromList(note.id)}>
+                            <X size={12} />
+                          </button>
+                        </div>
+                      );
+                    })}
+                    {iconPickerFor?.type === "note" && folderNotes.some((n) => n.id === iconPickerFor.id) && (
+                      <div className="inline-icon-picker">
+                        {ICON_BANK.map(({ id, Icon, label }) => (
+                          <button
+                            key={id}
+                            className={`icon-grid-item ${notes.find((n) => n.id === iconPickerFor.id)?.icon === id ? "active" : ""}`}
+                            title={label}
+                            onClick={() => setNoteIconInList(iconPickerFor.id, id)}
+                          >
+                            <Icon size={16} />
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
 
-... [Content truncated]
+          <div className="folder-row unfiled">
+            <span className="folder-name">Unfiled</span>
+            <span className="folder-count">{unfiledNotes.length}</span>
+            <button className="icon-btn" onClick={() => createNoteInFolder(null)} title="New unfiled note">
+              <Plus size={14} />
+            </button>
+          </div>
+          {unfiledNotes.map((note) => {
+            const NoteIcon = getIcon(note.icon).Icon;
+            return (
+              <div key={note.id} className="note-row">
+                <button
+                  className="icon-btn"
+                  onClick={() => setIconPickerFor({ type: "note", id: note.id })}
+                  title="Change note icon"
+                >
+                  <NoteIcon size={13} />
+                </button>
+                <button className="note-open-btn" onClick={() => openNote(note)}>
+                  {note.title || "Untitled"}
+                </button>
+                <button className="icon-btn delete-btn" onClick={() => deleteNoteFromList(note.id)}>
+                  <X size={12} />
+                </button>
+              </div>
+            );
+          })}
+          {iconPickerFor?.type === "note" && unfiledNotes.some((n) => n.id === iconPickerFor.id) && (
+            <div className="inline-icon-picker">
+              {ICON_BANK.map(({ id, Icon, label }) => (
+                <button
+                  key={id}
+                  className={`icon-grid-item ${notes.find((n) => n.id === iconPickerFor.id)?.icon === id ? "active" : ""}`}
+                  title={label}
+                  onClick={() => setNoteIconInList(iconPickerFor.id, id)}
+                >
+                  <Icon size={16} />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="input-area">
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && addTask()}
+          placeholder="Add a task..."
+        />
+      </div>
+
+      <ul className="task-list">
+        {activeTasks.map((task) => (
+          <li key={task.id}>
+            {editingId === task.id ? (
+              <input
+                className="edit-input"
+                value={editText}
+                onChange={(e) => setEditText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    setTasks(tasks.map((t) => (t.id === task.id ? { ...t, text: editText } : t)));
+                    setEditingId(null);
+                  }
+                  if (e.key === "Escape") setEditingId(null);
+                }}
+                onBlur={() => {
+                  setTasks(tasks.map((t) => (t.id === task.id ? { ...t, text: editText } : t)));
+                  setEditingId(null);
+                }}
+                autoFocus
+              />
+            ) : (
+              <label>
+                <input
+                  type="checkbox"
+                  checked={task.done}
+                  onChange={() =>
+                    setTasks(tasks.map((t) => (t.id === task.id ? { ...t, done: !t.done } : t)))
+                  }
+                />
+                <span onDoubleClick={() => { setEditingId(task.id); setEditText(task.text); }}>
+                  {task.text}
+                </span>
+              </label>
+            )}
+            <button className="icon-btn delete-btn" onClick={() => setTasks(tasks.filter((t) => t.id !== task.id))}>
+              <X size={14} />
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      {completedTasks.length > 0 && (
+        <div className="completed-section">
+          <div className="completed-header">
+            <span>Completed ({completedTasks.length})</span>
+            <button onClick={() => setTasks(tasks.filter((t) => !t.done))}>Clear</button>
+          </div>
+          <ul className="task-list">
+            {completedTasks.map((task) => (
+              <li key={task.id} className="done">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={task.done}
+                    onChange={() =>
+                      setTasks(tasks.map((t) => (t.id === task.id ? { ...t, done: !t.done } : t)))
+                    }
+                  />
+                  <span>{task.text}</span>
+                </label>
+                <button className="icon-btn delete-btn" onClick={() => setTasks(tasks.filter((t) => t.id !== task.id))}>
+                  <X size={14} />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default App;
