@@ -104,3 +104,20 @@ export function playBeep() {
 export function getIcon(iconId: string) {
   return ICON_BANK.find((i) => i.id === iconId) || ICON_BANK[0];
 }
+
+/** Live markdown → HTML (bold, italic, code, lists, tasks). */
+export function markdownToHtml(md: string): string {
+  const esc = md
+    .replace(/&/g, "&")
+    .replace(/</g, "<")
+    .replace(/>/g, ">");
+  return esc
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/(^|[^\*])\*([^\*]+)\*(?!\*)/g, "$1<em>$2</em>")
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/^- \[ \] (.+)$/gm, '<div class="md-task">☐ $1</div>')
+    .replace(/^- \[x\] (.+)$/gim, '<div class="md-task done">☑ $1</div>')
+    .replace(/^- (.+)$/gm, '<div class="md-li">• $1</div>')
+    .replace(/^\d+\. (.+)$/gm, '<div class="md-oli">$1</div>')
+    .replace(/\n/g, "<br>");
+}
