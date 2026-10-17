@@ -678,3 +678,46 @@ body {
   border-bottom: none;
   flex: 1;
 }
+
+
+/* ===== Refined markdown preview ===== */
+.md-toolbar { flex-wrap: wrap; }
+.md-toolbar .icon-btn { padding: 4px; }
+.md-toolbar-spacer { flex: 1; }
+.note-content-preview .md-p { margin: 3px 0; }
+.note-content-preview .md-h { font-weight: 700; margin: 7px 0 3px; }
+.note-content-preview .md-h1 { font-size: 1.28em; }
+.note-content-preview .md-h2 { font-size: 1.16em; }
+.note-content-preview .md-h3 { font-size: 1.07em; }
+.note-content-preview .md-h4 { font-size: 1em; }
+.note-content-preview .md-list { margin: 2px 0; padding-left: 18px; }
+.note-content-preview .md-task-list { list-style: none; padding-left: 2px; }
+.note-content-preview .md-list li { margin: 2px 0; }
+.note-content-preview .md-checkbox { cursor: pointer; margin-right: 5px; user-select: none; }
+.note-content-preview .md-quote {
+  border-left: 3px solid var(--accent);
+  padding: 2px 10px;
+  margin: 4px 0;
+  font-style: italic;
+  opacity: 0.85;
+}
+.note-content-preview .md-hr { border: none; border-top: 1px solid var(--border); margin: 8px 0; }
+.note-content-preview .md-code-block {
+  font-family: "SF Mono", "Cascadia Code", Consolas, monospace;
+  font-size: 0.85em;
+  background: rgba(128, 128, 128, 0.12);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin: 4px 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-x: auto;
+}
+.note-content-preview .md-code-block code { padding: 0; background: transparent; }
+.note-content-preview .md-code { font-family: "SF Mono", Consolas, monospace; }
+.note-content-preview .md-link {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.note-content-preview s { opacity: 0.6; }

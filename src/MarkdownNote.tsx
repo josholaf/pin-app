@@ -1,6 +1,7 @@
-import { useRef } from "react";
+import { useRef, useState, type MouseEvent, type KeyboardEvent } from "react";
 import {
   Moon, Sun, X, PanelRight, PanelRightClose, Bold, Italic, List, ListOrdered, CheckSquare,
+  Heading, Code, TextQuote, Link as LinkIcon, Strike, Eye, EyeOff,
 } from "lucide-react";
 import {
   NOTE_COLORS, markdownToHtml, getIcon,
@@ -28,6 +29,7 @@ type Props = {
 
 export function MarkdownNote(p: Props) {
   const noteEditorRef = useRef<HTMLTextAreaElement | null>(null);
+  const [previewOnly, setPreviewOnly] = useState(false);
   const currentColor = NOTE_COLORS.find((c) => c.id === p.noteColor) || NOTE_COLORS[0];
   const bgColor = p.theme === "dark" ? currentColor.dark : currentColor.light;
   const SelectedIcon = getIcon(p.noteIcon).Icon;
@@ -51,6 +53,32 @@ export function MarkdownNote(p: Props) {
     });
   };
 
+  /** Flip the n-th "- [ ]" / "- [x]" task marker in the raw markdown. */
+  const flipTask = (idx: number, toDone: boolean) => {
+    let n = 0;
+    p.setNoteContent(
+      p.noteContent.replace(/^(\s*[-*]\s+\[)( |x|X)(\])/gm, function (all: string, a: string, _mark: string, b: string) {
+        const res = n === idx ? a + (toDone ? "x" : " ") + b : all;
+        n += 1;
+        return res;
+      })
+    );
+  };
+
+  const onPreviewClick = (e: MouseEvent<HTMLDivElement>) => {
+    const box = (e.target as HTMLElement).closest(".md-checkbox") as HTMLElement | null;
+    if (!box) return;
+    flipTask(Number(box.dataset.task), box.dataset.done !== "1");
+  };
+
+  const onEditorKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.ctrlKey || e.metaKey) {
+      const k = e.key.toLowerCase();
+      if (k === "b") { e.preventDefault(); insertMd("**", "**"); }
+      else if (k === "i") { e.preventDefault(); insertMd("*", "*"); }
+    }
+  };
+
   return (
     <div className="pin-window note-window" data-tauri-drag-region style={{ background: bgColor, fontFamily: p.settings.fontFamily, fontSize: p.settings.fontSize }}>
       <div className="note-layout">
@@ -66,7 +94,7 @@ export function MarkdownNote(p: Props) {
                 {p.showColorPicker && (
                   <div className="color-picker">
                     {NOTE_COLORS.map((c) => (
-                      <button key={c.id} className={`color-option ${p.noteColor === c.id ? "active" : ""}`} style={{ background: p.theme === "dark" ? c.dark : c.light }} onClick={() => { p.setNoteColor(c.id); p.setShowColorPicker(false); }} />
+                      <button key={c.id} className={"color-option " + (p.noteColor === c.id ? "active" : "")} style={{ background: p.theme === "dark" ? c.dark : c.light }} onClick={() => { p.setNoteColor(c.id); p.setShowColorPicker(false); }} />
                     ))}
                   </div>
                 )}
@@ -77,11 +105,20 @@ export function MarkdownNote(p: Props) {
             </div>
           </header>
           <div className="md-toolbar">
-            <button type="button" className="icon-btn" title="Bold" onClick={() => insertMd("**", "**")}><Bold size={14} /></button>
-            <button type="button" className="icon-btn" title="Italic" onClick={() => insertMd("*", "*")}><Italic size={14} /></button>
-            <button type="button" className="icon-btn" title="Bullet" onClick={() => insertMd("- ")}><List size={14} /></button>
-            <button type="button" className="icon-btn" title="Numbered" onClick={() => insertMd("1. ")}><ListOrdered size={14} /></button>
+            <button type="button" className="icon-btn" title="Bold (Ctrl+B)" onClick={() => insertMd("**", "**")}><Bold size={14} /></button>
+            <button type="button" className="icon-btn" title="Italic (Ctrl+I)" onClick={() => insertMd("*", "*")}><Italic size={14} /></button>
+            <button type="button" className="icon-btn" title="Strikethrough" onClick={() => insertMd("~~", "~~")}><Strike size={14} /></button>
+            <button type="button" className="icon-btn" title="Heading" onClick={() => insertMd("## ")}><Heading size={14} /></button>
+            <button type="button" className="icon-btn" title="Inline code" onClick={() => insertMd("`", "`")}><Code size={14} /></button>
+            <button type="button" className="icon-btn" title="Bullet list" onClick={() => insertMd("- ")}><List size={14} /></button>
+            <button type="button" className="icon-btn" title="Numbered list" onClick={() => insertMd("1. ")}><ListOrdered size={14} /></button>
             <button type="button" className="icon-btn" title="Task" onClick={() => insertMd("- [ ] ")}><CheckSquare size={14} /></button>
+            <button type="button" className="icon-btn" title="Quote" onClick={() => insertMd("> ")}><TextQuote size={14} /></button>
+            <button type="button" className="icon-btn" title="Link" onClick={() => insertMd("[", "](https://)")}><LinkIcon size={14} /></button>
+            <div className="md-toolbar-spacer" />
+            <button type="button" className={"icon-btn " + (previewOnly ? "active-mode" : "")} title={previewOnly ? "Back to editor" : "Preview only"} onClick={() => setPreviewOnly(!previewOnly)}>
+              {previewOnly ? <EyeOff size={14} /> : <Eye size={14} />}
+            </button>
           </div>
           <div className="note-editor-split">
             <textarea
@@ -89,12 +126,14 @@ export function MarkdownNote(p: Props) {
               className="note-content note-content-edit"
               value={p.noteContent}
               onChange={(e) => p.setNoteContent(e.target.value)}
-              placeholder={"Write markdown…\n**bold**  *italic*\n- bullet\n- [ ] task"}
+              onKeyDown={onEditorKeyDown}
+              placeholder={"Write markdown…\n**bold** *italic* ~~strike~~\n# heading  > quote\n- bullet  1. numbered  - [ ] task"}
               autoFocus
-              style={{ background: "transparent" }}
+              style={{ background: "transparent", display: previewOnly ? "none" : undefined }}
             />
             <div
               className="note-content note-content-preview"
+              onClick={onPreviewClick}
               dangerouslySetInnerHTML={{ __html: liveHtml || '<span class="md-placeholder">Live preview</span>' }}
             />
           </div>
@@ -105,7 +144,7 @@ export function MarkdownNote(p: Props) {
             <div className="icon-grid">
               {["sticky-note","folder","book","bookmark","briefcase","calendar","check","clock","code","coffee","flame","heart","home","lightbulb","list","pencil","star","target","zap"].map((id) => {
                 const { Icon, label } = getIcon(id);
-                return <button key={id} className={`icon-grid-item ${p.noteIcon === id ? "active" : ""}`} title={label} onClick={() => p.setNoteIcon(id)}><Icon size={18} /></button>;
+                return <button key={id} className={"icon-grid-item " + (p.noteIcon === id ? "active" : "")} title={label} onClick={() => p.setNoteIcon(id)}><Icon size={18} /></button>;
               })}
             </div>
           </aside>

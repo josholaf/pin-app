@@ -105,19 +105,123 @@ export function getIcon(iconId: string) {
   return ICON_BANK.find((i) => i.id === iconId) || ICON_BANK[0];
 }
 
-/** Live markdown → HTML (bold, italic, code, lists, tasks). */
-export function markdownToHtml(md: string): string {
-  const esc = md
-    .replace(/&/g, "&")
-    .replace(/</g, "<")
-    .replace(/>/g, ">");
-  return esc
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+/** Inline markdown: code, bold, italic, strikethrough, links. */
+function inlineMd(s: string): string {
+  return s
+    .replace(/`([^`\n]+)`/g, '<code class="md-code">$1</code>')
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-    .replace(/(^|[^\*])\*([^\*]+)\*(?!\*)/g, "$1<em>$2</em>")
-    .replace(/`([^`]+)`/g, "<code>$1</code>")
-    .replace(/^- \[ \] (.+)$/gm, '<div class="md-task">☐ $1</div>')
-    .replace(/^- \[x\] (.+)$/gim, '<div class="md-task done">☑ $1</div>')
-    .replace(/^- (.+)$/gm, '<div class="md-li">• $1</div>')
-    .replace(/^\d+\. (.+)$/gm, '<div class="md-oli">$1</div>')
-    .replace(/\n/g, "<br>");
+    .replace(/~~(.+?)~~/g, "<s>$1</s>")
+    .replace(/(^|[^A-Za-z0-9_])\*([^*\n]+)\*(?!\*)/g, "$1<em>$2</em>")
+    .replace(/(^|[^A-Za-z0-9_])_([^_\n]+)_(?!_)/g, "$1<em>$2</em>")
+    .replace(/\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a class="md-link" href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+    .replace(/(^|[\s(])(https?:\/\/[^\s<)]+)/g, function (_all: string, pre: string, url: string) {
+      const trimmed = url.replace(/&quot;$/, "");
+      const tail = url.slice(trimmed.length);
+      return pre + '<a class="md-link" href="' + trimmed + '" target="_blank" rel="noopener noreferrer">' + trimmed + "</a>" + tail;
+    });
+}
+
+/** Live markdown to HTML with proper escaping. Supports headings, bold,
+ *  italic, strikethrough, inline and fenced code, bullet/numbered lists,
+ *  interactive task checkboxes, quotes, links and horizontal rules. */
+export function markdownToHtml(md: string): string {
+  if (!md.trim()) return "";
+
+  const codeBlocks: string[] = [];
+  let text = md.replace(/```(\w*)\n?([\s\S]*?)```/g, function (_all: string, _lang: string, code: string) {
+    codeBlocks.push(code.replace(/\n+$/, ""));
+    return "\u0000CB" + (codeBlocks.length - 1) + "\u0000";
+  });
+  text = escapeHtml(text);
+
+  const out: string[] = [];
+  let listTag: string | null = null;
+  let taskIdx = 0;
+  const closeList = function () {
+    if (listTag) {
+      out.push("</" + listTag + ">");
+      listTag = null;
+    }
+  };
+
+  const lines = text.split("\n");
+  for (const line of lines) {
+    const cb = line.match(/^\u0000CB(\d+)\u0000$/);
+    if (cb) {
+      closeList();
+      out.push(cb[0]);
+      continue;
+    }
+    if (!line.trim()) {
+      closeList();
+      continue;
+    }
+    if (/^\s*(-{3,}|\*{3,}|_{3,})\s*$/.test(line)) {
+      closeList();
+      out.push('<hr class="md-hr">');
+      continue;
+    }
+    const head = line.match(/^(#{1,4})\s+(.*)$/);
+    if (head) {
+      closeList();
+      out.push('<div class="md-h md-h' + head[1].length + '">' + inlineMd(head[2]) + "</div>");
+      continue;
+    }
+    const task = line.match(/^(\s*)[-*]\s+\[( |x|X)\]\s+(.*)$/);
+    if (task) {
+      if (listTag !== "ul") {
+        closeList();
+        out.push('<ul class="md-list md-task-list">');
+        listTag = "ul";
+      }
+      const done = task[2].toLowerCase() === "x";
+      out.push(
+        '<li class="md-task' + (done ? " done" : "") + '"><span class="md-checkbox" data-task="' + taskIdx +
+        '" data-done="' + (done ? 1 : 0) + '">' + (done ? "☑" : "☐") + "</span>" + inlineMd(task[3]) + "</li>"
+      );
+      taskIdx += 1;
+      continue;
+    }
+    const bullet = line.match(/^(\s*)[-*]\s+(.*)$/);
+    if (bullet) {
+      if (listTag !== "ul") {
+        closeList();
+        out.push('<ul class="md-list">');
+        listTag = "ul";
+      }
+      out.push("<li>" + inlineMd(bullet[2]) + "</li>");
+      continue;
+    }
+    const num = line.match(/^\s*\d+[.)]\s+(.*)$/);
+    if (num) {
+      if (listTag !== "ol") {
+        closeList();
+        out.push('<ol class="md-list">');
+        listTag = "ol";
+      }
+      out.push("<li>" + inlineMd(num[1]) + "</li>");
+      continue;
+    }
+    const quote = line.match(/^\s*&gt;\s?(.*)$/);
+    if (quote) {
+      closeList();
+      out.push('<div class="md-quote">' + inlineMd(quote[1]) + "</div>");
+      continue;
+    }
+    closeList();
+    out.push('<div class="md-p">' + inlineMd(line) + "</div>");
+  }
+  closeList();
+
+  return out.join("").replace(/\u0000CB(\d+)\u0000/g, function (_all: string, i: string) {
+    return '<pre class="md-code-block"><code>' + escapeHtml(codeBlocks[Number(i)]) + "</code></pre>";
+  });
 }
