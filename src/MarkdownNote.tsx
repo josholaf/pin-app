@@ -1,10 +1,10 @@
 import { useRef, useState, type MouseEvent, type KeyboardEvent } from "react";
 import {
   Moon, Sun, X, PanelRight, PanelRightClose, Bold, Italic, List, ListOrdered, CheckSquare,
-  Heading, Code, TextQuote, Link as LinkIcon, Strike, Eye, EyeOff,
+  Heading, Code, TextQuote, Link as LinkIcon, Strike, Pencil,
 } from "lucide-react";
 import {
-  NOTE_COLORS, markdownToHtml, getIcon,
+  NOTE_COLORS, ICON_BANK, markdownToHtml, plainToHtml, getIcon,
   type Theme, type NoteColor, type AppSettings,
 } from "./appData";
 
@@ -19,6 +19,8 @@ type Props = {
   setNoteColor: (c: NoteColor) => void;
   noteIcon: string;
   setNoteIcon: (id: string) => void;
+  noteFormat: "md" | "txt";
+  setNoteFormat: (f: "md" | "txt") => void;
   showColorPicker: boolean;
   setShowColorPicker: (v: boolean) => void;
   showIconSidebar: boolean;
@@ -29,11 +31,25 @@ type Props = {
 
 export function MarkdownNote(p: Props) {
   const noteEditorRef = useRef<HTMLTextAreaElement | null>(null);
-  const [previewOnly, setPreviewOnly] = useState(false);
+  // Single-pane auto-preview: rendered view by default; tap/click to edit.
+  const [editing, setEditing] = useState(false);
   const currentColor = NOTE_COLORS.find((c) => c.id === p.noteColor) || NOTE_COLORS[0];
   const bgColor = p.theme === "dark" ? currentColor.dark : currentColor.light;
   const SelectedIcon = getIcon(p.noteIcon).Icon;
-  const liveHtml = markdownToHtml(p.noteContent);
+  const isMd = p.noteFormat === "md";
+  const liveHtml = isMd ? markdownToHtml(p.noteContent) : plainToHtml(p.noteContent);
+
+  const enterEdit = () => {
+    setEditing(true);
+    requestAnimationFrame(() => {
+      const el = noteEditorRef.current;
+      if (el) {
+        el.focus();
+        el.setSelectionRange(el.value.length, el.value.length);
+      }
+    });
+  };
+  const exitEdit = () => setEditing(false);
 
   const insertMd = (before: string, after = "") => {
     const el = noteEditorRef.current;
@@ -67,16 +83,28 @@ export function MarkdownNote(p: Props) {
 
   const onPreviewClick = (e: MouseEvent<HTMLDivElement>) => {
     const box = (e.target as HTMLElement).closest(".md-checkbox") as HTMLElement | null;
-    if (!box) return;
-    flipTask(Number(box.dataset.task), box.dataset.done !== "1");
+    if (box) {
+      flipTask(Number(box.dataset.task), box.dataset.done !== "1");
+      return;
+    }
+    const link = (e.target as HTMLElement).closest("a");
+    if (link) return; // let links open normally
+    enterEdit();
   };
 
   const onEditorKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Escape") { e.preventDefault(); exitEdit(); return; }
     if (e.ctrlKey || e.metaKey) {
       const k = e.key.toLowerCase();
-      if (k === "b") { e.preventDefault(); insertMd("**", "**"); }
-      else if (k === "i") { e.preventDefault(); insertMd("*", "*"); }
+      if (k === "b" && isMd) { e.preventDefault(); insertMd("**", "**"); }
+      else if (k === "i" && isMd) { e.preventDefault(); insertMd("*", "*"); }
     }
+  };
+
+  const startToolbarAction = (e: MouseEvent<HTMLButtonElement>) => {
+    // keep textarea focus so insertion works and edit mode stays on
+    e.preventDefault();
+    if (!editing) enterEdit();
   };
 
   return (
@@ -89,6 +117,13 @@ export function MarkdownNote(p: Props) {
               <input className="note-title-input" value={p.noteTitle} onChange={(e) => p.setNoteTitle(e.target.value)} placeholder="Note title..." data-tauri-drag-region />
             </div>
             <div className="title-actions">
+              <button
+                className={"md-format-btn " + (isMd ? "" : "active-mode")}
+                title={isMd ? "Markdown formatting — switch to plain text" : "Plain text — switch to markdown"}
+                onClick={() => p.setNoteFormat(isMd ? "txt" : "md")}
+              >
+                {isMd ? "MD" : "TXT"}
+              </button>
               <div className="color-picker-wrapper">
                 <button onClick={() => p.setShowColorPicker(!p.showColorPicker)} className="color-btn" style={{ background: bgColor, boxShadow: "0 0 0 2px rgba(0,0,0,0.25)" }} />
                 {p.showColorPicker && (
@@ -104,48 +139,52 @@ export function MarkdownNote(p: Props) {
               <button onClick={p.closeWindow} className="icon-btn"><X size={16} /></button>
             </div>
           </header>
-          <div className="md-toolbar">
-            <button type="button" className="icon-btn" title="Bold (Ctrl+B)" onClick={() => insertMd("**", "**")}><Bold size={14} /></button>
-            <button type="button" className="icon-btn" title="Italic (Ctrl+I)" onClick={() => insertMd("*", "*")}><Italic size={14} /></button>
-            <button type="button" className="icon-btn" title="Strikethrough" onClick={() => insertMd("~~", "~~")}><Strike size={14} /></button>
-            <button type="button" className="icon-btn" title="Heading" onClick={() => insertMd("## ")}><Heading size={14} /></button>
-            <button type="button" className="icon-btn" title="Inline code" onClick={() => insertMd("`", "`")}><Code size={14} /></button>
-            <button type="button" className="icon-btn" title="Bullet list" onClick={() => insertMd("- ")}><List size={14} /></button>
-            <button type="button" className="icon-btn" title="Numbered list" onClick={() => insertMd("1. ")}><ListOrdered size={14} /></button>
-            <button type="button" className="icon-btn" title="Task" onClick={() => insertMd("- [ ] ")}><CheckSquare size={14} /></button>
-            <button type="button" className="icon-btn" title="Quote" onClick={() => insertMd("> ")}><TextQuote size={14} /></button>
-            <button type="button" className="icon-btn" title="Link" onClick={() => insertMd("[", "](https://)")}><LinkIcon size={14} /></button>
-            <div className="md-toolbar-spacer" />
-            <button type="button" className={"icon-btn " + (previewOnly ? "active-mode" : "")} title={previewOnly ? "Back to editor" : "Preview only"} onClick={() => setPreviewOnly(!previewOnly)}>
-              {previewOnly ? <EyeOff size={14} /> : <Eye size={14} />}
-            </button>
-          </div>
-          <div className="note-editor-split">
-            <textarea
-              ref={noteEditorRef}
-              className="note-content note-content-edit"
-              value={p.noteContent}
-              onChange={(e) => p.setNoteContent(e.target.value)}
-              onKeyDown={onEditorKeyDown}
-              placeholder={"Write markdown…\n**bold** *italic* ~~strike~~\n# heading  > quote\n- bullet  1. numbered  - [ ] task"}
-              autoFocus
-              style={{ background: "transparent", display: previewOnly ? "none" : undefined }}
-            />
-            <div
-              className="note-content note-content-preview"
-              onClick={onPreviewClick}
-              dangerouslySetInnerHTML={{ __html: liveHtml || '<span class="md-placeholder">Live preview</span>' }}
-            />
+          {isMd && (
+            <div className="md-toolbar">
+              <button type="button" className="icon-btn" title="Bold (Ctrl+B)" onMouseDown={startToolbarAction} onClick={() => insertMd("**", "**")}><Bold size={14} /></button>
+              <button type="button" className="icon-btn" title="Italic (Ctrl+I)" onMouseDown={startToolbarAction} onClick={() => insertMd("*", "*")}><Italic size={14} /></button>
+              <button type="button" className="icon-btn" title="Strikethrough" onMouseDown={startToolbarAction} onClick={() => insertMd("~~", "~~")}><Strike size={14} /></button>
+              <button type="button" className="icon-btn" title="Heading" onMouseDown={startToolbarAction} onClick={() => insertMd("## ")}><Heading size={14} /></button>
+              <button type="button" className="icon-btn" title="Inline code" onMouseDown={startToolbarAction} onClick={() => insertMd("`", "`")}><Code size={14} /></button>
+              <button type="button" className="icon-btn" title="Bullet list" onMouseDown={startToolbarAction} onClick={() => insertMd("- ")}><List size={14} /></button>
+              <button type="button" className="icon-btn" title="Numbered list" onMouseDown={startToolbarAction} onClick={() => insertMd("1. ")}><ListOrdered size={14} /></button>
+              <button type="button" className="icon-btn" title="Task" onMouseDown={startToolbarAction} onClick={() => insertMd("- [ ] ")}><CheckSquare size={14} /></button>
+              <button type="button" className="icon-btn" title="Quote" onMouseDown={startToolbarAction} onClick={() => insertMd("> ")}><TextQuote size={14} /></button>
+              <button type="button" className="icon-btn" title="Link" onMouseDown={startToolbarAction} onClick={() => insertMd("[", "](https://)")}><LinkIcon size={14} /></button>
+              <div className="md-toolbar-spacer" />
+              <button type="button" className="icon-btn" title="Edit" onMouseDown={startToolbarAction} onClick={enterEdit}><Pencil size={14} /></button>
+            </div>
+          )}
+          <div className="note-editor-single">
+            {editing ? (
+              <textarea
+                ref={noteEditorRef}
+                className="note-content note-content-edit"
+                value={p.noteContent}
+                onChange={(e) => p.setNoteContent(e.target.value)}
+                onKeyDown={onEditorKeyDown}
+                onBlur={exitEdit}
+                placeholder={isMd ? "Write markdown… (Esc to preview)" : "Write… (Esc to finish)"}
+                autoFocus
+                spellCheck={false}
+              />
+            ) : (
+              <div
+                className="note-content note-content-preview"
+                onClick={onPreviewClick}
+                dangerouslySetInnerHTML={{ __html: liveHtml || '<span class="md-placeholder">Tap to write…</span>' }}
+              />
+            )}
+            {!editing && <span className="md-edit-hint">tap to edit</span>}
           </div>
         </div>
         {p.showIconSidebar && (
           <aside className="icon-sidebar">
             <div className="icon-sidebar-header">Icons</div>
             <div className="icon-grid">
-              {["sticky-note","folder","book","bookmark","briefcase","calendar","check","clock","code","coffee","flame","heart","home","lightbulb","list","pencil","star","target","zap"].map((id) => {
-                const { Icon, label } = getIcon(id);
-                return <button key={id} className={"icon-grid-item " + (p.noteIcon === id ? "active" : "")} title={label} onClick={() => p.setNoteIcon(id)}><Icon size={18} /></button>;
-              })}
+              {ICON_BANK.map(({ id, Icon, label }) => (
+                <button key={id} className={"icon-grid-item " + (p.noteIcon === id ? "active" : "")} title={label} onClick={() => p.setNoteIcon(id)}><Icon size={18} /></button>
+              ))}
             </div>
           </aside>
         )}
