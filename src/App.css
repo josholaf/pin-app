@@ -805,3 +805,24 @@ body {
   background: var(--accent);
   color: #fff;
 }
+
+/* ===== Global font application ===== */
+.note-title-input,
+.note-content,
+.note-content-preview,
+.md-p,
+.md-h {
+  font-family: inherit;
+}
+.pin-window {
+  font-family: var(--app-font-family, system-ui, sans-serif);
+}
+.pin-window textarea,
+.pin-window input,
+.pin-window select {
+  font-family: inherit;
+}
+.md-code,
+.md-code-block code {
+  font-family: "SF Mono", "Cascadia Code", Consolas, monospace !important;
+}

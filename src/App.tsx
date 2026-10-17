@@ -148,20 +148,18 @@ function App() {
     document.documentElement.style.setProperty("--accent", settings.accentColor);
   }, [settings, store]);
 
-  // Settings window: poll for changes made in other windows
+  // All windows: poll for settings/theme changes made in any other window
+  // so font, accent and theme apply live across the whole app.
   useEffect(() => {
-    if (windowLabel !== "settings" || !store) return;
+    if (!store) return;
     const id = setInterval(async () => {
       const st = await store.get<AppSettings>("settings");
-      if (st) setSettings({ ...DEFAULT_SETTINGS, ...st });
+      if (st) setSettings((prev) => (JSON.stringify(prev) === JSON.stringify({ ...DEFAULT_SETTINGS, ...st }) ? prev : { ...DEFAULT_SETTINGS, ...st }));
       const th = await store.get<Theme>("theme");
-      if (th && th !== theme) {
-        setTheme(th);
-        document.documentElement.setAttribute("data-theme", th);
-      }
+      if (th && th !== theme) setTheme(th);
     }, 500);
     return () => clearInterval(id);
-  }, [windowLabel, store, theme]);
+  }, [store, theme]);
 
   useEffect(() => {
     if (store && windowLabel === "main") {
