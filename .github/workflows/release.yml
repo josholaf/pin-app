@@ -63,7 +63,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.0' }}
+          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.1' }}
           releaseName: "Pin ${{ github.ref_name }}"
           releaseBody: |
             First multi-platform release of **Pin** — lightweight sticky-note style task & note app.
