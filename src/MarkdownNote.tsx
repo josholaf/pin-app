@@ -41,20 +41,6 @@ export function MarkdownNote(p: Props) {
   const liveHtml = isMd ? markdownToHtml(p.noteContent) : plainToHtml(p.noteContent);
   const words = p.noteContent.trim() ? p.noteContent.trim().split(/\s+/).length : 0;
 
-  const enterEdit = () => {
-    setEditing(true);
-    requestAnimationFrame(() => {
-      const el = noteEditorRef.current;
-      if (el) {
-        el.focus();
-        el.setSelectionRange(el.value.length, el.value.length);
-        updateCursor();
-      }
-    })
-;
-  };
-  const exitEdit = () => setEditing(false);
-
   /** Track cursor position (line / column) for the status bar. */
   const updateCursor = () => {
     const el = noteEditorRef.current;
@@ -64,6 +50,19 @@ export function MarkdownNote(p: Props) {
     const lines = upto.split("\n");
     setCursorPos({ line: lines.length, col: lines[lines.length - 1].length + 1 });
   };
+
+  const enterEdit = () => {
+    setEditing(true);
+    requestAnimationFrame(() => {
+      const el = noteEditorRef.current;
+      if (el) {
+        el.focus();
+        el.setSelectionRange(el.value.length, el.value.length);
+        updateCursor();
+      }
+    });
+  };
+  const exitEdit = () => setEditing(false);
 
   const insertMd = (before: string, after = "") => {
     const el = noteEditorRef.current;
@@ -109,8 +108,7 @@ export function MarkdownNote(p: Props) {
 
   const onEditorKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Escape") { e.preventDefault(); exitEdit(); return; }
-    if (e.ctrlKey |
-| e.metaKey) {
+    if (e.ctrlKey || e.metaKey) {
       const k = e.key.toLowerCase();
       if (k === "b" && isMd) { e.preventDefault(); insertMd("**", "**"); }
       else if (k === "i" && isMd) { e.preventDefault(); insertMd("*", "*"); }
@@ -149,8 +147,7 @@ export function MarkdownNote(p: Props) {
                         className={"color-option " + (p.noteColor === c.id ? "active" : "")}
                         style={{ background: p.theme === "dark" ? c.dark : c.light }}
                         title={c.label}
-                        onClick={() => { p.setNoteColor(c.id); setShowColorPicke
-r(false); }}
+                        onClick={() => { p.setNoteColor(c.id); setShowColorPicker(false); }}
                       />
                     ))}
                   </div>
@@ -175,8 +172,7 @@ r(false); }}
               <button type="button" className="icon-btn" title="Strikethrough" onMouseDown={startToolbarAction} onClick={() => insertMd("~~", "~~")}><Strikethrough size={14} /></button>
               <button type="button" className="icon-btn" title="Heading" onMouseDown={startToolbarAction} onClick={() => insertMd("## ")}><Heading size={14} /></button>
               <button type="button" className="icon-btn" title="Inline code" onMouseDown={startToolbarAction} onClick={() => insertMd("`", "`")}><Code size={14} /></button>
-              <button type="button" className="icon-btn" title="Bullet 
-list" onMouseDown={startToolbarAction} onClick={() => insertMd("- ")}><List size={14} /></button>
+              <button type="button" className="icon-btn" title="Bullet list" onMouseDown={startToolbarAction} onClick={() => insertMd("- ")}><List size={14} /></button>
               <button type="button" className="icon-btn" title="Numbered list" onMouseDown={startToolbarAction} onClick={() => insertMd("1. ")}><ListOrdered size={14} /></button>
               <button type="button" className="icon-btn" title="Task" onMouseDown={startToolbarAction} onClick={() => insertMd("- [ ] ")}><CheckSquare size={14} /></button>
               <button type="button" className="icon-btn" title="Quote" onMouseDown={startToolbarAction} onClick={() => insertMd("> ")}><TextQuote size={14} /></button>
@@ -209,8 +205,7 @@ list" onMouseDown={startToolbarAction} onClick={() => insertMd("- ")}><List size
             )}
           </div>
           <div className="note-status-bar">
-            <span className="status-pos">Ln {cursorPos.line}, Col {cursorPos.
-col}</span>
+            <span className="status-pos">Ln {cursorPos.line}, Col {cursorPos.col}</span>
             <span className="status-spacer" />
             <span className="status-words">{words} {words === 1 ? "word" : "words"}</span>
           </div>
