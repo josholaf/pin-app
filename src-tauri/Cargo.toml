@@ -1,6 +1,6 @@
 [package]
 name = "pin"
-version = "0.1.2"
+version = "0.1.3"
 description = "Lightweight always-on-top task pin app"
 authors = ["josholaf"]
 edition = "2021"

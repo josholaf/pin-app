@@ -50,6 +50,9 @@ jobs:
       - name: Install frontend deps
         run: npm install --no-audit --no-fund
 
+      - name: Type-check frontend (test)
+        run: npx tsc --noEmit
+
       - name: Generate icons if missing
         shell: bash
         run: |
@@ -67,15 +70,30 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.2' }}
-          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.2' }}"
+          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.3' }}
+          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.3' }}"
           releaseBody: |
-            First multi-platform release of **Pin** — lightweight sticky-note style task & note app.
+            **Pin v0.1.3** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
+
+            ## What's new in v0.1.3
+
+            ### ✨ Features
+            - **Single-window notes** — notes open inside the main window (no more separate tabs)
+            - **Note color picker** — color circle in the sticky note titlebar
+            - **Ln / Col status bar** — live caret line/column and word count at the bottom of the note
+            - **Note search** — live search across titles and content, with match count
+            - **Global quick-capture hotkey** — `Ctrl+Shift+P` (macOS: `Cmd+Shift+P`) from any app brings Pin to the front with a fresh note
+            - **Storage management** — Settings → Storage shows your data location and item counts, with JSON export / import backups and clear-all-data
+
+            ### 🐛 Fixes
+            - Note titles can now be renamed (the title bar no longer swallows clicks for window dragging)
+            - Explicit pencil rename button on every note row
+            - Dark mode no longer resets when opening a note
 
             ## Downloads
             - **Windows**: `.msi` or `.exe` (NSIS)
             - **macOS**: `.dmg`
             - **Linux**: `.deb` or `.AppImage`
-          releaseDraft: true
+          releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
