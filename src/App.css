@@ -520,6 +520,7 @@ body {
   color: var(--text);
   padding: 4px 0;
   min-width: 0;
+  cursor: text;
 }
 .note-content {
   flex: 1;
@@ -581,41 +582,6 @@ body {
   border-color: var(--accent);
   opacity: 1;
   color: var(--accent);
-}
-.color-picker-wrapper { position: relative; }
-.color-btn {
-  width: 18px !important;
-  height: 18px !important;
-  border-radius: 50% !important;
-  border: 2px solid rgba(0, 0, 0, 0.15) !important;
-  padding: 0 !important;
-  cursor: pointer;
-  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.2) !important;
-}
-.color-picker {
-  position: absolute;
-  top: 28px;
-  right: 0;
-  display: flex;
-  gap: 6px;
-  padding: 8px;
-  background: var(--input-bg);
-  border-radius: 10px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
-  z-index: 100;
-  border: 1px solid var(--border);
-}
-.color-option {
-  width: 22px !important;
-  height: 22px !important;
-  border-radius: 50% !important;
-  border: 2px solid transparent !important;
-  padding: 0 !important;
-  cursor: pointer;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25) !important;
-}
-.color-option.active {
-  border-color: var(--text) !important;
 }
 
 /* Markdown editor */
@@ -781,15 +747,6 @@ body {
 }
 .note-editor-single .note-content-preview {
   cursor: text;
-}
-.md-edit-hint {
-  position: absolute;
-  right: 10px;
-  bottom: 8px;
-  font-size: 10px;
-  opacity: 0.45;
-  pointer-events: none;
-  user-select: none;
 }
 .md-format-btn {
   font-size: 11px;

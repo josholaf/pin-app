@@ -1,7 +1,7 @@
 import { useRef, useState, type MouseEvent, type KeyboardEvent } from "react";
 import {
   Moon, Sun, X, PanelRight, PanelRightClose, Bold, Italic, List, ListOrdered, CheckSquare,
-  Heading, Code, TextQuote, Link as LinkIcon, Strikethrough, Pencil,
+  Heading, Code, TextQuote, Link as LinkIcon, Strikethrough, ArrowLeft,
 } from "lucide-react";
 import {
   NOTE_COLORS, ICON_BANK, markdownToHtml, plainToHtml, getIcon,
@@ -11,18 +11,16 @@ import {
 type Props = {
   theme: Theme;
   settings: AppSettings;
+  onBack: () => void;
   noteTitle: string;
   setNoteTitle: (v: string) => void;
   noteContent: string;
   setNoteContent: (v: string) => void;
   noteColor: NoteColor;
-  setNoteColor: (c: NoteColor) => void;
   noteIcon: string;
   setNoteIcon: (id: string) => void;
   noteFormat: "md" | "txt";
   setNoteFormat: (f: "md" | "txt") => void;
-  showColorPicker: boolean;
-  setShowColorPicker: (v: boolean) => void;
   showIconSidebar: boolean;
   setShowIconSidebar: (v: boolean) => void;
   toggleTheme: () => void;
@@ -112,9 +110,15 @@ export function MarkdownNote(p: Props) {
       <div className="note-layout">
         <div className="note-main">
           <header className="titlebar" data-tauri-drag-region style={{ background: bgColor }}>
+            <button onClick={p.onBack} className="icon-btn" title="Back to notes"><ArrowLeft size={16} /></button>
             <div className="note-title-row" data-tauri-drag-region>
               <SelectedIcon size={16} className="note-icon-display" />
-              <input className="note-title-input" value={p.noteTitle} onChange={(e) => p.setNoteTitle(e.target.value)} placeholder="Note title..." data-tauri-drag-region />
+              <input
+                className="note-title-input"
+                value={p.noteTitle}
+                onChange={(e) => p.setNoteTitle(e.target.value)}
+                placeholder="Note title..."
+              />
             </div>
             <div className="title-actions">
               <button
@@ -124,19 +128,9 @@ export function MarkdownNote(p: Props) {
               >
                 {isMd ? "MD" : "TXT"}
               </button>
-              <div className="color-picker-wrapper">
-                <button onClick={() => p.setShowColorPicker(!p.showColorPicker)} className="color-btn" style={{ background: bgColor, boxShadow: "0 0 0 2px rgba(0,0,0,0.25)" }} />
-                {p.showColorPicker && (
-                  <div className="color-picker">
-                    {NOTE_COLORS.map((c) => (
-                      <button key={c.id} className={"color-option " + (p.noteColor === c.id ? "active" : "")} style={{ background: p.theme === "dark" ? c.dark : c.light }} onClick={() => { p.setNoteColor(c.id); p.setShowColorPicker(false); }} />
-                    ))}
-                  </div>
-                )}
-              </div>
-              <button onClick={() => p.setShowIconSidebar(!p.showIconSidebar)} className="icon-btn">{p.showIconSidebar ? <PanelRightClose size={16} /> : <PanelRight size={16} />}</button>
-              <button onClick={p.toggleTheme} className="icon-btn">{p.theme === "light" ? <Moon size={16} /> : <Sun size={16} />}</button>
-              <button onClick={p.closeWindow} className="icon-btn"><X size={16} /></button>
+              <button onClick={() => p.setShowIconSidebar(!p.showIconSidebar)} className="icon-btn" title="Icons">{p.showIconSidebar ? <PanelRightClose size={16} /> : <PanelRight size={16} />}</button>
+              <button onClick={p.toggleTheme} className="icon-btn" title="Theme">{p.theme === "light" ? <Moon size={16} /> : <Sun size={16} />}</button>
+              <button onClick={p.closeWindow} className="icon-btn" title="Close"><X size={16} /></button>
             </div>
           </header>
           {isMd && (
@@ -152,7 +146,6 @@ export function MarkdownNote(p: Props) {
               <button type="button" className="icon-btn" title="Quote" onMouseDown={startToolbarAction} onClick={() => insertMd("> ")}><TextQuote size={14} /></button>
               <button type="button" className="icon-btn" title="Link" onMouseDown={startToolbarAction} onClick={() => insertMd("[", "](https://)")}><LinkIcon size={14} /></button>
               <div className="md-toolbar-spacer" />
-              <button type="button" className="icon-btn" title="Edit" onMouseDown={startToolbarAction} onClick={enterEdit}><Pencil size={14} /></button>
             </div>
           )}
           <div className="note-editor-single">
@@ -175,7 +168,6 @@ export function MarkdownNote(p: Props) {
                 dangerouslySetInnerHTML={{ __html: liveHtml || '<span class="md-placeholder">Tap to write…</span>' }}
               />
             )}
-            {!editing && <span className="md-edit-hint">tap to edit</span>}
           </div>
         </div>
         {p.showIconSidebar && (
