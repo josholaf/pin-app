@@ -143,6 +143,13 @@ body {
   font-size: 13px;
 }
 
+.settings-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  opacity: 0.8;
+  margin: 0;
+}
+
 .accent-swatches {
   display: flex;
   flex-wrap: wrap;
@@ -584,6 +591,63 @@ body {
   color: var(--accent);
 }
 
+/* Note color circle picker (sticky note titlebar) */
+.color-picker-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.color-btn {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid var(--text);
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.color-picker {
+  position: absolute;
+  top: 26px;
+  right: 0;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  z-index: 50;
+}
+.color-option {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+}
+.color-option.active {
+  border-color: var(--text) !important;
+}
+
+/* Note editor status bar (Ln / Col / words at the bottom of the sticky note) */
+.note-status-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 12px;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--text-muted);
+  background: color-mix(in srgb, var(--titlebar-bg) 50%, transparent);
+  user-select: none;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+.note-status-bar .status-spacer { flex: 1; }
+
 /* Markdown editor */
 .md-toolbar {
   display: flex;
@@ -643,8 +707,77 @@ body {
 .settings-panel-standalone {
   border-bottom: none;
   flex: 1;
+  overflow-y: auto;
 }
 
+/* Settings → Storage section */
+.storage-section {
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.storage-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+.storage-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin: 0;
+}
+.storage-path {
+  font-size: 10px;
+  color: var(--text-muted);
+  opacity: 0.85;
+  margin: 0;
+  word-break: break-all;
+  user-select: text;
+}
+.storage-stats {
+  font-size: 11px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text);
+}
+.storage-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+.storage-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  padding: 6px 10px;
+  background: var(--input-bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.storage-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.storage-btn.danger-btn {
+  color: var(--delete-hover);
+}
+.storage-btn.danger-btn:hover {
+  border-color: var(--delete-hover);
+  color: var(--delete-hover);
+  background: rgba(198, 40, 40, 0.08);
+}
+.storage-status {
+  font-size: 11px;
+  color: var(--accent);
+  margin: 0;
+  font-weight: 600;
+}
 
 /* ===== Refined markdown preview ===== */
 .md-toolbar { flex-wrap: wrap; }

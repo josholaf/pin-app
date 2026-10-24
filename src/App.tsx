@@ -221,7 +221,7 @@ function App() {
     const existing = await WebviewWindow.getByLabel("settings");
     if (existing) { await existing.setFocus(); return; }
     new WebviewWindow("settings", {
-      title: "Settings", width: 320, height: 360,
+      title: "Settings", width: 320, height: 420,
       decorations: false, transparent: true, alwaysOnTop: true, center: true, resizable: false,
     });
   };
@@ -312,6 +312,17 @@ function App() {
     setInput("");
   };
 
+  /** Local mirror of "Clear all data" from Settings → Storage. */
+  const resetAllData = () => {
+    setTasks([]);
+    setNotes([]);
+    setFolders([]);
+    setStreak(0);
+    setLastActiveDate(null);
+    setOpenNoteId(null);
+    setExpandedFolders(new Set());
+  };
+
   const unfiledNotes = notes.filter((n) => !n.folderId);
   const activeTasks = tasks.filter((t) => !t.done);
 
@@ -323,6 +334,8 @@ function App() {
         setSettings={setSettings}
         toggleTheme={toggleTheme}
         closeWindow={closeWindow}
+        store={store}
+        onResetData={resetAllData}
       />
     );
   }
@@ -339,6 +352,7 @@ function App() {
         noteContent={noteContent}
         setNoteContent={setNoteContent}
         noteColor={noteColor}
+        setNoteColor={setNoteColor}
         noteIcon={noteIcon}
         setNoteIcon={setNoteIcon}
         noteFormat={noteFormat}

@@ -1,4 +1,4 @@
-import { useRef, useState, type MouseEvent, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type MouseEvent, type KeyboardEvent } from "react";
 import {
   Moon, Sun, X, PanelRight, PanelRightClose, Bold, Italic, List, ListOrdered, CheckSquare,
   Heading, Code, TextQuote, Link as LinkIcon, Strikethrough, ArrowLeft,
@@ -17,6 +17,7 @@ type Props = {
   noteContent: string;
   setNoteContent: (v: string) => void;
   noteColor: NoteColor;
+  setNoteColor: (c: NoteColor) => void;
   noteIcon: string;
   setNoteIcon: (id: string) => void;
   noteFormat: "md" | "txt";
@@ -31,11 +32,14 @@ export function MarkdownNote(p: Props) {
   const noteEditorRef = useRef<HTMLTextAreaElement | null>(null);
   // Single-pane auto-preview: rendered view by default; tap/click to edit.
   const [editing, setEditing] = useState(false);
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [cursorPos, setCursorPos] = useState({ line: 1, col: 1 });
   const currentColor = NOTE_COLORS.find((c) => c.id === p.noteColor) || NOTE_COLORS[0];
   const bgColor = p.theme === "dark" ? currentColor.dark : currentColor.light;
   const SelectedIcon = getIcon(p.noteIcon).Icon;
   const isMd = p.noteFormat === "md";
   const liveHtml = isMd ? markdownToHtml(p.noteContent) : plainToHtml(p.noteContent);
+  const words = p.noteContent.trim() ? p.noteContent.trim().split(/\s+/).length : 0;
 
   const enterEdit = () => {
     setEditing(true);
@@ -44,10 +48,21 @@ export function MarkdownNote(p: Props) {
       if (el) {
         el.focus();
         el.setSelectionRange(el.value.length, el.value.length);
+        updateCursor();
       }
     });
   };
   const exitEdit = () => setEditing(false);
+
+  /** Track cursor position (line / column) for the status bar. */
+  const updateCursor = () => {
+    const el = noteEditorRef.current;
+    if (!el) return;
+    const caret = el.selectionStart ?? 0;
+    const upto = el.value.slice(0, caret);
+    const lines = upto.split("\n");
+    setCursorPos({ line: lines.length, col: lines[lines.length - 1].length + 1 });
+  };
 
   const insertMd = (before: string, after = "") => {
     const el = noteEditorRef.current;
@@ -64,6 +79,7 @@ export function MarkdownNote(p: Props) {
       el.focus();
       const pos = start + before.length + selected.length;
       el.setSelectionRange(pos, pos);
+      updateCursor();
     });
   };
 
@@ -121,6 +137,22 @@ export function MarkdownNote(p: Props) {
               />
             </div>
             <div className="title-actions">
+              <div className="color-picker-wrapper">
+                <button className="color-btn" style={{ background: bgColor }} title="Note color" onClick={() => setShowColorPicker((v) => !v)} />
+                {showColorPicker && (
+                  <div className="color-picker">
+                    {NOTE_COLORS.map((c) => (
+                      <button
+                        key={c.id}
+                        className={"color-option " + (p.noteColor === c.id ? "active" : "")}
+                        style={{ background: p.theme === "dark" ? c.dark : c.light }}
+                        title={c.name}
+                        onClick={() => { p.setNoteColor(c.id); setShowColorPicker(false); }}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
               <button
                 className={"md-format-btn " + (isMd ? "" : "active-mode")}
                 title={isMd ? "Markdown formatting — switch to plain text" : "Plain text — switch to markdown"}
@@ -154,8 +186,11 @@ export function MarkdownNote(p: Props) {
                 ref={noteEditorRef}
                 className="note-content note-content-edit"
                 value={p.noteContent}
-                onChange={(e) => p.setNoteContent(e.target.value)}
+                onChange={(e) => { p.setNoteContent(e.target.value); updateCursor(); }}
                 onKeyDown={onEditorKeyDown}
+                onKeyUp={updateCursor}
+                onClick={updateCursor}
+                onSelect={updateCursor}
                 onBlur={exitEdit}
                 placeholder={isMd ? "Write markdown… (Esc to preview)" : "Write… (Esc to finish)"}
                 autoFocus
@@ -168,6 +203,11 @@ export function MarkdownNote(p: Props) {
                 dangerouslySetInnerHTML={{ __html: liveHtml || '<span class="md-placeholder">Tap to write…</span>' }}
               />
             )}
+          </div>
+          <div className="note-status-bar">
+            <span className="status-pos">Ln {cursorPos.line}, Col {cursorPos.col}</span>
+            <span className="status-spacer" />
+            <span className="status-words">{words} {words === 1 ? "word" : "words"}</span>
           </div>
         </div>
         {p.showIconSidebar && (
