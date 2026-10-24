@@ -2,8 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { Store } from "@tauri-apps/plugin-store";
+import { register, unregister, isRegistered } from "@tauri-apps/plugin-global-shortcut";
 import {
-  Pin, Moon, Sun, Plus, X, Play, Pause, RotateCcw,
+  Pin, Moon, Sun, Plus, X, Play, Pause, RotateCcw, Search,
   ChevronDown, ChevronRight, FolderPlus, Flame, Folder, FolderOpen,
   Coffee, Settings, Pencil,
 } from "lucide-react";
@@ -38,6 +39,7 @@ function App() {
   const [ready, setReady] = useState(false);
   const [folders, setFolders] = useState<NoteFolder[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
+  const [search, setSearch] = useState("");
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [newFolderName, setNewFolderName] = useState("");
   const [showNewFolder, setShowNewFolder] = useState(false);
@@ -323,7 +325,39 @@ function App() {
     setExpandedFolders(new Set());
   };
 
-  const unfiledNotes = notes.filter((n) => !n.folderId);
+  // Global quick-capture hotkey (Ctrl/Cmd+Shift+P): bring Pin to the
+  // front and drop you straight into a fresh note, from anywhere.
+  const quickCaptureRef = useRef<() => void>(() => {});
+  quickCaptureRef.current = () => createNoteInFolder(null);
+  useEffect(() => {
+    if (windowLabel !== "main") return;
+    (async () => {
+      try {
+        const already = await isRegistered("CommandOrControl+Shift+P").catch(() => false);
+        if (!already) {
+          await register("CommandOrControl+Shift+P", async (event) => {
+            if (event.state === "Pressed") {
+              try {
+                const win = getCurrentWindow();
+                await win.show();
+                await win.setFocus();
+              } catch { /* ignore */ }
+              quickCaptureRef.current();
+            }
+          });
+        }
+      } catch { /* shortcut unavailable (already taken by another app) */ }
+    })();
+    return () => { unregister("CommandOrControl+Shift+P").catch(() => {}); };
+  }, [windowLabel]);
+
+  // ----- Note search (titles + content, live) -----
+  const q = search.trim().toLowerCase();
+  const noteMatches = (n: Note) =>
+    !q || (n.title || "").toLowerCase().includes(q) || (n.content || "").toLowerCase().includes(q);
+  const searchMatches = q ? notes.filter(noteMatches).length : 0;
+
+  const unfiledNotes = notes.filter((n) => !n.folderId && noteMatches(n));
   const activeTasks = tasks.filter((t) => !t.done);
 
   if (windowLabel === "settings") {
@@ -389,6 +423,16 @@ function App() {
             <button onClick={() => setShowNewFolder(true)} title="New Folder" className="icon-btn"><FolderPlus size={14} /></button>
           </div>
         </div>
+        <div className="note-search-row">
+          <Search size={13} className="search-icon" />
+          <input className="note-search-input" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search notes..." />
+          {q ? (
+            <>
+              <span className="search-count">{searchMatches} {searchMatches === 1 ? "match" : "matches"}</span>
+              <button className="icon-btn" title="Clear search" onClick={() => setSearch("")}><X size={14} /></button>
+            </>
+          ) : null}
+        </div>
         {showNewFolder && (
           <div className="new-folder-row">
             <input value={newFolderName} onChange={(e) => setNewFolderName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && createFolder()} placeholder="Folder name..." autoFocus />
@@ -398,9 +442,10 @@ function App() {
         )}
         <div className="folder-list">
           {folders.map((folder) => {
-            const folderNotes = notes.filter((n) => n.folderId === folder.id);
-            const isExpanded = expandedFolders.has(folder.id);
+            const folderNotes = notes.filter((n) => n.folderId === folder.id && noteMatches(n));
+            const isExpanded = q ? true : expandedFolders.has(folder.id);
             const FolderIcon = isExpanded ? FolderOpen : Folder;
+            if (q && !folder.name.toLowerCase().includes(q) && folderNotes.length === 0) return null;
             return (
               <div key={folder.id} className="folder-block">
                 <div className="folder-row" onContextMenu={(e) => { e.preventDefault(); setContextMenu({ type: "folder", id: folder.id, x: e.clientX, y: e.clientY }); }}>

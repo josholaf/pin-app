@@ -90,7 +90,8 @@ body {
   justify-content: center;
   background: none;
   border: none;
-  cursor: pointer;
+  cursor: pointer
+;
   padding: 6px;
   border-radius: 6px;
   color: var(--text);
@@ -205,7 +206,8 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 8px 14px;
-  font-size: 11px;
+  font
+-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -321,7 +323,8 @@ body {
   font-size: 15px;
   outline: none;
   background: var(--input-bg);
-  color: var(--text);
+ 
+ color: var(--text);
 }
 
 .task-list {
@@ -411,7 +414,8 @@ body {
   gap: 2px;
   align-items: center;
 }
-.pomodoro-controls-sm .icon-btn.active-mode {
+.pomodoro-controls-sm
+ .icon-btn.active-mode {
   color: var(--accent);
   opacity: 1;
   background: color-mix(in srgb, var(--accent) 18%, transparent);
@@ -519,7 +523,8 @@ body {
 }
 .note-title-input {
   flex: 1;
-  background: transparent;
+  background: tran
+sparent;
   border: none;
   outline: none;
   font-size: 14px;
@@ -620,7 +625,8 @@ body {
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
   z-index: 50;
 }
-.color-option {
+.color-opt
+ion {
   width: 18px;
   height: 18px;
   border-radius: 50%;
@@ -712,7 +718,8 @@ body {
 
 /* Settings → Storage section */
 .storage-section {
-  border-top: 1px solid var(--border);
+  borde
+r-top: 1px solid var(--border);
   padding-top: 10px;
   display: flex;
   flex-direction: column;
@@ -793,7 +800,8 @@ body {
 .note-content-preview .md-task-list { list-style: none; padding-left: 2px; }
 .note-content-preview .md-list li { margin: 2px 0; }
 .note-content-preview .md-checkbox { cursor: pointer; margin-right: 5px; user-select: none; }
-.note-content-preview .md-quote {
+.note-conten
+t-preview .md-quote {
   border-left: 3px solid var(--accent);
   padding: 2px 10px;
   margin: 4px 0;
@@ -859,7 +867,8 @@ body {
   background: rgba(128, 128, 128, 0.12);
   border-radius: 4px 4px 0 0;
   padding: 1px 8px;
-  margin-bottom: -6px;
+  margin-bo
+ttom: -6px;
   margin-top: 4px;
 }
 
@@ -915,4 +924,36 @@ body {
 .md-code,
 .md-code-block code {
   font-family: "SF Mono", "Cascadia Code", Consolas, monospace !important;
+}
+
+/* ===== Note search ===== */
+.note-search-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px 8px;
+}
+.note-search-row .search-icon {
+  color: var(--text-muted);
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+.note-search-input {
+  flex: 1;
+  min-width: 0;
+  padding: 5px 10px;
+  border: 1px solid var(--input-border);
+  border-radius: 999px;
+  background: var(--input-bg);
+  color: var(--text);
+  font-size: 12px;
+  outline: none;
+}
+.note-search-input:focus {
+  border-color: var(--input-focus);
+}
+.search-count {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
 }
