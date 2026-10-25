@@ -657,6 +657,26 @@ body {
 }
 .note-status-bar .status-spacer { flex: 1; }
 
+/* Network status dot (between Ln/Col and word count) */
+.status-net {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.status-net-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.status-net.is-online .status-net-dot { background: #4caf50; }
+.status-net.is-offline .status-net-dot { background: #ff9800; }
+.status-net-label {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
 /* Note search */
 .note-search-row {
   display: flex;
