@@ -82,7 +82,7 @@ jobs:
           releaseBody: |
             **Pin v0.1.5** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
 
-                        ## What's new in v0.1.5
+            ## What's new in v0.1.5
 
             ### ✨ Features
             - **Pin note to desktop** (#3) — float any note as a small always-on-top sticky window, from the note list, the editor header or the command palette
@@ -90,7 +90,7 @@ jobs:
             - **Note tags with filter chips** (#5) — add colored tags in the note editor and filter the note list with tag chips
             - **Command palette (Ctrl/Cmd+K)** (#6) — fuzzy-search commands and notes: new note, new folder, theme, settings, open or pin any note
             - **Export & copy notes** (#7) — export a note as .md/.txt through the native save dialog, or copy it as plain text from the editor header
-## Downloads
+            ## Downloads
             - **Windows**: `.msi` or `.exe` (NSIS)
             - **macOS**: `.dmg`
             - **Linux**: `.deb` or `.AppImage`
