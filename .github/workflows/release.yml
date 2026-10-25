@@ -57,11 +57,18 @@ jobs:
         shell: bash
         run: |
           mkdir -p src-tauri/icons
-          # Regenerate real icons if the Windows .ico is missing or an empty placeholder
+          # Regenerate icons if the Windows .ico is missing or an empty placeholder.
+          # Prefer the committed app logo (black rounded square + green pin, icon.svg);
+          # fall back to the generated PNG only if the SVG is absent.
           if [ ! -s src-tauri/icons/icon.ico ]; then
-            echo "icon.ico missing or empty - generating real icon set"
-            node scripts/gen-icon.mjs
-            npx tauri icon src-tauri/icons/source-icon.png -o src-tauri/icons
+            if [ -s src-tauri/icons/icon.svg ]; then
+              echo "icon.ico missing or empty - generating icon set from icon.svg"
+              npx tauri icon src-tauri/icons/icon.svg -o src-tauri/icons
+            else
+              echo "icon.svg missing - generating fallback icon set"
+              node scripts/gen-icon.mjs
+              npx tauri icon src-tauri/icons/source-icon.png -o src-tauri/icons
+            fi
           fi
           ls -la src-tauri/icons/
 
