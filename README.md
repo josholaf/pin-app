@@ -8,7 +8,7 @@ Small floating windows that stay on top (or on the desktop layer) so you can kee
 
 - **Sticky-note windows** — frameless, transparent, always-on-top or desktop layer
 - **Folders** — organize notes under folders
-- **50+ Lucide icons** — assign icons to notes and folders
+- **Lucide icons** — assign icons to notes and folders
 - **Per-note colors**
 - **Pomodoro timer** (25 min focus / 5 min break) with sound + auto-switch
 - **Daily writing streak** — fire icon in the title bar that grows when you create or write notes
@@ -36,25 +36,6 @@ Small floating windows that stay on top (or on the desktop layer) so you can kee
 - Title + body, color picker, icon sidebar
 - Auto-saves as you type
 
-## Develop
-
-```bash
-npm install
-npm run tauri dev
-```
-
-## Build / Release
-
-Multi-platform builds (Windows, macOS, Linux) are handled by GitHub Actions.
-
-To create a release:
-
-```bash
-git tag v0.1.0
-git push origin v0.1.0
-```
-
-Or run the **Release** workflow manually from the Actions tab.
 
 ---
 
