@@ -502,6 +502,26 @@ body {
   color: var(--delete-hover);
 }
 
+/* Icon picker inside the note list context menu (issue #1) */
+.context-menu-icons {
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+  padding-top: 6px;
+}
+.context-menu-icons-title {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 0 4px 4px;
+}
+.context-icon-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 2px;
+  padding: 0 2px;
+}
+
 .note-layout {
   display: flex;
   height: 100%;

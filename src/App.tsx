@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import {
   DEFAULT_SETTINGS,
-  FOCUS_SECONDS, BREAK_SECONDS, playBeep, getIcon,
+  FOCUS_SECONDS, BREAK_SECONDS, playBeep, getIcon, ICON_BANK,
   type Task, type Theme, type NoteColor, type PomodoroMode, type AppSettings,
   type NoteFolder, type Note,
 } from "./appData";
@@ -285,6 +285,16 @@ function App() {
   const startRename = (id: string, current: string) => {
     setRenamingId(id); setRenameText(current); setContextMenu(null);
   };
+  /** Change a note's icon straight from the list context menu (issue #1). */
+  const setNoteIconFor = (id: string, iconId: string) => {
+    const n = notes.find((x) => x.id === id);
+    if (!n) return;
+    const updated = { ...n, icon: iconId };
+    setNotes(notes.map((x) => (x.id === id ? updated : x)));
+    persistNote(updated);
+    if (openNoteId === id) setNoteIcon(iconId);
+    setContextMenu(null);
+  };
   const createNoteInFolder = (folderId: string | null) => {
     const id = crypto.randomUUID();
     const note: Note = { id, title: "Untitled", content: "", color: "yellow", icon: "sticky-note", folderId, createdAt: Date.now(), format: "md" };
@@ -528,6 +538,23 @@ function App() {
               else deleteNoteFromList(contextMenu.id);
               setContextMenu(null);
             }}>Delete</button>
+            {contextMenu.type === "note" && (
+              <div className="context-menu-icons">
+                <div className="context-menu-icons-title">Change icon</div>
+                <div className="icon-grid context-icon-grid">
+                  {ICON_BANK.map(({ id, Icon, label }) => (
+                    <button
+                      key={id}
+                      className={"icon-grid-item " + (notes.find((x) => x.id === contextMenu.id)?.icon === id ? "active" : "")}
+                      title={label}
+                      onClick={() => setNoteIconFor(contextMenu.id, id)}
+                    >
+                      <Icon size={16} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
