@@ -1,6 +1,6 @@
 import { type ComponentType } from "react";
 import {
-  StickyNote, Book, Bookmark, Briefcase, Calendar, Check, CheckCircle, Clock,
+  StickyNote, Book, Bookmark, Briefcase, Calendar, Check, CheckCircle, FolderCheck,
   Code, Coffee, Flame, Folder, Heart, Home, Lightbulb, List, Pencil, Star,
   Target, Zap, type LucideProps,
 } from "lucide-react";
@@ -48,7 +48,7 @@ export const ICON_BANK: { id: string; Icon: ComponentType<LucideProps>; label: s
   { id: "calendar", Icon: Calendar, label: "Calendar" },
   { id: "check", Icon: Check, label: "Check" },
   { id: "check-circle", Icon: CheckCircle, label: "Done" },
-  { id: "clock", Icon: Clock, label: "Clock" },
+  { id: "folder-check", Icon: FolderCheck, label: "Folder check" },
   { id: "code", Icon: Code, label: "Code" },
   { id: "coffee", Icon: Coffee, label: "Coffee" },
   { id: "flame", Icon: Flame, label: "Flame" },
@@ -279,7 +279,7 @@ export function markdownToHtml(md: string): string {
         const done = task[2].toLowerCase() === "x";
         out.push(
           '<li class="md-task' + (done ? " done" : "") + '"><span class="md-checkbox" data-task="' + taskIdx +
-          '" data-done="' + (done ? 1 : 0) + '">' + (done ? "\u2611" : "\u2610") + "</span>" + inlineMd(task[3]) + "</li>"
+          '" data-done="' + (done ? 1 : 0) + '"></span>' + inlineMd(task[3]) + "</li>"
         );
         taskIdx += 1;
       } else if (num) {
@@ -315,3 +315,4 @@ export function plainToHtml(text: string): string {
     .map(function (l) { return '<div class="md-p">' + escapeHtml(l) + "</div>"; })
     .join("");
 }
+
