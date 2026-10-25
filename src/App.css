@@ -41,20 +41,22 @@ body {
   margin: 0;
   padding: 0;
   overflow: hidden;
-  background: transparent;
+  background: var(--bg);
 }
 
+/* Native OS window frame: no floating-card radius or shadow, the edges
+   belong to the OS and the content sits inside them with its own padding. */
 .pin-window {
   background: var(--bg);
   color: var(--text);
-  border-radius: 12px;
+  border-radius: 0;
   height: 100vh;
   display: flex;
   flex-direction: column;
   font-family: var(--app-font-family);
   font-size: var(--app-font-size);
   overflow: hidden;
-  box-shadow: var(--shadow);
+  box-shadow: none;
   transition: background 0.2s ease, color 0.2s ease;
 }
 
@@ -83,6 +85,7 @@ body {
   flex-shrink: 0;
   align-items: center;
 }
+
 
 .icon-btn {
   display: inline-flex;
@@ -542,30 +545,36 @@ body {
   color: var(--text);
   font-family: inherit;
 }
-.icon-sidebar {
-  width: 140px;
-  flex-shrink: 0;
-  border-left: 1px solid var(--border);
-  background: var(--sidebar-bg);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+
+/* Icon picker (right-click on the note title) */
+.picker-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
 }
-.icon-sidebar-header {
-  padding: 8px 10px;
+.icon-picker {
+  position: fixed;
+  width: 216px;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  padding: 8px;
+  z-index: 1001;
+}
+.icon-picker-header {
+  padding: 2px 4px 6px;
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   color: var(--text-muted);
-  border-bottom: 1px solid var(--border);
 }
 .icon-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 4px;
-  padding: 8px;
   overflow-y: auto;
-  flex: 1;
+  max-height: 240px;
 }
 .icon-grid-item {
   display: flex;
@@ -824,7 +833,44 @@ body {
 .note-content-preview .md-list { margin: 2px 0; padding-left: 18px; }
 .note-content-preview .md-task-list { list-style: none; padding-left: 2px; }
 .note-content-preview .md-list li { margin: 2px 0; }
-.note-content-preview .md-checkbox { cursor: pointer; margin-right: 5px; user-select: none; }
+
+/* Circle task checkbox in markdown notes: pure CSS, slightly larger,
+   matching the .circle-checkbox used in the task list. */
+.note-content-preview .md-checkbox {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--text-muted);
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  user-select: none;
+  vertical-align: -3px;
+  margin-right: 7px;
+  position: relative;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  flex-shrink: 0;
+}
+.note-content-preview .md-checkbox::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 5px;
+  height: 9px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+  opacity: 0;
+}
+.note-content-preview .md-task.done .md-checkbox {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.note-content-preview .md-task.done .md-checkbox::after {
+  opacity: 1;
+}
+
 .note-content-preview .md-quote {
   border-left: 3px solid var(--accent);
   padding: 2px 10px;
