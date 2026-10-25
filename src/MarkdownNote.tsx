@@ -1,4 +1,4 @@
-import { useRef, useState, type MouseEvent, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type MouseEvent, type KeyboardEvent } from "react";
 import {
   Moon, Sun, X, Bold, Italic, List, ListOrdered, CheckSquare,
   Heading, Code, TextQuote, Link as LinkIcon, Strikethrough, ArrowLeft,
@@ -32,6 +32,17 @@ export function MarkdownNote(p: Props) {
   const [editing, setEditing] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [iconPickerPos, setIconPickerPos] = useState<{ x: number; y: number } | null>(null);
+  const [online, setOnline] = useState(navigator.onLine);
+  useEffect(() => {
+    const goOnline = () => setOnline(true);
+    const goOffline = () => setOnline(false);
+    window.addEventListener("online", goOnline);
+    window.addEventListener("offline", goOffline);
+    return () => {
+      window.removeEventListener("online", goOnline);
+      window.removeEventListener("offline", goOffline);
+    };
+  }, []);
   const [cursorPos, setCursorPos] = useState({ line: 1, col: 1 });
   const currentColor = NOTE_COLORS.find((c) => c.id === p.noteColor) || NOTE_COLORS[0];
   const bgColor = p.theme === "dark" ? currentColor.dark : currentColor.light;
@@ -209,6 +220,10 @@ export function MarkdownNote(p: Props) {
           </div>
           <div className="note-status-bar">
             <span className="status-pos">Ln {cursorPos.line}, Col {cursorPos.col}</span>
+            <span className={"status-net " + (online ? "is-online" : "is-offline")} title={online ? "Online" : "Offline"}>
+              <span className="status-net-dot" />
+              {!online && <span className="status-net-label">Offline</span>}
+            </span>
             <span className="status-spacer" />
             <span className="status-words">{words} {words === 1 ? "word" : "words"}</span>
           </div>
