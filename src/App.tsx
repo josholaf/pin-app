@@ -6,10 +6,10 @@ import { register, unregister, isRegistered } from "@tauri-apps/plugin-global-sh
 import {
   Pin, Moon, Sun, Plus, X, Play, Pause, RotateCcw, Search,
   ChevronDown, ChevronRight, FolderPlus, Flame, Folder, FolderOpen,
-  Coffee, Settings, Pencil,
+  Coffee, Settings, Pencil, Trash2, Undo2, Command,
 } from "lucide-react";
 import {
-  DEFAULT_SETTINGS,
+  DEFAULT_SETTINGS, NOTE_COLORS, tagColor,
   FOCUS_SECONDS, BREAK_SECONDS, playBeep, getIcon, ICON_BANK,
   type Task, type Theme, type NoteColor, type PomodoroMode, type AppSettings,
   type NoteFolder, type Note,
@@ -28,6 +28,68 @@ async function loadNotes(s: Store): Promise<Note[]> {
   }
   out.sort((a, b) => b.createdAt - a.createdAt);
   return out;
+}
+
+/** A note floated on the desktop as its own tiny always-on-top window (issue #3). */
+function PinnedNote({ noteId }: { noteId: string }) {
+  const [note, setNote] = useState<Note | null>(null);
+  const [theme, setTheme] = useState<Theme>("light");
+  const storeRef = useRef<Store | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const s = await Store.load("pin-data.json");
+      storeRef.current = s;
+      const n = await s.get<Note>(noteKey(noteId));
+      if (n) setNote(n);
+      const th = await s.get<Theme>("theme");
+      if (th) setTheme(th);
+    })();
+  }, [noteId]);
+
+  // Debounced save: keep every other field of the stored note intact.
+  useEffect(() => {
+    if (!note) return;
+    const t = setTimeout(async () => {
+      const s = storeRef.current;
+      if (!s) return;
+      const existing = await s.get<Note>(noteKey(noteId));
+      const updated: Note = { ...((existing || { id: noteId, createdAt: Date.now() }) as Note), ...note };
+      await s.set(noteKey(noteId), updated);
+      await s.save();
+    }, 400);
+    return () => clearTimeout(t);
+  }, [note, noteId]);
+
+  const currentColor = note ? (NOTE_COLORS.find((c) => c.id === note.color) || NOTE_COLORS[0]) : NOTE_COLORS[0];
+  const bgColor = theme === "dark" ? currentColor.dark : currentColor.light;
+
+  return (
+    <div className="pinned-window" data-tauri-drag-region style={{ background: bgColor, color: theme === "dark" ? "#eee" : "#222" }}>
+      <div className="pinned-header" data-tauri-drag-region>
+        <span className="pinned-title">{(note && note.title) || "Untitled"}</span>
+        <button
+          className="icon-btn"
+          title="Unpin"
+          onClick={async () => {
+            const win = getCurrentWindow();
+            try { await win.close(); } catch { try { await win.destroy(); } catch { /* ignore */ } }
+          }}
+        ><X size={12} /></button>
+      </div>
+      {note ? (
+        <textarea
+          className="pinned-content"
+          value={note.content}
+          onChange={(e) => setNote({ ...note, content: e.target.value })}
+          placeholder="Pinned note..."
+          spellCheck={false}
+        />
+      ) : (
+        <div className="pinned-content" />
+      )}
+    </div>
+  );
 }
 
 function App() {
@@ -62,6 +124,11 @@ function App() {
   const [isRunning, setIsRunning] = useState(false);
   const timerRef = useRef<number | null>(null);
   const justFinishedRef = useRef(false);
+  // v0.1.5: tags filter, trash, command palette
+  const [tagFilter, setTagFilter] = useState<string | null>(null);
+  const [trashOpen, setTrashOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [paletteQuery, setPaletteQuery] = useState("");
   const totalSeconds = pomodoroMode === "focus" ? FOCUS_SECONDS : BREAK_SECONDS;
   const progress = ((totalSeconds - secondsLeft) / totalSeconds) * 100;
 
@@ -74,7 +141,7 @@ function App() {
 
   // Init store + migrate legacy whole-array notes to per-note keys.
   // Everything is read BEFORE any effect is allowed to write back
-  // (see `ready`), so a fresh window can never clobber the saved
+  // (see "ready"), so a fresh window can never clobber the saved
   // theme/settings with defaults.
   useEffect(() => {
     (async () => {
@@ -125,7 +192,7 @@ function App() {
   }, [tasks, folders, store, ready, windowLabel]);
 
   useEffect(() => {
-    document.documentElement.style.setProperty("--app-font-size", `${settings.fontSize}px`);
+    document.documentElement.style.setProperty("--app-font-size", settings.fontSize + "px");
     document.documentElement.style.setProperty("--app-font-family", settings.fontFamily);
     document.documentElement.style.setProperty("--accent", settings.accentColor);
   }, [settings]);
@@ -163,18 +230,19 @@ function App() {
 
   // Inline note editor: automatic debounced save of the open note,
   // plus a local list update so the icon/title show immediately in the UI.
+  // The stored note is spread first so tags/trash state survive saves.
   useEffect(() => {
     if (!store || !openNoteId) return;
     const t = setTimeout(async () => {
       const existing = await store.get<Note>(noteKey(openNoteId));
       const updated: Note = {
+        ...((existing || { id: openNoteId, createdAt: Date.now() }) as Note),
         id: openNoteId,
         title: noteTitle || "Untitled",
         content: noteContent,
         color: noteColor,
         icon: noteIcon,
         folderId: noteFolderId,
-        createdAt: existing?.createdAt ?? Date.now(),
         format: noteFormat,
       };
       await store.set(noteKey(openNoteId), updated);
@@ -207,7 +275,7 @@ function App() {
   }, [isRunning, secondsLeft, pomodoroMode]);
 
   const formatTime = (secs: number) =>
-    `${Math.floor(secs / 60).toString().padStart(2, "0")}:${(secs % 60).toString().padStart(2, "0")}`;
+    Math.floor(secs / 60).toString().padStart(2, "0") + ":" + (secs % 60).toString().padStart(2, "0");
   const toggleTheme = () => setTheme((p) => (p === "light" ? "dark" : "light"));
   const closeWindow = async () => {
     const win = getCurrentWindow();
@@ -304,10 +372,60 @@ function App() {
     recordActivity();
     openNote(note);
   };
+  // v0.1.5: deleting a note moves it to Trash (soft delete) instead of
+  // destroying it immediately (issue #4).
   const deleteNoteFromList = (id: string) => {
-    setNotes(notes.filter((n) => n.id !== id));
-    removeNotePersist(id);
+    const n = notes.find((x) => x.id === id);
+    if (!n) return;
+    const updated = { ...n, deletedAt: Date.now() };
+    setNotes(notes.map((x) => (x.id === id ? updated : x)));
+    persistNote(updated);
     if (openNoteId === id) backToList();
+  };
+  const restoreNote = (id: string) => {
+    const n = notes.find((x) => x.id === id);
+    if (!n) return;
+    const updated = { ...n, deletedAt: undefined };
+    setNotes(notes.map((x) => (x.id === id ? updated : x)));
+    persistNote(updated);
+  };
+  const purgeNote = (id: string) => {
+    setNotes(notes.filter((x) => x.id !== id));
+    removeNotePersist(id);
+  };
+  const emptyTrash = () => {
+    notes.filter((n) => n.deletedAt).forEach((n) => { removeNotePersist(n.id); });
+    setNotes(notes.filter((n) => !n.deletedAt));
+  };
+  // v0.1.5: note tags (issue #5)
+  const addTagToNote = (id: string, raw: string) => {
+    const tag = raw.trim().replace(/^#/, "").toLowerCase();
+    if (!tag) return;
+    const n = notes.find((x) => x.id === id);
+    if (!n) return;
+    const updated = { ...n, tags: Array.from(new Set([...(n.tags || []), tag])) };
+    setNotes(notes.map((x) => (x.id === id ? updated : x)));
+    persistNote(updated);
+  };
+  const removeTagFromNote = (id: string, tag: string) => {
+    const n = notes.find((x) => x.id === id);
+    if (!n) return;
+    const updated = { ...n, tags: (n.tags || []).filter((t) => t !== tag) };
+    setNotes(notes.map((x) => (x.id === id ? updated : x)));
+    persistNote(updated);
+  };
+  // v0.1.5: float a note on the desktop as its own tiny window (issue #3)
+  const pinNoteToDesktop = async (note: Note) => {
+    const label = "note-" + note.id;
+    const existing = await WebviewWindow.getByLabel(label);
+    if (existing) { await existing.setFocus(); return; }
+    new WebviewWindow(label, {
+      url: "index.html",
+      title: note.title || "Pinned note",
+      width: 280, height: 220, resizable: true,
+      decorations: false, transparent: false, alwaysOnTop: true, skipTaskbar: true,
+    });
+    setContextMenu(null);
   };
   const toggleFolder = (id: string) => {
     const next = new Set(expandedFolders);
@@ -321,7 +439,7 @@ function App() {
     setInput("");
   };
 
-  /** Local mirror of "Clear all data" from Settings → Storage. */
+  /** Local mirror of "Clear all data" from Settings -> Storage. */
   const resetAllData = () => {
     setTasks([]);
     setNotes([]);
@@ -330,6 +448,7 @@ function App() {
     setLastActiveDate(null);
     setOpenNoteId(null);
     setExpandedFolders(new Set());
+    setTagFilter(null);
   };
 
   // Global quick-capture hotkey (Ctrl/Cmd+Shift+P): bring Pin to the
@@ -358,13 +477,36 @@ function App() {
     return () => { unregister("CommandOrControl+Shift+P").catch(() => {}); };
   }, [windowLabel]);
 
-  // ----- Note search (titles + content, live) -----
+  // v0.1.5: command palette toggle (issue #6)
+  useEffect(() => {
+    if (windowLabel !== "main" || openNoteId) return;
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setPaletteOpen((v) => !v);
+        setPaletteQuery("");
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [windowLabel, openNoteId]);
+
+  // ----- Note search (titles + content + tags, live) -----
   const q = search.trim().toLowerCase();
   const noteMatches = (n: Note) =>
-    !q || (n.title || "").toLowerCase().includes(q) || (n.content || "").toLowerCase().includes(q);
-  const searchMatches = q ? notes.filter(noteMatches).length : 0;
+    !q ||
+    (n.title || "").toLowerCase().includes(q) ||
+    (n.content || "").toLowerCase().includes(q) ||
+    (n.tags || []).some((t) => t.toLowerCase().includes(q));
+  const applyTagFilter = (n: Note) => !tagFilter || (n.tags || []).includes(tagFilter);
+  const matches = (n: Note) => noteMatches(n) && applyTagFilter(n);
 
-  const unfiledNotes = notes.filter((n) => !n.folderId && noteMatches(n));
+  const activeNotes = notes.filter((n) => !n.deletedAt);
+  const trashedNotes = notes.filter((n) => n.deletedAt);
+  const allTags = Array.from(new Set(activeNotes.flatMap((n) => n.tags || []))).sort();
+  const searchMatches = q ? activeNotes.filter(matches).length : 0;
+
+  const unfiledNotes = activeNotes.filter((n) => !n.folderId && matches(n));
   const activeTasks = tasks.filter((t) => !t.done);
 
   if (windowLabel === "settings") {
@@ -379,6 +521,11 @@ function App() {
         onResetData={resetAllData}
       />
     );
+  }
+
+  // Pinned desktop note windows (issue #3)
+  if (windowLabel.startsWith("note-")) {
+    return <PinnedNote noteId={windowLabel.slice(5)} />;
   }
 
   // Inline note editor view (replaces the list inside the main window)
@@ -398,11 +545,44 @@ function App() {
         setNoteIcon={setNoteIcon}
         noteFormat={noteFormat}
         setNoteFormat={setNoteFormat}
+        noteTags={notes.find((n) => n.id === openNoteId)?.tags || []}
+        onAddTag={(t) => { addTagToNote(openNoteId, t); }}
+        onRemoveTag={(t) => { removeTagFromNote(openNoteId, t); }}
+        onPin={() => {
+          const n = notes.find((x) => x.id === openNoteId);
+          if (n) pinNoteToDesktop(n);
+        }}
         toggleTheme={toggleTheme}
         closeWindow={closeWindow}
       />
     );
   }
+
+  // ----- Command palette (issue #6) -----
+  const fuzzy = (needle: string, hay: string) => {
+    if (!needle) return true;
+    let i = 0;
+    for (const ch of hay.toLowerCase()) { if (ch === needle[i]) i += 1; }
+    return i === needle.length;
+  };
+  type PaletteItem = { id: string; title: string; subtitle: string; run: () => void };
+  const closePalette = () => { setPaletteOpen(false); setPaletteQuery(""); };
+  const paletteItems: PaletteItem[] = [
+    { id: "new-note", title: "New note", subtitle: "Create a note", run: () => createNoteInFolder(null) },
+    { id: "new-folder", title: "New folder", subtitle: "Create a folder", run: () => { setShowNewFolder(true); } },
+    { id: "toggle-theme", title: "Toggle theme", subtitle: "Light / dark", run: () => toggleTheme() },
+    { id: "settings", title: "Open settings", subtitle: "Preferences", run: () => { openSettingsWindow(); } },
+  ];
+  if (trashedNotes.length > 0) {
+    paletteItems.push({ id: "empty-trash", title: "Empty trash", subtitle: "Delete all trashed notes forever", run: () => emptyTrash() });
+  }
+  activeNotes.slice(0, 20).forEach((n) => {
+    const label = n.title || "Untitled";
+    paletteItems.push({ id: "open-" + n.id, title: "Open: " + label, subtitle: (n.tags || []).map((t) => "#" + t).join(" ") || "Note", run: () => openNote(n) });
+    paletteItems.push({ id: "pin-" + n.id, title: "Pin to desktop: " + label, subtitle: "Float this note on top", run: () => { pinNoteToDesktop(n); } });
+  });
+  const pq = paletteQuery.trim().toLowerCase();
+  const visibleItems = pq ? paletteItems.filter((it) => fuzzy(pq, it.title + " " + it.subtitle)) : paletteItems.slice(0, 12);
 
   return (
     <div className="pin-window" data-tauri-drag-region style={{ fontSize: settings.fontSize, fontFamily: settings.fontFamily }}>
@@ -410,11 +590,12 @@ function App() {
         <span className="app-title"><Pin size={16} /> Pin</span>
         <div className="title-actions">
           {streak > 0 && (
-            <div className="streak-badge" title={`${streak} day streak`}>
+            <div className="streak-badge" title={streak + " day streak"}>
               <Flame size={14} className="streak-flame" />
               <span className="streak-count">{streak}</span>
             </div>
           )}
+          <button onClick={() => setPaletteOpen(true)} className="icon-btn" title="Command palette (Ctrl+K)"><Command size={16} /></button>
           <button onClick={openSettingsWindow} className="icon-btn" title="Settings"><Settings size={16} /></button>
           <button onClick={toggleTheme} className="icon-btn" title="Theme">{theme === "light" ? <Moon size={16} /> : <Sun size={16} />}</button>
         </div>
@@ -438,6 +619,19 @@ function App() {
             </>
           ) : null}
         </div>
+        {allTags.length > 0 && (
+          <div className="tag-filter-row">
+            {allTags.map((t) => (
+              <button
+                key={t}
+                className={"tag-filter-chip " + (tagFilter === t ? "active" : "")}
+                style={{ borderColor: tagColor(t) }}
+                onClick={() => setTagFilter(tagFilter === t ? null : t)}
+              >{"#" + t}</button>
+            ))}
+            {tagFilter && <button className="icon-btn" title="Clear tag filter" onClick={() => setTagFilter(null)}><X size={12} /></button>}
+          </div>
+        )}
         {showNewFolder && (
           <div className="new-folder-row">
             <input value={newFolderName} onChange={(e) => setNewFolderName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && createFolder()} placeholder="Folder name..." autoFocus />
@@ -447,10 +641,10 @@ function App() {
         )}
         <div className="folder-list">
           {folders.map((folder) => {
-            const folderNotes = notes.filter((n) => n.folderId === folder.id && noteMatches(n));
-            const isExpanded = q ? true : expandedFolders.has(folder.id);
+            const folderNotes = activeNotes.filter((n) => n.folderId === folder.id && matches(n));
+            const isExpanded = q || tagFilter ? true : expandedFolders.has(folder.id);
             const FolderIcon = isExpanded ? FolderOpen : Folder;
-            if (q && !folder.name.toLowerCase().includes(q) && folderNotes.length === 0) return null;
+            if ((q || tagFilter) && !folder.name.toLowerCase().includes(q) && folderNotes.length === 0) return null;
             return (
               <div key={folder.id} className="folder-block">
                 <div className="folder-row" onContextMenu={(e) => { e.preventDefault(); setContextMenu({ type: "folder", id: folder.id, x: e.clientX, y: e.clientY }); }}>
@@ -477,6 +671,7 @@ function App() {
                           ) : (
                             <button className="note-open-btn" onClick={() => openNote(note)}>{note.title || "Untitled"}</button>
                           )}
+                          <button className="icon-btn" title="Pin to desktop" onClick={() => pinNoteToDesktop(note)}><Pin size={12} /></button>
                           <button className="icon-btn" title="Rename" onClick={() => startRename(note.id, note.title || "Untitled")}><Pencil size={12} /></button>
                           <button className="icon-btn delete-btn" onClick={() => deleteNoteFromList(note.id)}><X size={12} /></button>
                         </div>
@@ -497,11 +692,34 @@ function App() {
                 ) : (
                   <button className="note-open-btn" onClick={() => openNote(note)}>{note.title || "Untitled"}</button>
                 )}
+                <button className="icon-btn" title="Pin to desktop" onClick={() => pinNoteToDesktop(note)}><Pin size={12} /></button>
                 <button className="icon-btn" title="Rename" onClick={() => startRename(note.id, note.title || "Untitled")}><Pencil size={12} /></button>
                 <button className="icon-btn delete-btn" onClick={() => deleteNoteFromList(note.id)}><X size={12} /></button>
               </div>
             );
           })}
+          {trashedNotes.length > 0 && (
+            <div className="trash-block">
+              <div className="trash-header" onClick={() => setTrashOpen((v) => !v)}>
+                {trashOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                <Trash2 size={13} />
+                <span>Trash</span>
+                <span className="folder-count">{trashedNotes.length}</span>
+                <button className="icon-btn delete-btn" title="Empty trash" onClick={(e) => { e.stopPropagation(); emptyTrash(); }}><X size={12} /></button>
+              </div>
+              {trashOpen && (
+                <div className="trash-items">
+                  {trashedNotes.map((n) => (
+                    <div key={n.id} className="trash-item">
+                      <span className="trash-item-title">{n.title || "Untitled"}</span>
+                      <button className="icon-btn" title="Restore" onClick={() => restoreNote(n.id)}><Undo2 size={12} /></button>
+                      <button className="icon-btn delete-btn" title="Delete forever" onClick={() => purgeNote(n.id)}><X size={12} /></button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -520,6 +738,34 @@ function App() {
         ))}
       </ul>
 
+      {paletteOpen && (
+        <div className="palette-overlay" onClick={closePalette}>
+          <div className="palette" onClick={(e) => e.stopPropagation()}>
+            <input
+              className="palette-input"
+              autoFocus
+              value={paletteQuery}
+              onChange={(e) => setPaletteQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") { e.preventDefault(); closePalette(); }
+                if (e.key === "Enter") { e.preventDefault(); const first = visibleItems[0]; if (first) { first.run(); closePalette(); } }
+              }}
+              placeholder="Type a command or search notes..."
+            />
+            <div className="palette-items">
+              {visibleItems.length === 0 && <div className="palette-empty">No matching commands</div>}
+              {visibleItems.map((it) => (
+                <button key={it.id} className="palette-item" onClick={() => { it.run(); closePalette(); }}>
+                  <div className="palette-item-title">{it.title}</div>
+                  <div className="palette-item-sub">{it.subtitle}</div>
+                </button>
+              ))}
+            </div>
+            <div className="palette-hint">Enter to run - Esc to close</div>
+          </div>
+        </div>
+      )}
+
       {contextMenu && (
         <div className="context-menu-overlay" onClick={() => setContextMenu(null)}>
           <div className="context-menu" style={{ left: contextMenu.x, top: contextMenu.y }} onClick={(e) => e.stopPropagation()}>
@@ -533,6 +779,12 @@ function App() {
               }
             }}>Rename</button>
             {contextMenu.type === "folder" && <button onClick={() => { createNoteInFolder(contextMenu.id); setContextMenu(null); }}>New note</button>}
+            {contextMenu.type === "note" && (
+              <button onClick={() => {
+                const n = notes.find((x) => x.id === contextMenu.id);
+                if (n) pinNoteToDesktop(n);
+              }}>Pin to desktop</button>
+            )}
             <button className="danger" onClick={() => {
               if (contextMenu.type === "folder") deleteFolder(contextMenu.id);
               else deleteNoteFromList(contextMenu.id);
@@ -563,11 +815,11 @@ function App() {
         <div className="pomodoro-bottom-row">
           <span className="pomodoro-timer-sm">{formatTime(secondsLeft)}</span>
           <div className="pomodoro-progress-track pomodoro-progress-sm">
-            <div className="pomodoro-progress-fill" style={{ width: `${progress}%` }} />
+            <div className="pomodoro-progress-fill" style={{ width: progress + "%" }} />
           </div>
           <div className="pomodoro-controls-sm">
             <button onClick={() => { setIsRunning(false); setSecondsLeft(pomodoroMode === "focus" ? FOCUS_SECONDS : BREAK_SECONDS); }} className="icon-btn" title="Reset"><RotateCcw size={16} /></button>
-            <button onClick={() => { setIsRunning(false); setPomodoroMode("break"); setSecondsLeft(BREAK_SECONDS); }} className={`icon-btn ${pomodoroMode === "break" ? "active-mode" : ""}`} title="Break"><Coffee size={16} /></button>
+            <button onClick={() => { setIsRunning(false); setPomodoroMode("break"); setSecondsLeft(BREAK_SECONDS); }} className={"icon-btn " + (pomodoroMode === "break" ? "active-mode" : "")} title="Break"><Coffee size={16} /></button>
             {isRunning ? (
               <button onClick={() => setIsRunning(false)} className="icon-btn" title="Pause"><Pause size={16} /></button>
             ) : (

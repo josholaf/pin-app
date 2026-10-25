@@ -2,11 +2,18 @@ import { useEffect, useRef, useState, type MouseEvent, type KeyboardEvent } from
 import {
   Moon, Sun, X, Bold, Italic, List, ListOrdered, CheckSquare,
   Heading, Code, TextQuote, Link as LinkIcon, Strikethrough, ArrowLeft,
+  Pin, Download, Copy, Tag,
 } from "lucide-react";
+import { save } from "@tauri-apps/plugin-dialog";
+import { writeTextFile } from "@tauri-apps/plugin-fs";
 import {
   NOTE_COLORS, ICON_BANK, markdownToHtml, plainToHtml, getIcon,
   type Theme, type NoteColor, type AppSettings,
 } from "./appData";
+
+// The inline-code toolbar button wraps the selection in backticks; spelled
+// out via charCode so this file contains no raw backtick characters.
+const BACKTICK = String.fromCharCode(96);
 
 type Props = {
   theme: Theme;
@@ -22,6 +29,10 @@ type Props = {
   setNoteIcon: (id: string) => void;
   noteFormat: "md" | "txt";
   setNoteFormat: (f: "md" | "txt") => void;
+  noteTags: string[];
+  onAddTag: (tag: string) => void;
+  onRemoveTag: (tag: string) => void;
+  onPin?: () => void;
   toggleTheme: () => void;
   closeWindow: () => void;
 };
@@ -33,6 +44,9 @@ export function MarkdownNote(p: Props) {
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [iconPickerPos, setIconPickerPos] = useState<{ x: number; y: number } | null>(null);
   const [online, setOnline] = useState(navigator.onLine);
+  const [tagInput, setTagInput] = useState("");
+  const [flash, setFlash] = useState<string | null>(null);
+  const flashTimer = useRef<number | null>(null);
   useEffect(() => {
     const goOnline = () => setOnline(true);
     const goOffline = () => setOnline(false);
@@ -50,6 +64,46 @@ export function MarkdownNote(p: Props) {
   const isMd = p.noteFormat === "md";
   const liveHtml = isMd ? markdownToHtml(p.noteContent) : plainToHtml(p.noteContent);
   const words = p.noteContent.trim() ? p.noteContent.trim().split(/\s+/).length : 0;
+
+  /** Show a short confirmation message in the status bar. */
+  const flashMessage = (msg: string) => {
+    setFlash(msg);
+    if (flashTimer.current) clearTimeout(flashTimer.current);
+    flashTimer.current = window.setTimeout(() => setFlash(null), 1800);
+  };
+
+  /** Export the note as a .md / .txt file via the native save dialog (issue #7). */
+  const exportNote = async () => {
+    try {
+      const ext = isMd ? "md" : "txt";
+      const safe = (p.noteTitle || "note").replace(/[<>:"/\\|?*]+/g, "-").trim() || "note";
+      const path = await save({
+        defaultPath: safe + "." + ext,
+        filters: [{ name: ext.toUpperCase() + " file", extensions: [ext] }],
+      });
+      if (!path) return;
+      await writeTextFile(path, p.noteContent);
+      flashMessage("Exported as ." + ext);
+    } catch { flashMessage("Export failed"); }
+  };
+
+  /** Copy the note body as plain text (issue #7). */
+  const copyPlainText = async () => {
+    try {
+      await navigator.clipboard.writeText(p.noteContent);
+      flashMessage("Copied to clipboard");
+    } catch {
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = p.noteContent;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+        flashMessage("Copied to clipboard");
+      } catch { flashMessage("Copy failed"); }
+    }
+  };
 
   /** Track cursor position (line / column) for the status bar. */
   const updateCursor = () => {
@@ -131,6 +185,11 @@ export function MarkdownNote(p: Props) {
     if (!editing) enterEdit();
   };
 
+  const addTag = () => {
+    p.onAddTag(tagInput);
+    setTagInput("");
+  };
+
   return (
     <div className="pin-window note-window" data-tauri-drag-region style={{ background: bgColor, fontFamily: p.settings.fontFamily, fontSize: p.settings.fontSize }}>
       <div className="note-layout">
@@ -152,6 +211,11 @@ export function MarkdownNote(p: Props) {
               />
             </div>
             <div className="title-actions">
+              {p.onPin && (
+                <button onClick={p.onPin} className="icon-btn" title="Pin to desktop"><Pin size={16} /></button>
+              )}
+              <button onClick={() => { exportNote(); }} className="icon-btn" title={"Export as ." + (isMd ? "md" : "txt")}><Download size={16} /></button>
+              <button onClick={() => { copyPlainText(); }} className="icon-btn" title="Copy as text"><Copy size={16} /></button>
               <div className="color-picker-wrapper">
                 <button className="color-btn" style={{ background: bgColor }} title="Note color" onClick={() => setShowColorPicker((v) => !v)} />
                 {showColorPicker && (
@@ -179,13 +243,29 @@ export function MarkdownNote(p: Props) {
               <button onClick={p.closeWindow} className="icon-btn" title="Close"><X size={16} /></button>
             </div>
           </header>
+          <div className="note-tags-row">
+            <Tag size={11} className="note-tags-icon" />
+            {p.noteTags.map((t) => (
+              <span key={t} className="tag-chip">
+                {"#" + t}
+                <button className="tag-chip-x" title="Remove tag" onClick={() => p.onRemoveTag(t)}><X size={9} /></button>
+              </span>
+            ))}
+            <input
+              className="cm-tag-input"
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTag(); } }}
+              placeholder="+ tag"
+            />
+          </div>
           {isMd && (
             <div className="md-toolbar">
               <button type="button" className="icon-btn" title="Bold (Ctrl+B)" onMouseDown={startToolbarAction} onClick={() => insertMd("**", "**")}><Bold size={14} /></button>
               <button type="button" className="icon-btn" title="Italic (Ctrl+I)" onMouseDown={startToolbarAction} onClick={() => insertMd("*", "*")}><Italic size={14} /></button>
               <button type="button" className="icon-btn" title="Strikethrough" onMouseDown={startToolbarAction} onClick={() => insertMd("~~", "~~")}><Strikethrough size={14} /></button>
               <button type="button" className="icon-btn" title="Heading" onMouseDown={startToolbarAction} onClick={() => insertMd("## ")}><Heading size={14} /></button>
-              <button type="button" className="icon-btn" title="Inline code" onMouseDown={startToolbarAction} onClick={() => insertMd("`", "`")}><Code size={14} /></button>
+              <button type="button" className="icon-btn" title="Inline code" onMouseDown={startToolbarAction} onClick={() => insertMd(BACKTICK, BACKTICK)}><Code size={14} /></button>
               <button type="button" className="icon-btn" title="Bullet list" onMouseDown={startToolbarAction} onClick={() => insertMd("- ")}><List size={14} /></button>
               <button type="button" className="icon-btn" title="Numbered list" onMouseDown={startToolbarAction} onClick={() => insertMd("1. ")}><ListOrdered size={14} /></button>
               <button type="button" className="icon-btn" title="Task" onMouseDown={startToolbarAction} onClick={() => insertMd("- [ ] ")}><CheckSquare size={14} /></button>
@@ -225,6 +305,7 @@ export function MarkdownNote(p: Props) {
               {!online && <span className="status-net-label">Offline</span>}
             </span>
             <span className="status-spacer" />
+            {flash && <span className="status-flash">{flash}</span>}
             <span className="status-words">{words} {words === 1 ? "word" : "words"}</span>
           </div>
         </div>
@@ -259,4 +340,3 @@ export function MarkdownNote(p: Props) {
     </div>
   );
 }
-

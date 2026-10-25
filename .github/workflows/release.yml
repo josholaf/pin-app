@@ -77,22 +77,20 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.4' }}
-          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.4' }}"
+          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.5' }}
+          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.5' }}"
           releaseBody: |
-            **Pin v0.1.4** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
+            **Pin v0.1.5** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
 
-            ## What's new in v0.1.4
+                        ## What's new in v0.1.5
 
             ### ✨ Features
-            - **Offline status dot** — small dot in the note status bar (between Ln/Col and word count); green when online, amber with an "Offline" label when not
-            - **Circle checkboxes in markdown notes** — larger 18px circular task checkboxes that fill with the accent color when checked
-            - **Native window edges** — OS-native window frame, no more overlapping card look
-            - **Right-click to change note icon** — right-click the note title to pick an icon from a popover; the icon sidebar is gone
-            - **FolderCheck icon** — replaces the Clock icon in the icon bank
-            - **New app icon** — black rounded square with the green Lucide pin
-
-            ## Downloads
+            - **Pin note to desktop** (#3) — float any note as a small always-on-top sticky window, from the note list, the editor header or the command palette
+            - **Trash with restore** (#4) — deleted notes now go to a Trash section in the sidebar; restore them individually or delete them forever
+            - **Note tags with filter chips** (#5) — add colored tags in the note editor and filter the note list with tag chips
+            - **Command palette (Ctrl/Cmd+K)** (#6) — fuzzy-search commands and notes: new note, new folder, theme, settings, open or pin any note
+            - **Export & copy notes** (#7) — export a note as .md/.txt through the native save dialog, or copy it as plain text from the editor header
+## Downloads
             - **Windows**: `.msi` or `.exe` (NSIS)
             - **macOS**: `.dmg`
             - **Linux**: `.deb` or `.AppImage`

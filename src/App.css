@@ -1034,3 +1034,38 @@ body {
 .md-code-block code {
   font-family: "SF Mono", "Cascadia Code", Consolas, monospace !important;
 }
+
+
+/* ===== v0.1.5 additions: tags, trash, command palette, pinned notes ===== */
+.note-tags-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 5px 12px; border-bottom: 1px solid rgba(128, 128, 128, 0.15); }
+.note-tags-icon { opacity: 0.55; flex-shrink: 0; }
+.tag-chip { display: inline-flex; align-items: center; gap: 3px; background: rgba(0, 0, 0, 0.07); border-radius: 999px; padding: 1px 8px; font-size: 11px; white-space: nowrap; }
+[data-theme="dark"] .tag-chip { background: rgba(255, 255, 255, 0.12); }
+.tag-chip-x { border: none; background: none; padding: 0; cursor: pointer; display: inline-flex; align-items: center; color: inherit; opacity: 0.55; }
+.tag-chip-x:hover { opacity: 1; }
+.cm-tag-input { border: none; background: transparent; outline: none; font-size: 11px; min-width: 56px; width: 64px; color: inherit; padding: 1px 2px; }
+.tag-filter-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 3px 12px 6px; }
+.tag-filter-chip { border: 1px solid rgba(128, 128, 128, 0.35); background: transparent; border-radius: 999px; padding: 1px 8px; font-size: 11px; cursor: pointer; color: inherit; }
+.tag-filter-chip.active { background: var(--accent, #4caf50); border-color: transparent; color: #fff; }
+.trash-block { margin-top: 6px; border-top: 1px dashed rgba(128, 128, 128, 0.35); padding-top: 4px; }
+.trash-header { display: flex; align-items: center; gap: 6px; padding: 4px 12px; cursor: pointer; opacity: 0.85; }
+.trash-items { display: flex; flex-direction: column; gap: 2px; padding: 2px 12px 6px; }
+.trash-item { display: flex; align-items: center; gap: 4px; font-size: 12px; opacity: 0.75; }
+.trash-item-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.palette-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.35); z-index: 60; display: flex; justify-content: center; align-items: flex-start; padding-top: 56px; }
+.palette { width: 296px; max-height: 330px; background: var(--palette-bg, #fff); color: var(--palette-fg, #222); border-radius: 10px; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35); overflow: hidden; display: flex; flex-direction: column; }
+[data-theme="dark"] .palette { --palette-bg: #2b2b2b; --palette-fg: #eee; }
+.palette-input { border: none; border-bottom: 1px solid rgba(128, 128, 128, 0.3); padding: 10px 12px; font-size: 13px; background: transparent; color: inherit; outline: none; }
+.palette-items { overflow-y: auto; flex: 1; }
+.palette-item { display: block; width: 100%; text-align: left; border: none; background: none; padding: 7px 12px; cursor: pointer; color: inherit; }
+.palette-item:hover { background: rgba(76, 175, 80, 0.16); }
+.palette-item-title { font-size: 13px; }
+.palette-item-sub { font-size: 11px; opacity: 0.6; }
+.palette-empty { padding: 14px 12px; font-size: 12px; opacity: 0.6; }
+.palette-hint { padding: 6px 12px; font-size: 10px; opacity: 0.5; border-top: 1px solid rgba(128, 128, 128, 0.2); }
+.status-flash { font-size: 11px; color: var(--accent, #4caf50); }
+.pinned-window { position: fixed; inset: 0; display: flex; flex-direction: column; border-radius: 8px; overflow: hidden; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 13px; }
+.pinned-header { display: flex; align-items: center; gap: 6px; padding: 5px 8px; border-bottom: 1px solid rgba(0, 0, 0, 0.08); }
+[data-theme="dark"] .pinned-header { border-bottom: 1px solid rgba(255, 255, 255, 0.12); }
+.pinned-title { flex: 1; font-weight: 600; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pinned-content { flex: 1; border: none; outline: none; resize: none; background: transparent; padding: 8px; font: inherit; color: inherit; }

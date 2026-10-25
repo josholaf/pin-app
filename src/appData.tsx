@@ -28,6 +28,8 @@ export type Note = {
   folderId: string | null;
   createdAt: number;
   format?: "md" | "txt";
+  tags?: string[];
+  deletedAt?: number;
 };
 
 export const NOTE_COLORS: { id: NoteColor; label: string; light: string; dark: string }[] = [
@@ -79,6 +81,15 @@ export const FONT_OPTIONS = [
 ];
 
 export const ACCENT_OPTIONS = ["#4caf50", "#2196f3", "#ff9800", "#e91e63", "#9c27b0", "#00bcd4", "#f44336", "#795548"];
+
+export const TAG_PALETTE = ["#e91e63", "#9c27b0", "#2196f3", "#00bcd4", "#4caf50", "#ff9800", "#795548", "#f44336"];
+
+/** Deterministic color for a tag, so the same tag always looks the same. */
+export function tagColor(tag: string): string {
+  let h = 0;
+  for (let i = 0; i < tag.length; i++) h = (h * 31 + tag.charCodeAt(i)) >>> 0;
+  return TAG_PALETTE[h % TAG_PALETTE.length];
+}
 
 export const FOCUS_SECONDS = 25 * 60;
 export const BREAK_SECONDS = 5 * 60;
