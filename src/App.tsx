@@ -54,7 +54,6 @@ function App() {
   const [noteIcon, setNoteIcon] = useState("sticky-note");
   const [noteFolderId, setNoteFolderId] = useState<string | null>(null);
   const [noteFormat, setNoteFormat] = useState<"md" | "txt">("md");
-  const [showIconSidebar, setShowIconSidebar] = useState(false);
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [streak, setStreak] = useState(0);
   const [lastActiveDate, setLastActiveDate] = useState<string | null>(null);
@@ -224,7 +223,7 @@ function App() {
     if (existing) { await existing.setFocus(); return; }
     new WebviewWindow("settings", {
       title: "Settings", width: 320, height: 420,
-      decorations: false, transparent: true, alwaysOnTop: true, center: true, resizable: false,
+      decorations: true, transparent: false, alwaysOnTop: true, center: true, resizable: false,
     });
   };
 
@@ -251,13 +250,11 @@ function App() {
     setNoteIcon(note.icon || "sticky-note");
     setNoteFolderId(note.folderId ?? null);
     setNoteFormat(note.format || "md");
-    setShowIconSidebar(false);
     setOpenNoteId(note.id);
     setContextMenu(null);
   };
   const backToList = () => {
     setOpenNoteId(null);
-    setShowIconSidebar(false);
   };
 
   const createFolder = () => {
@@ -391,8 +388,6 @@ function App() {
         setNoteIcon={setNoteIcon}
         noteFormat={noteFormat}
         setNoteFormat={setNoteFormat}
-        showIconSidebar={showIconSidebar}
-        setShowIconSidebar={setShowIconSidebar}
         toggleTheme={toggleTheme}
         closeWindow={closeWindow}
       />
@@ -417,7 +412,7 @@ function App() {
 
       <div className="library-section">
         <div className="library-header">
-          <span>Notes & Folders</span>
+          <span>Notes &amp; Folders</span>
           <div className="library-header-actions">
             <button onClick={() => createNoteInFolder(null)} title="New Note" className="icon-btn"><Plus size={14} /></button>
             <button onClick={() => setShowNewFolder(true)} title="New Folder" className="icon-btn"><FolderPlus size={14} /></button>
