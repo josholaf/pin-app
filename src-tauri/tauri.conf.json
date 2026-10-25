@@ -17,8 +17,8 @@
         "width": 340,
         "height": 480,
         "resizable": true,
-        "decorations": false,
-        "transparent": true,
+        "decorations": true,
+        "transparent": false,
         "alwaysOnTop": true,
         "center": true
       }
