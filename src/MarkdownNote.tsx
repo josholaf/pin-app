@@ -1,6 +1,6 @@
 import { useRef, useState, type MouseEvent, type KeyboardEvent } from "react";
 import {
-  Moon, Sun, X, PanelRight, PanelRightClose, Bold, Italic, List, ListOrdered, CheckSquare,
+  Moon, Sun, X, Bold, Italic, List, ListOrdered, CheckSquare,
   Heading, Code, TextQuote, Link as LinkIcon, Strikethrough, ArrowLeft,
 } from "lucide-react";
 import {
@@ -22,8 +22,6 @@ type Props = {
   setNoteIcon: (id: string) => void;
   noteFormat: "md" | "txt";
   setNoteFormat: (f: "md" | "txt") => void;
-  showIconSidebar: boolean;
-  setShowIconSidebar: (v: boolean) => void;
   toggleTheme: () => void;
   closeWindow: () => void;
 };
@@ -33,6 +31,7 @@ export function MarkdownNote(p: Props) {
   // Single-pane auto-preview: rendered view by default; tap/click to edit.
   const [editing, setEditing] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
+  const [iconPickerPos, setIconPickerPos] = useState<{ x: number; y: number } | null>(null);
   const [cursorPos, setCursorPos] = useState({ line: 1, col: 1 });
   const currentColor = NOTE_COLORS.find((c) => c.id === p.noteColor) || NOTE_COLORS[0];
   const bgColor = p.theme === "dark" ? currentColor.dark : currentColor.light;
@@ -127,7 +126,12 @@ export function MarkdownNote(p: Props) {
         <div className="note-main">
           <header className="titlebar" data-tauri-drag-region style={{ background: bgColor }}>
             <button onClick={p.onBack} className="icon-btn" title="Back to notes"><ArrowLeft size={16} /></button>
-            <div className="note-title-row" data-tauri-drag-region>
+            <div
+              className="note-title-row"
+              data-tauri-drag-region
+              title="Right-click to change the note icon"
+              onContextMenu={(e) => { e.preventDefault(); setIconPickerPos({ x: e.clientX, y: e.clientY }); }}
+            >
               <SelectedIcon size={16} className="note-icon-display" />
               <input
                 className="note-title-input"
@@ -160,7 +164,6 @@ export function MarkdownNote(p: Props) {
               >
                 {isMd ? "MD" : "TXT"}
               </button>
-              <button onClick={() => p.setShowIconSidebar(!p.showIconSidebar)} className="icon-btn" title="Icons">{p.showIconSidebar ? <PanelRightClose size={16} /> : <PanelRight size={16} />}</button>
               <button onClick={p.toggleTheme} className="icon-btn" title="Theme">{p.theme === "light" ? <Moon size={16} /> : <Sun size={16} />}</button>
               <button onClick={p.closeWindow} className="icon-btn" title="Close"><X size={16} /></button>
             </div>
@@ -210,17 +213,35 @@ export function MarkdownNote(p: Props) {
             <span className="status-words">{words} {words === 1 ? "word" : "words"}</span>
           </div>
         </div>
-        {p.showIconSidebar && (
-          <aside className="icon-sidebar">
-            <div className="icon-sidebar-header">Icons</div>
-            <div className="icon-grid">
-              {ICON_BANK.map(({ id, Icon, label }) => (
-                <button key={id} className={"icon-grid-item " + (p.noteIcon === id ? "active" : "")} title={label} onClick={() => p.setNoteIcon(id)}><Icon size={18} /></button>
-              ))}
+        {iconPickerPos && (
+          <div
+            className="picker-overlay"
+            onClick={() => setIconPickerPos(null)}
+            onContextMenu={(e) => { e.preventDefault(); setIconPickerPos(null); }}
+          >
+            <div
+              className="icon-picker"
+              style={{ left: iconPickerPos.x, top: iconPickerPos.y }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="icon-picker-header">Note icon</div>
+              <div className="icon-grid">
+                {ICON_BANK.map(({ id, Icon, label }) => (
+                  <button
+                    key={id}
+                    className={"icon-grid-item " + (p.noteIcon === id ? "active" : "")}
+                    title={label}
+                    onClick={() => { p.setNoteIcon(id); setIconPickerPos(null); }}
+                  >
+                    <Icon size={18} />
+                  </button>
+                ))}
+              </div>
             </div>
-          </aside>
+          </div>
         )}
       </div>
     </div>
   );
 }
+
