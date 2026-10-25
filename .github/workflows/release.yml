@@ -70,25 +70,20 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.3' }}
-          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.3' }}"
+          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.4' }}
+          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.4' }}"
           releaseBody: |
-            **Pin v0.1.3** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
+            **Pin v0.1.4** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
 
-            ## What's new in v0.1.3
+            ## What's new in v0.1.4
 
             ### ✨ Features
-            - **Single-window notes** — notes open inside the main window (no more separate tabs)
-            - **Note color picker** — color circle in the sticky note titlebar
-            - **Ln / Col status bar** — live caret line/column and word count at the bottom of the note
-            - **Note search** — live search across titles and content, with match count
-            - **Global quick-capture hotkey** — `Ctrl+Shift+P` (macOS: `Cmd+Shift+P`) from any app brings Pin to the front with a fresh note
-            - **Storage management** — Settings → Storage shows your data location and item counts, with JSON export / import backups and clear-all-data
-
-            ### 🐛 Fixes
-            - Note titles can now be renamed (the title bar no longer swallows clicks for window dragging)
-            - Explicit pencil rename button on every note row
-            - Dark mode no longer resets when opening a note
+            - **Offline status dot** — small dot in the note status bar (between Ln/Col and word count); green when online, amber with an "Offline" label when not
+            - **Circle checkboxes in markdown notes** — larger 18px circular task checkboxes that fill with the accent color when checked
+            - **Native window edges** — OS-native window frame, no more overlapping card look
+            - **Right-click to change note icon** — right-click the note title to pick an icon from a popover; the icon sidebar is gone
+            - **FolderCheck icon** — replaces the Clock icon in the icon bank
+            - **New app icon** — black rounded square with the green Lucide pin
 
             ## Downloads
             - **Windows**: `.msi` or `.exe` (NSIS)
