@@ -5,7 +5,7 @@ import {
   Target, Zap, type LucideProps,
 } from "lucide-react";
 
-export type Task = { id: string; text: string; done: boolean; createdAt: number };
+export type Task = { id: string; text: string; done: boolean; createdAt: number; deletedAt?: number };
 export type Theme = "light" | "dark";
 export type NoteColor = "yellow" | "pink" | "blue" | "green" | "purple" | "orange";
 export type PomodoroMode = "focus" | "break";
@@ -18,7 +18,7 @@ export type AppSettings = {
   stickToDesktop: boolean;
 };
 
-export type NoteFolder = { id: string; name: string; icon: string; createdAt: number };
+export type NoteFolder = { id: string; name: string; icon: string; createdAt: number; deletedAt?: number };
 export type Note = {
   id: string;
   title: string;
