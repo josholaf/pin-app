@@ -1069,3 +1069,6 @@ body {
 [data-theme="dark"] .pinned-header { border-bottom: 1px solid rgba(255, 255, 255, 0.12); }
 .pinned-title { flex: 1; font-weight: 600; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pinned-content { flex: 1; border: none; outline: none; resize: none; background: transparent; padding: 8px; font: inherit; color: inherit; }
+
+/* Copy confirmation in the note editor titlebar */
+.icon-btn .copy-done { color: var(--accent); opacity: 1; }
