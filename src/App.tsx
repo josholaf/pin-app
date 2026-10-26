@@ -332,10 +332,23 @@ function App() {
     setNewFolderName(""); setShowNewFolder(false);
   };
   const deleteFolder = (id: string) => {
-    setFolders(folders.filter((f) => f.id !== id));
-    const moved = notes.filter((n) => n.folderId === id);
-    setNotes(notes.map((n) => (n.folderId === id ? { ...n, folderId: null } : n)));
-    moved.forEach((n) => { persistNote({ ...n, folderId: null }); });
+    const ts = Date.now();
+    setFolders((prev) => prev.map((f) => (f.id === id ? { ...f, deletedAt: ts } : f)));
+    const moved = notes.filter((n) => n.folderId === id && !n.deletedAt);
+    setNotes((prev) => prev.map((n) => (n.folderId === id && !n.deletedAt ? { ...n, deletedAt: ts } : n)));
+    moved.forEach((n) => { persistNote({ ...n, deletedAt: ts }); });
+  };
+  const restoreFolder = (id: string) => {
+    setFolders((prev) => prev.map((f) => (f.id === id ? { ...f, deletedAt: undefined } : f)));
+    const moved = notes.filter((n) => n.folderId === id && n.deletedAt);
+    setNotes((prev) => prev.map((n) => (n.folderId === id && n.deletedAt ? { ...n, deletedAt: undefined } : n)));
+    moved.forEach((n) => { persistNote({ ...n, deletedAt: undefined }); });
+  };
+  const purgeFolder = (id: string) => {
+    setFolders((prev) => prev.filter((f) => f.id !== id));
+    const inside = notes.filter((n) => n.folderId === id);
+    setNotes((prev) => prev.filter((n) => n.folderId !== id));
+    inside.forEach((n) => { removeNotePersist(n.id); });
   };
   const renameFolder = (id: string, name: string) => {
     if (!name.trim()) return;
@@ -394,8 +407,11 @@ function App() {
     removeNotePersist(id);
   };
   const emptyTrash = () => {
+    if (!window.confirm("Permanently delete everything in trash? This cannot be undone.")) return;
     notes.filter((n) => n.deletedAt).forEach((n) => { removeNotePersist(n.id); });
-    setNotes(notes.filter((n) => !n.deletedAt));
+    setNotes((prev) => prev.filter((n) => !n.deletedAt));
+    setFolders((prev) => prev.filter((f) => !f.deletedAt));
+    setTasks((prev) => prev.filter((t) => !t.deletedAt));
   };
   // v0.1.5: note tags (issue #5)
   const addTagToNote = (id: string, raw: string) => {
@@ -438,6 +454,15 @@ function App() {
     setTasks([{ id: crypto.randomUUID(), text, done: false, createdAt: Date.now() }, ...tasks]);
     setInput("");
   };
+  const markTaskDeleted = (id: string) => {
+    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, deletedAt: Date.now() } : t)));
+  };
+  const restoreTask = (id: string) => {
+    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, deletedAt: undefined } : t)));
+  };
+  const purgeTask = (id: string) => {
+    setTasks((prev) => prev.filter((t) => t.id !== id));
+  };
 
   /** Local mirror of "Clear all data" from Settings -> Storage. */
   const resetAllData = () => {
@@ -449,6 +474,7 @@ function App() {
     setOpenNoteId(null);
     setExpandedFolders(new Set());
     setTagFilter(null);
+    setTrashOpen(false);
   };
 
   // Global quick-capture hotkey (Ctrl/Cmd+Shift+P): bring Pin to the
@@ -506,8 +532,13 @@ function App() {
   const allTags = Array.from(new Set(activeNotes.flatMap((n) => n.tags || []))).sort();
   const searchMatches = q ? activeNotes.filter(matches).length : 0;
 
+  const activeFolders = folders.filter((f) => !f.deletedAt);
+  const trashedFolders = folders.filter((f) => f.deletedAt);
+  const trashedTasks = tasks.filter((t) => t.deletedAt);
+  const trashCount = trashedFolders.length + trashedNotes.length + trashedTasks.length;
+
   const unfiledNotes = activeNotes.filter((n) => !n.folderId && matches(n));
-  const activeTasks = tasks.filter((t) => !t.done);
+  const activeTasks = tasks.filter((t) => !t.done && !t.deletedAt);
 
   if (windowLabel === "settings") {
     return (
@@ -572,8 +603,9 @@ function App() {
     { id: "new-folder", title: "New folder", subtitle: "Create a folder", run: () => { setShowNewFolder(true); } },
     { id: "toggle-theme", title: "Toggle theme", subtitle: "Light / dark", run: () => toggleTheme() },
     { id: "settings", title: "Open settings", subtitle: "Preferences", run: () => { openSettingsWindow(); } },
+    { id: "open-trash", title: "Open trash", subtitle: "Restore deleted notes, folders and tasks", run: () => { setTrashOpen(true); } },
   ];
-  if (trashedNotes.length > 0) {
+  if (trashCount > 0) {
     paletteItems.push({ id: "empty-trash", title: "Empty trash", subtitle: "Delete all trashed notes forever", run: () => emptyTrash() });
   }
   activeNotes.slice(0, 20).forEach((n) => {
@@ -601,6 +633,47 @@ function App() {
         </div>
       </header>
 
+      {trashOpen ? (
+        <div className="trash-section">
+          <div className="trash-view-header">
+            <span>Trash{trashCount > 0 ? " (" + trashCount + ")" : ""}</span>
+            <div className="library-header-actions">
+              {trashCount > 0 && <button className="small-btn trash-danger-btn" onClick={emptyTrash} title="Permanently delete everything in trash">Empty trash</button>}
+              <button className="small-btn trash-back-btn" onClick={() => setTrashOpen(false)} title="Back to notes">Back</button>
+            </div>
+          </div>
+          <div className="trash-list">
+            {trashedFolders.map((f) => (
+              <div key={f.id} className="trash-item">
+                <Folder size={13} />
+                <span className="trash-item-kind">Folder</span>
+                <span className="trash-item-title">{f.name}</span>
+                <button className="icon-btn" title="Restore folder and its notes" onClick={() => restoreFolder(f.id)}><Undo2 size={12} /></button>
+                <button className="icon-btn delete-btn" title="Delete forever" onClick={() => purgeFolder(f.id)}><X size={12} /></button>
+              </div>
+            ))}
+            {trashedNotes.map((n) => (
+              <div key={n.id} className="trash-item">
+                <Trash2 size={13} className="trash-item-icon" />
+                <span className="trash-item-kind">Note</span>
+                <span className="trash-item-title">{n.title || "Untitled"}</span>
+                <button className="icon-btn" title="Restore note" onClick={() => restoreNote(n.id)}><Undo2 size={12} /></button>
+                <button className="icon-btn delete-btn" title="Delete forever" onClick={() => purgeNote(n.id)}><X size={12} /></button>
+              </div>
+            ))}
+            {trashedTasks.map((t) => (
+              <div key={t.id} className="trash-item">
+                <span className="trash-item-kind">Task</span>
+                <span className="trash-item-title">{t.text}</span>
+                <button className="icon-btn" title="Restore task" onClick={() => restoreTask(t.id)}><Undo2 size={12} /></button>
+                <button className="icon-btn delete-btn" title="Delete forever" onClick={() => purgeTask(t.id)}><X size={12} /></button>
+              </div>
+            ))}
+            {trashCount === 0 && <p className="trash-empty-hint">Trash is empty. Deleted notes, folders and tasks land here first.</p>}
+          </div>
+        </div>
+      ) : (
+      <>
       <div className="library-section">
         <div className="library-header">
           <span>Notes &amp; Folders</span>
@@ -640,7 +713,7 @@ function App() {
           </div>
         )}
         <div className="folder-list">
-          {folders.map((folder) => {
+          {activeFolders.map((folder) => {
             const folderNotes = activeNotes.filter((n) => n.folderId === folder.id && matches(n));
             const isExpanded = q || tagFilter ? true : expandedFolders.has(folder.id);
             const FolderIcon = isExpanded ? FolderOpen : Folder;
@@ -698,28 +771,6 @@ function App() {
               </div>
             );
           })}
-          {trashedNotes.length > 0 && (
-            <div className="trash-block">
-              <div className="trash-header" onClick={() => setTrashOpen((v) => !v)}>
-                {trashOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-                <Trash2 size={13} />
-                <span>Trash</span>
-                <span className="folder-count">{trashedNotes.length}</span>
-                <button className="icon-btn delete-btn" title="Empty trash" onClick={(e) => { e.stopPropagation(); emptyTrash(); }}><X size={12} /></button>
-              </div>
-              {trashOpen && (
-                <div className="trash-items">
-                  {trashedNotes.map((n) => (
-                    <div key={n.id} className="trash-item">
-                      <span className="trash-item-title">{n.title || "Untitled"}</span>
-                      <button className="icon-btn" title="Restore" onClick={() => restoreNote(n.id)}><Undo2 size={12} /></button>
-                      <button className="icon-btn delete-btn" title="Delete forever" onClick={() => purgeNote(n.id)}><X size={12} /></button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
         </div>
       </div>
 
@@ -730,13 +781,15 @@ function App() {
         {activeTasks.map((task) => (
           <li key={task.id}>
             <label>
-              <input type="checkbox" className="circle-checkbox" checked={false} onChange={() => setTasks(tasks.filter((t) => t.id !== task.id))} />
+              <input type="checkbox" className="circle-checkbox" checked={false} onChange={() => markTaskDeleted(task.id)} />
               <span>{task.text}</span>
             </label>
-            <button className="icon-btn delete-btn" onClick={() => setTasks(tasks.filter((t) => t.id !== task.id))}><X size={14} /></button>
+            <button className="icon-btn delete-btn" onClick={() => markTaskDeleted(task.id)}><X size={14} /></button>
           </li>
         ))}
       </ul>
+      </>
+      )}
 
       {paletteOpen && (
         <div className="palette-overlay" onClick={closePalette}>
