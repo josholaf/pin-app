@@ -6,7 +6,7 @@ import { register, unregister, isRegistered } from "@tauri-apps/plugin-global-sh
 import {
   Pin, Moon, Sun, Plus, X, Play, Pause, RotateCcw, Search,
   ChevronDown, ChevronRight, FolderPlus, Flame, Folder, FolderOpen,
-  Coffee, Settings, Pencil, Trash2, Undo2, Command,
+  Coffee, Settings, Pencil, Trash2, Undo2, Command, Star,
 } from "lucide-react";
 import {
   DEFAULT_SETTINGS, NOTE_COLORS, tagColor,
@@ -376,6 +376,15 @@ function App() {
     if (openNoteId === id) setNoteIcon(iconId);
     setContextMenu(null);
   };
+  /** Toggle a note's favorite; favorites sort to the top of every list (issue #10). */
+  const toggleFavorite = (id: string) => {
+    const n = notes.find((x) => x.id === id);
+    if (!n) return;
+    const updated = { ...n, favorite: !n.favorite };
+    setNotes(notes.map((x) => (x.id === id ? updated : x)));
+    persistNote(updated);
+    setContextMenu(null);
+  };
   const createNoteInFolder = (folderId: string | null) => {
     const id = crypto.randomUUID();
     const note: Note = { id, title: "Untitled", content: "", color: "yellow", icon: "sticky-note", folderId, createdAt: Date.now(), format: "md" };
@@ -527,7 +536,8 @@ function App() {
   const applyTagFilter = (n: Note) => !tagFilter || (n.tags || []).includes(tagFilter);
   const matches = (n: Note) => noteMatches(n) && applyTagFilter(n);
 
-  const activeNotes = notes.filter((n) => !n.deletedAt);
+  const activeNotes = notes.filter((n) => !n.deletedAt)
+    .sort((x, y) => Number(y.favorite || false) - Number(x.favorite || false) || y.createdAt - x.createdAt);
   const trashedNotes = notes.filter((n) => n.deletedAt);
   const allTags = Array.from(new Set(activeNotes.flatMap((n) => n.tags || []))).sort();
   const searchMatches = q ? activeNotes.filter(matches).length : 0;
@@ -744,7 +754,7 @@ function App() {
                           ) : (
                             <button className="note-open-btn" onClick={() => openNote(note)}>{note.title || "Untitled"}</button>
                           )}
-                          <button className="icon-btn" title="Pin to desktop" onClick={() => pinNoteToDesktop(note)}><Pin size={12} /></button>
+                          <button className={"icon-btn star-btn " + (note.favorite ? "active" : "")} title={note.favorite ? "Remove favorite" : "Add favorite"} onClick={() => toggleFavorite(note.id)}><Star size={12} fill={note.favorite ? "currentColor" : "none"} /></button><button className="icon-btn" title="Pin to desktop" onClick={() => pinNoteToDesktop(note)}><Pin size={12} /></button>
                           <button className="icon-btn" title="Rename" onClick={() => startRename(note.id, note.title || "Untitled")}><Pencil size={12} /></button>
                           <button className="icon-btn delete-btn" onClick={() => deleteNoteFromList(note.id)}><X size={12} /></button>
                         </div>
@@ -765,7 +775,7 @@ function App() {
                 ) : (
                   <button className="note-open-btn" onClick={() => openNote(note)}>{note.title || "Untitled"}</button>
                 )}
-                <button className="icon-btn" title="Pin to desktop" onClick={() => pinNoteToDesktop(note)}><Pin size={12} /></button>
+                <button className={"icon-btn star-btn " + (note.favorite ? "active" : "")} title={note.favorite ? "Remove favorite" : "Add favorite"} onClick={() => toggleFavorite(note.id)}><Star size={12} fill={note.favorite ? "currentColor" : "none"} /></button><button className="icon-btn" title="Pin to desktop" onClick={() => pinNoteToDesktop(note)}><Pin size={12} /></button>
                 <button className="icon-btn" title="Rename" onClick={() => startRename(note.id, note.title || "Untitled")}><Pencil size={12} /></button>
                 <button className="icon-btn delete-btn" onClick={() => deleteNoteFromList(note.id)}><X size={12} /></button>
               </div>
@@ -837,6 +847,9 @@ function App() {
                 const n = notes.find((x) => x.id === contextMenu.id);
                 if (n) pinNoteToDesktop(n);
               }}>Pin to desktop</button>
+            )}
+            {contextMenu.type === "note" && (
+              <button onClick={() => toggleFavorite(contextMenu.id)}>{notes.find((x) => x.id === contextMenu.id)?.favorite ? "Remove favorite" : "Add favorite"}</button>
             )}
             <button className="danger" onClick={() => {
               if (contextMenu.type === "folder") deleteFolder(contextMenu.id);
