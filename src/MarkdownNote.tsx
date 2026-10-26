@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState, type MouseEvent, type KeyboardEvent } from "react";
 import {
-  Moon, Sun, X, Bold, Italic, List, ListOrdered, CheckSquare,
+  Moon, Sun, X, Bold, Italic, List, ListOrdered, CheckSquare, Download, Copy, Check as CheckIcon,
   Heading, Code, TextQuote, Link as LinkIcon, Strikethrough, ArrowLeft,
   Pin, Download, Copy, Tag,
 } from "lucide-react";
+import { save } from "@tauri-apps/plugin-dialog";
+import { writeTextFile } from "@tauri-apps/plugin-fs";
 import { save } from "@tauri-apps/plugin-dialog";
 import { writeTextFile } from "@tauri-apps/plugin-fs";
 import {
@@ -43,6 +45,7 @@ export function MarkdownNote(p: Props) {
   const [editing, setEditing] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [iconPickerPos, setIconPickerPos] = useState<{ x: number; y: number } | null>(null);
+  const [copied, setCopied] = useState(false);
   const [online, setOnline] = useState(navigator.onLine);
   const [tagInput, setTagInput] = useState("");
   const [flash, setFlash] = useState<string | null>(null);
@@ -179,6 +182,29 @@ export function MarkdownNote(p: Props) {
     }
   };
 
+  /** Export the note as a .md / .txt file via the system save dialog. */
+  const exportNoteFile = async () => {
+    try {
+      const ext = isMd ? "md" : "txt";
+      const file = await save({
+        title: "Export note",
+        defaultPath: (p.noteTitle.trim() || "note") + "." + ext,
+        filters: [{ name: isMd ? "Markdown" : "Text", extensions: [ext] }],
+      });
+      if (!file) return;
+      await writeTextFile(file, p.noteContent);
+    } catch { /* dialog unavailable */ }
+  };
+
+  /** Copy the raw note content to the clipboard. */
+  const copyNoteText = async () => {
+    try {
+      await navigator.clipboard.writeText(p.noteContent);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch { /* clipboard unavailable */ }
+  };
+
   const startToolbarAction = (e: MouseEvent<HTMLButtonElement>) => {
     // keep textarea focus so insertion works and edit mode stays on
     e.preventDefault();
@@ -239,6 +265,8 @@ export function MarkdownNote(p: Props) {
               >
                 {isMd ? "MD" : "TXT"}
               </button>
+              <button onClick={exportNoteFile} className="icon-btn" title={isMd ? "Export as .md" : "Export as .txt"}><Download size={16} /></button>
+              <button onClick={copyNoteText} className="icon-btn" title="Copy as plain text">{copied ? <CheckIcon size={16} className="copy-done" /> : <Copy size={16} />}</button>
               <button onClick={p.toggleTheme} className="icon-btn" title="Theme">{p.theme === "light" ? <Moon size={16} /> : <Sun size={16} />}</button>
               <button onClick={p.closeWindow} className="icon-btn" title="Close"><X size={16} /></button>
             </div>
