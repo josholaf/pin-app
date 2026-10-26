@@ -1080,3 +1080,8 @@ body {
 .trash-empty-hint { font-size: 12px; color: var(--text-muted); padding: 12px 8px; margin: 0; }
 .trash-danger-btn { background: var(--delete-hover); }
 .trash-back-btn { background: rgba(128, 128, 128, 0.2); }
+
+/* ===== Favorite notes (issue #10) ===== */
+.star-btn { color: var(--text-muted); }
+.star-btn.active { color: #f5b400; opacity: 1; }
+.star-btn:hover { color: #f5b400; opacity: 1; }
