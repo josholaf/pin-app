@@ -104,6 +104,7 @@ export const FONT_OPTIONS = [
   { id: "system", label: "System", value: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' },
   { id: "serif", label: "Serif", value: 'Georgia, "Times New Roman", serif' },
   { id: "mono", label: "Monospace", value: '"SF Mono", "Cascadia Code", Consolas, monospace' },
+  { id: "jetbrains", label: "JetBrains Mono", value: '"JetBrains Mono", "SF Mono", "Cascadia Code", Consolas, monospace' },
   { id: "rounded", label: "Rounded", value: '"Segoe UI", system-ui, sans-serif' },
   { id: "casual", label: "Casual", value: '"Comic Sans MS", "Chalkboard SE", cursive' },
 ];

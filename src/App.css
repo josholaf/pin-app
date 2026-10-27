@@ -172,6 +172,45 @@ body {
   margin: 0;
 }
 
+/* ===== Font dropdown: modern, rounded, native feel (issue #14) ===== */
+.settings-select {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  border-radius: 16px;
+  padding: 10px 38px 10px 14px;
+  border: 1px solid var(--input-border);
+  background-color: var(--input-bg);
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23888888' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.settings-select:hover {
+  border-color: var(--accent);
+}
+
+.settings-select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.settings-select:active {
+  border-color: var(--input-focus);
+}
+
+/* The popup itself is rendered by the OS; just keep entries readable. */
+.settings-select option {
+  background: var(--input-bg);
+  color: var(--text);
+}
+
 .accent-swatches {
   display: flex;
   flex-wrap: wrap;
@@ -466,12 +505,6 @@ body {
   border: solid white;
   border-width: 0 2px 2px 0;
   transform: rotate(45deg);
-}
-
-.settings-select,
-.settings-row select {
-  border-radius: 16px !important;
-  padding: 8px 12px !important;
 }
 
 .rename-input {
