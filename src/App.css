@@ -37,6 +37,25 @@
 
 * { box-sizing: border-box; }
 
+/* Font setting must reach every control: buttons, inputs and selects
+   do not inherit font-family by default (issue #12). */
+.pin-window button,
+.pin-window input,
+.pin-window select,
+.pin-window textarea {
+  font-family: inherit;
+}
+.pin-window button { font-size: inherit; }
+
+/* The titlebar and the pomodoro bar are always visible, even when the
+   window is resized to a short height (issue #12). */
+.titlebar,
+.pomodoro-bar {
+  flex-shrink: 0;
+}
+.library-section { min-height: 0; }
+.task-list { min-height: 0; }
+
 body {
   margin: 0;
   padding: 0;
