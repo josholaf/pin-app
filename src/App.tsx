@@ -129,6 +129,11 @@ function App() {
   const [trashOpen, setTrashOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [paletteQuery, setPaletteQuery] = useState("");
+  // v0.1.6: focus sessions per day, save safety net (issue #16)
+  const [focusDone, setFocusDone] = useState<{ date: string; count: number } | null>(null);
+  const [savedAt, setSavedAt] = useState(0);
+  const undoStackRef = useRef<string[]>([]);
+  const lastPushRef = useRef(0);
   const totalSeconds = pomodoroMode === "focus" ? FOCUS_SECONDS : BREAK_SECONDS;
   const progress = ((totalSeconds - secondsLeft) / totalSeconds) * 100;
 
@@ -167,6 +172,7 @@ function App() {
       const st = await s.get<AppSettings>("settings"); if (st) setSettings({ ...DEFAULT_SETTINGS, ...st });
       const sk = await s.get<number>("streak"); if (typeof sk === "number") setStreak(sk);
       const la = await s.get<string>("lastActiveDate"); if (la) setLastActiveDate(la);
+      const fd = await s.get<{ date: string; count: number }>("focusDone"); if (fd) setFocusDone(fd);
       setNotes(await loadNotes(s));
       setReady(true);
     })();
@@ -219,6 +225,13 @@ function App() {
     }
   }, [streak, lastActiveDate, store, ready, windowLabel]);
 
+  // v0.1.6: persist today's focus session count (issue #16)
+  useEffect(() => {
+    if (ready && store && windowLabel === "main") {
+      store.set("focusDone", focusDone); store.save();
+    }
+  }, [focusDone, store, ready, windowLabel]);
+
   const recordActivity = () => {
     const today = new Date().toISOString().slice(0, 10);
     if (lastActiveDate === today) return;
@@ -263,6 +276,11 @@ function App() {
       justFinishedRef.current = true;
       setIsRunning(false);
       playBeep();
+      // v0.1.6: count each completed focus session toward today's total (issue #16)
+      if (pomodoroMode === "focus") {
+        const today = new Date().toISOString().slice(0, 10);
+        setFocusDone((prev) => (prev && prev.date === today ? { date: today, count: prev.count + 1 } : { date: today, count: 1 }));
+      }
       const next: PomodoroMode = pomodoroMode === "focus" ? "break" : "focus";
       setTimeout(() => {
         setPomodoroMode(next);
@@ -320,10 +338,65 @@ function App() {
     setNoteFormat(note.format || "md");
     setOpenNoteId(note.id);
     setContextMenu(null);
+    // v0.1.6: fresh undo history per opened note (issue #16)
+    undoStackRef.current = [];
+    lastPushRef.current = 0;
   };
   const backToList = () => {
     setOpenNoteId(null);
   };
+
+  // v0.1.6: save safety net (issue #16).
+  // Ctrl+S forces an immediate save and flashes "Saved" in the status bar;
+  // Ctrl+Z restores the last content snapshot (60-deep, throttled while
+  // typing) so a bad paste can never destroy a long note.
+  const saveNow = async () => {
+    if (!store || !openNoteId) return;
+    const existing = await store.get<Note>(noteKey(openNoteId));
+    const updated: Note = {
+      ...((existing || { id: openNoteId, createdAt: Date.now() }) as Note),
+      id: openNoteId,
+      title: noteTitle || "Untitled",
+      content: noteContent,
+      color: noteColor,
+      icon: noteIcon,
+      folderId: noteFolderId,
+      format: noteFormat,
+    };
+    await store.set(noteKey(openNoteId), updated);
+    const ids = (await store.get<string[]>("noteIds")) || [];
+    if (!ids.includes(openNoteId)) { ids.unshift(openNoteId); await store.set("noteIds", ids); }
+    await store.save();
+    setNotes((prev) => prev.map((n) => (n.id === openNoteId ? updated : n)));
+    setSavedAt(Date.now());
+  };
+  const undoOne = () => {
+    const stack = undoStackRef.current;
+    if (!stack.length) return;
+    const prev = stack.pop() as string;
+    setNoteContent(prev);
+  };
+  const setNoteContentTracked = (v: string) => {
+    const now = Date.now();
+    if (now - lastPushRef.current > 500) {
+      undoStackRef.current.push(noteContent);
+      if (undoStackRef.current.length > 60) undoStackRef.current.shift();
+      lastPushRef.current = now;
+    }
+    setNoteContent(v);
+  };
+  useEffect(() => {
+    if (!openNoteId) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        const k = e.key.toLowerCase();
+        if (k === "s") { e.preventDefault(); saveNow(); }
+        else if (k === "z") { e.preventDefault(); undoOne(); }
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [openNoteId, store, noteTitle, noteContent, noteColor, noteIcon, noteFolderId, noteFormat]);
 
   const createFolder = () => {
     const folder: NoteFolder = { id: crypto.randomUUID(), name: newFolderName.trim() || "New Folder", icon: "folder", createdAt: Date.now() };
@@ -484,6 +557,7 @@ function App() {
     setExpandedFolders(new Set());
     setTagFilter(null);
     setTrashOpen(false);
+    setFocusDone(null);
   };
 
   // Global quick-capture hotkey (Ctrl/Cmd+Shift+P): bring Pin to the
@@ -550,6 +624,12 @@ function App() {
   const unfiledNotes = activeNotes.filter((n) => !n.folderId && matches(n));
   const activeTasks = tasks.filter((t) => !t.done && !t.deletedAt);
 
+  // v0.1.6: stats footer (issue #16)
+  const totalWords = activeNotes.reduce(
+    (acc: number, n: Note) => acc + ((n.content || "").trim() ? (n.content || "").trim().split(/\s+/).length : 0),
+    0
+  );
+
   if (windowLabel === "settings") {
     return (
       <SettingsWindow
@@ -579,7 +659,7 @@ function App() {
         noteTitle={noteTitle}
         setNoteTitle={setNoteTitle}
         noteContent={noteContent}
-        setNoteContent={setNoteContent}
+        setNoteContent={setNoteContentTracked}
         noteColor={noteColor}
         setNoteColor={setNoteColor}
         noteIcon={noteIcon}
@@ -593,6 +673,7 @@ function App() {
           const n = notes.find((x) => x.id === openNoteId);
           if (n) pinNoteToDesktop(n);
         }}
+        savedAt={savedAt}
         toggleTheme={toggleTheme}
         closeWindow={closeWindow}
       />
@@ -754,7 +835,8 @@ function App() {
                           ) : (
                             <button className="note-open-btn" onClick={() => openNote(note)}>{note.title || "Untitled"}</button>
                           )}
-                          <button className={"icon-btn star-btn " + (note.favorite ? "active" : "")} title={note.favorite ? "Remove favorite" : "Add favorite"} onClick={() => toggleFavorite(note.id)}><Star size={12} fill={note.favorite ? "currentColor" : "none"} /></button><button className="icon-btn" title="Pin to desktop" onClick={() => pinNoteToDesktop(note)}><Pin size={12} /></button>
+                          <button className={"icon-btn star-btn " + (note.favorite ? "active" : "")} title={note.favorite ? "Remove favorite" : "Add favorite"} onClick={() => toggleFavorite(note.id)}><Star size={12} fill={note.favorite ? "currentColor" : "none"} /></button>
+                          <button className="icon-btn" title="Pin to desktop" onClick={() => pinNoteToDesktop(note)}><Pin size={12} /></button>
                           <button className="icon-btn" title="Rename" onClick={() => startRename(note.id, note.title || "Untitled")}><Pencil size={12} /></button>
                           <button className="icon-btn delete-btn" onClick={() => deleteNoteFromList(note.id)}><X size={12} /></button>
                         </div>
@@ -775,7 +857,8 @@ function App() {
                 ) : (
                   <button className="note-open-btn" onClick={() => openNote(note)}>{note.title || "Untitled"}</button>
                 )}
-                <button className={"icon-btn star-btn " + (note.favorite ? "active" : "")} title={note.favorite ? "Remove favorite" : "Add favorite"} onClick={() => toggleFavorite(note.id)}><Star size={12} fill={note.favorite ? "currentColor" : "none"} /></button><button className="icon-btn" title="Pin to desktop" onClick={() => pinNoteToDesktop(note)}><Pin size={12} /></button>
+                <button className={"icon-btn star-btn " + (note.favorite ? "active" : "")} title={note.favorite ? "Remove favorite" : "Add favorite"} onClick={() => toggleFavorite(note.id)}><Star size={12} fill={note.favorite ? "currentColor" : "none"} /></button>
+                <button className="icon-btn" title="Pin to desktop" onClick={() => pinNoteToDesktop(note)}><Pin size={12} /></button>
                 <button className="icon-btn" title="Rename" onClick={() => startRename(note.id, note.title || "Untitled")}><Pencil size={12} /></button>
                 <button className="icon-btn delete-btn" onClick={() => deleteNoteFromList(note.id)}><X size={12} /></button>
               </div>
@@ -877,9 +960,21 @@ function App() {
         </div>
       )}
 
+      {windowLabel === "main" && (
+        <div className="stats-bar" title="Live library stats">
+          <span title="Active notes">{activeNotes.length} {activeNotes.length === 1 ? "note" : "notes"}</span>
+          <span title="Open tasks">{activeTasks.length} {activeTasks.length === 1 ? "task" : "tasks"}</span>
+          <span title="Total words across active notes">{totalWords} {totalWords === 1 ? "word" : "words"}</span>
+          <span title="Items in trash">{trashCount} in trash</span>
+        </div>
+      )}
+
       <div className="pomodoro-bar pomodoro-bottom">
         <div className="pomodoro-bottom-row">
           <span className="pomodoro-timer-sm">{formatTime(secondsLeft)}</span>
+          {focusDone && focusDone.count > 0 && (
+            <span className="focus-count" title="Focus sessions completed today">{focusDone.count}/4</span>
+          )}
           <div className="pomodoro-progress-track pomodoro-progress-sm">
             <div className="pomodoro-progress-fill" style={{ width: progress + "%" }} />
           </div>
