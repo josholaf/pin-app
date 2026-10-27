@@ -1137,3 +1137,8 @@ body {
 .star-btn { color: var(--text-muted); }
 .star-btn.active { color: #f5b400; opacity: 1; }
 .star-btn:hover { color: #f5b400; opacity: 1; }
+
+/* ===== v0.1.6: stats bar, focus sessions, save safety ===== */
+.stats-bar { display: flex; align-items: center; gap: 10px; padding: 3px 14px; font-size: 10px; color: var(--text-muted); border-top: 1px solid var(--border); flex-shrink: 0; user-select: none; font-variant-numeric: tabular-nums; }
+.stats-bar span { white-space: nowrap; }
+.focus-count { font-size: 11px; font-weight: 700; color: var(--accent); background: color-mix(in srgb, var(--accent) 18%, transparent); border-radius: 999px; padding: 2px 8px; flex-shrink: 0; font-variant-numeric: tabular-nums; }

@@ -77,19 +77,24 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.5' }}
-          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.5' }}"
+          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.6' }}
+          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.6' }}"
           releaseBody: |
-            **Pin v0.1.5** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
+            **Pin v0.1.6** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
 
-            ## What's new in v0.1.5
+            ## What's new in v0.1.6
 
-            ### ✨ Features
-            - **Pin note to desktop** (#3) — float any note as a small always-on-top sticky window, from the note list, the editor header or the command palette
-            - **Trash with restore** (#4) — deleted notes now go to a Trash section in the sidebar; restore them individually or delete them forever
-            - **Note tags with filter chips** (#5) — add colored tags in the note editor and filter the note list with tag chips
-            - **Command palette (Ctrl/Cmd+K)** (#6) — fuzzy-search commands and notes: new note, new folder, theme, settings, open or pin any note
-            - **Export & copy notes** (#7) — export a note as .md/.txt through the native save dialog, or copy it as plain text from the editor header
+            ### ✨ New in this release
+            - **Stats footer** (#16) — a compact bar at the bottom of the main window showing your note, task, word and trash counts
+            - **Pomodoro focus session counter** (#16) — track completed focus sessions per day, right in the pomodoro bar (n/4)
+            - **Ctrl+S save flash with undo safety net** (#16) — press Ctrl+S for an instant "Saved" flash, and Ctrl+Z to undo recent note edits
+
+            ### 🚀 Shipped since v0.1.5
+            - **Trash with restore** (#4) — a full in-app trash view opened from the command palette; restore notes, folders and tasks
+            - **Favorite notes** (#10) — star your best notes and keep them at the top of the list
+            - **Font fixes** (#12) — the app font now applies everywhere, including note and folder names; 45 note icons; the pomodoro bar stays visible when you resize the window
+            - **Modern font dropdown** (#14) — a rounded 16px pill-style font picker, with JetBrains Mono bundled and available offline
+
             ## Downloads
             - **Windows**: `.msi` or `.exe` (NSIS)
             - **macOS**: `.dmg`

@@ -33,6 +33,8 @@ type Props = {
   onAddTag: (tag: string) => void;
   onRemoveTag: (tag: string) => void;
   onPin?: () => void;
+  /** Timestamp of the last Ctrl+S save; shows a "Saved" flash (issue #16). */
+  savedAt?: number;
   toggleTheme: () => void;
   closeWindow: () => void;
 };
@@ -47,6 +49,7 @@ export function MarkdownNote(p: Props) {
   const [tagInput, setTagInput] = useState("");
   const [flash, setFlash] = useState<string | null>(null);
   const flashTimer = useRef<number | null>(null);
+  const lastSavedAt = useRef<number>(0);
   useEffect(() => {
     const goOnline = () => setOnline(true);
     const goOffline = () => setOnline(false);
@@ -57,6 +60,15 @@ export function MarkdownNote(p: Props) {
       window.removeEventListener("offline", goOffline);
     };
   }, []);
+  // v0.1.6: flash "Saved" in the status bar after each Ctrl+S save (issue #16)
+  useEffect(() => {
+    if (p.savedAt && p.savedAt !== lastSavedAt.current) {
+      lastSavedAt.current = p.savedAt;
+      setFlash("Saved");
+      if (flashTimer.current) clearTimeout(flashTimer.current);
+      flashTimer.current = window.setTimeout(() => setFlash(null), 1800);
+    }
+  }, [p.savedAt]);
   const [cursorPos, setCursorPos] = useState({ line: 1, col: 1 });
   const currentColor = NOTE_COLORS.find((c) => c.id === p.noteColor) || NOTE_COLORS[0];
   const bgColor = p.theme === "dark" ? currentColor.dark : currentColor.light;
