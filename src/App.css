@@ -1203,3 +1203,44 @@ body {
 
 /* Faster theme switch: no transition work on the root while flipping. */
 .pin-window { transition: background 0.08s ease, color 0.08s ease; }
+
+/* ===== v0.1.8: line numbers in the note editor (issue #20) ===== */
+
+/* Editor row: fixed gutter on the left, textarea fills the rest.
+   The gutter uses the same font size and 1.5 line-height as the
+   textarea (.note-content), so every number lines up with its row. */
+.note-editor-with-lines {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+}
+.note-editor-with-lines .note-content-lines {
+  flex: 1;
+  min-width: 0;
+  border-left: none;
+}
+.line-numbers {
+  flex-shrink: 0;
+  width: 36px;
+  padding: 12px 6px 12px 0;
+  margin-right: 4px;
+  text-align: right;
+  color: var(--text-muted);
+  opacity: 0.6;
+  font-size: inherit;
+  line-height: 1.5;
+  user-select: none;
+  overflow: hidden;
+  font-variant-numeric: tabular-nums;
+  border-right: 1px solid var(--border);
+}
+.line-number {
+  height: 1.5em;
+  white-space: nowrap;
+}
+.line-number.current {
+  color: var(--accent);
+  opacity: 1;
+  font-weight: 700;
+}
