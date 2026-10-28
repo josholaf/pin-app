@@ -1,13 +1,13 @@
-import { useEffect, useRef, useState, type MouseEvent, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type MouseEvent, type KeyboardEvent, type CSSProperties } from "react";
 import {
   Moon, Sun, X, Bold, Italic, List, ListOrdered, CheckSquare,
   Heading, Code, TextQuote, Link as LinkIcon, Strikethrough, ArrowLeft,
-  Pin, Download, Copy, Tag,
+  Pin, Download, Copy, Tag, Table,
 } from "lucide-react";
 import { save } from "@tauri-apps/plugin-dialog";
 import { writeTextFile } from "@tauri-apps/plugin-fs";
 import {
-  NOTE_COLORS, ICON_BANK, markdownToHtml, plainToHtml, getIcon,
+  NOTE_COLORS, ICON_BANK, markdownToHtml, plainToHtml, getIcon, tagColor,
   type Theme, type NoteColor, type AppSettings,
 } from "./appData";
 
@@ -30,6 +30,8 @@ type Props = {
   noteFormat: "md" | "txt";
   setNoteFormat: (f: "md" | "txt") => void;
   noteTags: string[];
+  /** v0.1.7: every tag used anywhere, for suggestions (issue #18). */
+  allTags?: string[];
   onAddTag: (tag: string) => void;
   onRemoveTag: (tag: string) => void;
   onPin?: () => void;
@@ -47,6 +49,7 @@ export function MarkdownNote(p: Props) {
   const [iconPickerPos, setIconPickerPos] = useState<{ x: number; y: number } | null>(null);
   const [online, setOnline] = useState(navigator.onLine);
   const [tagInput, setTagInput] = useState("");
+  const [tagSuggestOpen, setTagSuggestOpen] = useState(false);
   const [flash, setFlash] = useState<string | null>(null);
   const flashTimer = useRef<number | null>(null);
   const lastSavedAt = useRef<number>(0);
@@ -76,6 +79,12 @@ export function MarkdownNote(p: Props) {
   const isMd = p.noteFormat === "md";
   const liveHtml = isMd ? markdownToHtml(p.noteContent) : plainToHtml(p.noteContent);
   const words = p.noteContent.trim() ? p.noteContent.trim().split(/\s+/).length : 0;
+
+  /** v0.1.7: tags you already created, matching what you are typing (issue #18). */
+  const tagSuggestions = (p.allTags || [])
+    .filter((t) => !p.noteTags.includes(t))
+    .filter((t) => !tagInput.trim() || t.includes(tagInput.trim().replace(/^#/, "").toLowerCase()))
+    .slice(0, 6);
 
   /** Show a short confirmation message in the status bar. */
   const flashMessage = (msg: string) => {
@@ -258,18 +267,36 @@ export function MarkdownNote(p: Props) {
           <div className="note-tags-row">
             <Tag size={11} className="note-tags-icon" />
             {p.noteTags.map((t) => (
-              <span key={t} className="tag-chip">
+              <span key={t} className="tag-chip" style={{ "--tag-color": tagColor(t) } as CSSProperties}>
                 {"#" + t}
                 <button className="tag-chip-x" title="Remove tag" onClick={() => p.onRemoveTag(t)}><X size={9} /></button>
               </span>
             ))}
-            <input
-              className="cm-tag-input"
-              value={tagInput}
-              onChange={(e) => setTagInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTag(); } }}
-              placeholder="+ tag"
-            />
+            <div className="tag-suggest-wrap">
+              <input
+                className="cm-tag-input"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onFocus={() => setTagSuggestOpen(true)}
+                onBlur={() => { setTimeout(() => setTagSuggestOpen(false), 150); }}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTag(); } }}
+                placeholder="+ tag"
+              />
+              {tagSuggestOpen && tagSuggestions.length > 0 && (
+                <div className="tag-suggest-pop">
+                  {tagSuggestions.map((t) => (
+                    <button
+                      key={t}
+                      className="tag-suggest-item"
+                      style={{ color: tagColor(t) }}
+                      onMouseDown={(e) => { e.preventDefault(); p.onAddTag(t); setTagInput(""); }}
+                    >
+                      {"#" + t}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
           {isMd && (
             <div className="md-toolbar">
@@ -281,6 +308,7 @@ export function MarkdownNote(p: Props) {
               <button type="button" className="icon-btn" title="Bullet list" onMouseDown={startToolbarAction} onClick={() => insertMd("- ")}><List size={14} /></button>
               <button type="button" className="icon-btn" title="Numbered list" onMouseDown={startToolbarAction} onClick={() => insertMd("1. ")}><ListOrdered size={14} /></button>
               <button type="button" className="icon-btn" title="Task" onMouseDown={startToolbarAction} onClick={() => insertMd("- [ ] ")}><CheckSquare size={14} /></button>
+              <button type="button" className="icon-btn" title="Table" onMouseDown={startToolbarAction} onClick={() => insertMd("\n| Column | Column |\n| --- | --- |\n| Cell | Cell |\n\n")}><Table size={14} /></button>
               <button type="button" className="icon-btn" title="Quote" onMouseDown={startToolbarAction} onClick={() => insertMd("> ")}><TextQuote size={14} /></button>
               <button type="button" className="icon-btn" title="Link" onMouseDown={startToolbarAction} onClick={() => insertMd("[", "](https://)")}><LinkIcon size={14} /></button>
               <div className="md-toolbar-spacer" />

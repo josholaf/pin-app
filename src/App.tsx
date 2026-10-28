@@ -6,7 +6,7 @@ import { register, unregister, isRegistered } from "@tauri-apps/plugin-global-sh
 import {
   Pin, Moon, Sun, Plus, X, Play, Pause, RotateCcw, Search,
   ChevronDown, ChevronRight, FolderPlus, Flame, Folder, FolderOpen,
-  Coffee, Settings, Pencil, Trash2, Undo2, Command, Star,
+  Coffee, Settings, Pencil, Trash2, Undo2, Command, Star, Minus,
 } from "lucide-react";
 import {
   DEFAULT_SETTINGS, NOTE_COLORS, tagColor,
@@ -96,7 +96,11 @@ function App() {
   const [windowLabel, setWindowLabel] = useState("main");
   const [tasks, setTasks] = useState<Task[]>([]);
   const [input, setInput] = useState("");
-  const [theme, setTheme] = useState<Theme>("light");
+  // v0.1.7: read the cached theme synchronously so dark mode never flashes
+  // light on launch (issue #18). index.html applies it before React mounts.
+  const [theme, setTheme] = useState<Theme>(() => {
+    try { return localStorage.getItem("pin-theme") === "dark" ? "dark" : "light"; } catch { return "light"; }
+  });
   const [store, setStore] = useState<Store | null>(null);
   const [ready, setReady] = useState(false);
   const [folders, setFolders] = useState<NoteFolder[]>([]);
@@ -182,6 +186,9 @@ function App() {
   // after the initial load finished.
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
+    // v0.1.7: cache in localStorage too so the NEXT launch starts dark
+    // with zero flash (the inline script in index.html reads it).
+    try { localStorage.setItem("pin-theme", theme); } catch { /* ignore */ }
   }, [theme]);
 
   useEffect(() => {
@@ -207,7 +214,8 @@ function App() {
     if (ready && store) { store.set("settings", settings); store.save(); }
   }, [settings, store, ready]);
 
-  // Poll for settings/theme changes made in the Settings window
+  // Poll for settings/theme changes made in the Settings window.
+  // v0.1.7: 150ms so a theme flip from Settings feels instant (issue #18).
   useEffect(() => {
     if (!store || !ready) return;
     const id = setInterval(async () => {
@@ -215,7 +223,7 @@ function App() {
       if (st) setSettings((prev) => (JSON.stringify(prev) === JSON.stringify({ ...DEFAULT_SETTINGS, ...st }) ? prev : { ...DEFAULT_SETTINGS, ...st }));
       const th = await store.get<Theme>("theme");
       if (th && th !== theme) setTheme(th);
-    }, 500);
+    }, 150);
     return () => clearInterval(id);
   }, [store, ready, theme]);
 
@@ -302,6 +310,11 @@ function App() {
     } catch {
       try { await win.destroy(); } catch { /* ignore */ }
     }
+  };
+  // v0.1.7: themed window controls (native decorations are off, issue #18)
+  const minimizeWindow = async () => {
+    const win = getCurrentWindow();
+    try { await win.minimize(); } catch { /* ignore */ }
   };
 
   const openSettingsWindow = async () => {
@@ -667,6 +680,7 @@ function App() {
         noteFormat={noteFormat}
         setNoteFormat={setNoteFormat}
         noteTags={notes.find((n) => n.id === openNoteId)?.tags || []}
+        allTags={allTags}
         onAddTag={(t) => { addTagToNote(openNoteId, t); }}
         onRemoveTag={(t) => { removeTagFromNote(openNoteId, t); }}
         onPin={() => {
@@ -721,6 +735,8 @@ function App() {
           <button onClick={() => setPaletteOpen(true)} className="icon-btn" title="Command palette (Ctrl+K)"><Command size={16} /></button>
           <button onClick={openSettingsWindow} className="icon-btn" title="Settings"><Settings size={16} /></button>
           <button onClick={toggleTheme} className="icon-btn" title="Theme">{theme === "light" ? <Moon size={16} /> : <Sun size={16} />}</button>
+          <button onClick={minimizeWindow} className="icon-btn win-ctrl" title="Minimize"><Minus size={16} /></button>
+          <button onClick={closeWindow} className="icon-btn win-ctrl" title="Close"><X size={16} /></button>
         </div>
       </header>
 
@@ -789,7 +805,7 @@ function App() {
               <button
                 key={t}
                 className={"tag-filter-chip " + (tagFilter === t ? "active" : "")}
-                style={{ borderColor: tagColor(t) }}
+                style={{ borderColor: tagColor(t), ...(tagFilter === t ? {} : { color: tagColor(t) }) }}
                 onClick={() => setTagFilter(tagFilter === t ? null : t)}
               >{"#" + t}</button>
             ))}
@@ -915,6 +931,12 @@ function App() {
       {contextMenu && (
         <div className="context-menu-overlay" onClick={() => setContextMenu(null)}>
           <div className="context-menu" style={{ left: contextMenu.x, top: contextMenu.y }} onClick={(e) => e.stopPropagation()}>
+            {contextMenu.type === "note" && (
+              <button onClick={() => {
+                const n = notes.find((x) => x.id === contextMenu.id);
+                if (n) openNote(n);
+              }}>Edit</button>
+            )}
             <button onClick={() => {
               if (contextMenu.type === "folder") {
                 const f = folders.find((x) => x.id === contextMenu.id);

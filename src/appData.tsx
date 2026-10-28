@@ -154,6 +154,80 @@ function escapeHtml(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
+// ===== v0.1.7: lightweight syntax highlighting for fenced code blocks (issue #18) =====
+
+/** Keyword sets per language family (kept small and readable). */
+const KEYWORDS: Record<string, string[]> = {
+  python: ["def", "class", "return", "if", "elif", "else", "for", "while", "import", "from", "as", "in", "is", "not", "and", "or", "None", "True", "False", "try", "except", "finally", "with", "lambda", "pass", "break", "continue", "global", "raise", "assert", "yield", "del", "async", "await", "self", "print", "range", "len"],
+  js: ["function", "const", "let", "var", "return", "if", "else", "for", "while", "do", "switch", "case", "break", "continue", "new", "class", "extends", "import", "export", "from", "default", "typeof", "instanceof", "null", "undefined", "true", "false", "this", "async", "await", "try", "catch", "finally", "throw", "of", "in", "delete", "void", "yield", "static", "get", "set"],
+  rust: ["fn", "let", "mut", "const", "static", "return", "if", "else", "match", "loop", "while", "for", "in", "struct", "enum", "impl", "trait", "use", "mod", "pub", "crate", "self", "super", "where", "as", "move", "async", "await", "dyn", "ref", "break", "continue", "true", "false", "Some", "None", "Ok", "Err"],
+  cpp: ["int", "float", "double", "char", "bool", "void", "long", "short", "unsigned", "return", "if", "else", "for", "while", "do", "switch", "case", "break", "continue", "class", "struct", "public", "private", "protected", "new", "delete", "this", "namespace", "using", "template", "const", "nullptr", "true", "false", "auto", "include", "virtual", "override"],
+  bash: ["if", "then", "else", "elif", "fi", "for", "while", "do", "done", "case", "esac", "function", "echo", "export", "local", "return", "source", "set", "cd", "in"],
+  json: ["true", "false", "null"],
+  yaml: ["true", "false", "null", "yes", "no"],
+  sql: ["select", "from", "where", "insert", "into", "values", "update", "set", "delete", "create", "table", "join", "left", "right", "inner", "outer", "on", "group", "by", "order", "limit", "as", "and", "or", "not", "null", "primary", "key"],
+};
+
+/** Normalize a fence language tag like "Python" or "py" to a keyword family. */
+function normLang(raw: string): string {
+  const l = raw.trim().toLowerCase();
+  const aliases: Record<string, string> = {
+    py: "python", python3: "python", javascript: "js", node: "js",
+    ts: "ts", typescript: "ts", jsx: "js", tsx: "ts",
+    rust: "rust", rs: "rust",
+    c: "cpp", cpp: "cpp", "c++": "cpp", cc: "cpp", h: "cpp", hpp: "cpp", java: "cpp", kotlin: "cpp", go: "cpp", swift: "cpp",
+    sh: "bash", shell: "bash", zsh: "bash", console: "bash", terminal: "bash",
+    json: "json", yml: "yaml", yaml: "yaml",
+    sql: "sql", postgres: "sql", mysql: "sql", sqlite: "sql",
+  };
+  if (aliases[l]) return aliases[l];
+  if (KEYWORDS[l]) return l;
+  return l ? "generic" : "";
+}
+
+/** True when the language uses "#" for line comments. */
+function hashComments(lang: string): boolean {
+  return lang === "python" || lang === "bash" || lang === "yaml";
+}
+
+/** Tokenize raw code once and wrap tokens in colored spans.
+ *  Supports keywords, strings, comments, numbers and function calls.
+ *  Unknown languages still get strings and numbers colored. */
+export function highlightCode(code: string, langRaw: string): string {
+  const lang = normLang(langRaw);
+  const kwList = KEYWORDS[lang] || [];
+  const kwSet = new Set(kwList);
+
+  const parts: string[] = [];
+  const alternatives: string[] = [];
+  if (lang) {
+    alternatives.push(hashComments(lang) ? "#[^\\n]*" : "\\/\\/[^\\n]*|\\/\\*[\\s\\S]*?\\*\\/");
+  }
+  alternatives.push('"[^"\\n]*"|' + "'[^'\\n]*'");
+  if (lang === "js" || lang === "ts" || lang === "rust") alternatives.push("`[^`]*`");
+  if (kwList.length) alternatives.push("\\b(?:" + kwList.join("|") + ")\\b");
+  alternatives.push("\\b\\d+(?:\\.\\d+)?\\b");
+  alternatives.push("\\b[A-Za-z_][A-Za-z0-9_]*(?=\\s*\\()");
+  const master = new RegExp("(" + alternatives.join(")|(") + ")", "g");
+
+  let last = 0;
+  let m: RegExpExecArray | null;
+  while ((m = master.exec(code)) !== null) {
+    parts.push(escapeHtml(code.slice(last, m.index)));
+    const tok = m[0];
+    let cls = "";
+    if (tok.startsWith("#") || tok.startsWith("//") || tok.startsWith("/*")) cls = "tok-com";
+    else if (tok.startsWith('"') || tok.startsWith("'") || tok.startsWith("`")) cls = "tok-str";
+    else if (kwSet.has(tok)) cls = "tok-kw";
+    else if (/^\d/.test(tok)) cls = "tok-num";
+    else cls = "tok-fn";
+    parts.push('<span class="' + cls + '">' + escapeHtml(tok) + "</span>");
+    last = m.index + tok.length;
+  }
+  parts.push(escapeHtml(code.slice(last)));
+  return parts.join("");
+}
+
 /** Inline markdown: code, bold, italic, strikethrough, images, links. */
 function inlineMd(s: string): string {
   return s
@@ -191,17 +265,17 @@ function tableAligns(sep: string): string[] {
 }
 
 /** Live markdown to HTML with proper escaping. Supports headings (h1-h6),
- *  bold, italic, strikethrough, inline and fenced code (with language label),
- *  nested bullet/numbered lists, interactive task checkboxes, blockquotes
- *  (multi-line merged), pipe tables with alignment, images, links and
- *  horizontal rules. */
+ *  bold, italic, strikethrough, inline and fenced code (with language label
+ *  and syntax coloring), nested bullet/numbered lists, interactive task
+ *  checkboxes, blockquotes (multi-line merged), pipe tables with alignment,
+ *  images, links and horizontal rules. */
 export function markdownToHtml(md: string): string {
   if (!md.trim()) return "";
 
   const codeBlocks: string[] = [];
   let text = md.replace(/```(\w*)\n?([\s\S]*?)```/g, function (_all: string, lang: string, code: string) {
-    codeBlocks.push(lang + " LANG" + code.replace(/\n+$/, ""));
-    return " CB" + (codeBlocks.length - 1) + " ";
+    codeBlocks.push(lang + " LANG" + code.replace(/\n+$/, ""));
+    return " CB" + (codeBlocks.length - 1) + " ";
   });
   text = escapeHtml(text);
 
@@ -220,7 +294,7 @@ export function markdownToHtml(md: string): string {
   while (i < lines.length) {
     const line = lines[i];
 
-    const cb = line.match(/^ CB(\d+)  $/);
+    const cb = line.match(/^ CB(\d+) $/);
     if (cb) {
       closeAllLists();
       out.push(cb[0]);
@@ -337,13 +411,14 @@ export function markdownToHtml(md: string): string {
   }
   closeAllLists();
 
-  return out.join("").replace(/ CB(\d+)  /g, function (_all: string, idx: string) {
+  return out.join("").replace(/ CB(\d+) $/g, function (_all: string, idx: string) {
     const raw = codeBlocks[Number(idx)];
-    const sep = raw.indexOf(" LANG");
+    const sep = raw.indexOf(" LANG");
     const lang = sep >= 0 ? raw.slice(0, sep) : "";
     const code = sep >= 0 ? raw.slice(sep + 5) : raw;
     const label = lang ? '<div class="md-code-lang">' + lang + "</div>" : "";
-    return label + '<pre class="md-code-block"><code>' + escapeHtml(code) + "</code></pre>";
+    // v0.1.7: syntax coloring inside fenced blocks (issue #18)
+    return label + '<pre class="md-code-block"><code>' + highlightCode(code, lang) + "</code></pre>";
   });
 }
 
