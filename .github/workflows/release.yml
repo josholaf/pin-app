@@ -77,22 +77,18 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.7' }}
-          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.7' }}"
+          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.8' }}
+          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.8' }}"
           releaseBody: |
-            **Pin v0.1.7** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
+            **Pin v0.1.8** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
 
-            ## What's new in v0.1.7
+            ## What's new in v0.1.8
 
             ### ✨ New in this release
-            - **Instant dark mode** (#18) — the saved theme is applied before the app renders, so dark mode never flashes light on launch, and theme flips from the Settings window land in 150 ms
-            - **Themed window controls** (#18) — the titlebar with the app logo now has its own minimize and close buttons that follow dark mode (native frame decorations off)
-            - **Full right-click note menu** (#18) — Edit, Rename, Pin to desktop, Favorite, Delete and Change icon, all in one menu
-            - **Colored tags with suggestions** (#18) — every tag keeps its own color on chips and filters, and the tag input suggests tags you already created
-            - **Markdown table button** (#18) — one click inserts a ready-made table skeleton (tables render with alignment)
-            - **Syntax-colored code blocks** (#18) — ```python (or js, ts, rust, c/cpp, bash, json, yaml, sql) shows the language label and colors keywords, strings, comments, numbers and function calls
+            - **Line numbers in the note editor** (#20) — a VS Code / GitHub-style gutter on the left while you edit: one number per line, scrolls with the content, highlights the line your cursor is on, and follows the app font size so it always aligns in light and dark themes
 
             ### 🚀 Previously shipped
+            - Instant dark mode, themed window controls, full right-click note menu, colored tags with suggestions, markdown table button, syntax-highlighted code blocks (v0.1.7)
             - Stats footer, pomodoro focus session counter, Ctrl+S save flash with undo (v0.1.6)
             - Trash with restore (#4), favorite notes (#10), font inheritance fix + 45 icons (#12), modern font dropdown with bundled JetBrains Mono (#14)
 

@@ -43,6 +43,7 @@ type Props = {
 
 export function MarkdownNote(p: Props) {
   const noteEditorRef = useRef<HTMLTextAreaElement | null>(null);
+  const lineNumRef = useRef<HTMLDivElement | null>(null);
   // Single-pane auto-preview: rendered view by default; tap/click to edit.
   const [editing, setEditing] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
@@ -79,6 +80,8 @@ export function MarkdownNote(p: Props) {
   const isMd = p.noteFormat === "md";
   const liveHtml = isMd ? markdownToHtml(p.noteContent) : plainToHtml(p.noteContent);
   const words = p.noteContent.trim() ? p.noteContent.trim().split(/\s+/).length : 0;
+  /** v0.1.8: one gutter number per content line, like VS Code (issue #20). */
+  const lineCount = p.noteContent.split("\n").length;
 
   /** v0.1.7: tags you already created, matching what you are typing (issue #18). */
   const tagSuggestions = (p.allTags || [])
@@ -136,6 +139,13 @@ export function MarkdownNote(p: Props) {
     setCursorPos({ line: lines.length, col: lines[lines.length - 1].length + 1 });
   };
 
+  /** v0.1.8: keep the line-number gutter glued to the editor scroll (issue #20). */
+  const syncGutterScroll = () => {
+    const ta = noteEditorRef.current;
+    const gutter = lineNumRef.current;
+    if (ta && gutter) gutter.scrollTop = ta.scrollTop;
+  };
+
   const enterEdit = () => {
     setEditing(true);
     requestAnimationFrame(() => {
@@ -144,6 +154,7 @@ export function MarkdownNote(p: Props) {
         el.focus();
         el.setSelectionRange(el.value.length, el.value.length);
         updateCursor();
+        syncGutterScroll();
       }
     });
   };
@@ -316,20 +327,28 @@ export function MarkdownNote(p: Props) {
           )}
           <div className="note-editor-single">
             {editing ? (
-              <textarea
-                ref={noteEditorRef}
-                className="note-content note-content-edit"
-                value={p.noteContent}
-                onChange={(e) => { p.setNoteContent(e.target.value); updateCursor(); }}
-                onKeyDown={onEditorKeyDown}
-                onKeyUp={updateCursor}
-                onClick={updateCursor}
-                onSelect={updateCursor}
-                onBlur={exitEdit}
-                placeholder={isMd ? "Write markdown… (Esc to preview)" : "Write… (Esc to finish)"}
-                autoFocus
-                spellCheck={false}
-              />
+              <div className="note-editor-with-lines">
+                <div className="line-numbers" ref={lineNumRef} aria-hidden="true">
+                  {Array.from({ length: lineCount }, (_, i) => (
+                    <div key={i} className={"line-number" + (cursorPos.line === i + 1 ? " current" : "")}>{i + 1}</div>
+                  ))}
+                </div>
+                <textarea
+                  ref={noteEditorRef}
+                  className="note-content note-content-edit note-content-lines"
+                  value={p.noteContent}
+                  onChange={(e) => { p.setNoteContent(e.target.value); updateCursor(); }}
+                  onKeyDown={onEditorKeyDown}
+                  onKeyUp={updateCursor}
+                  onClick={updateCursor}
+                  onSelect={updateCursor}
+                  onScroll={syncGutterScroll}
+                  onBlur={exitEdit}
+                  placeholder={isMd ? "Write markdown… (Esc to preview)" : "Write… (Esc to finish)"}
+                  autoFocus
+                  spellCheck={false}
+                />
+              </div>
             ) : (
               <div
                 className="note-content note-content-preview"
