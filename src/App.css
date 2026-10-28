@@ -1244,3 +1244,71 @@ body {
   opacity: 1;
   font-weight: 700;
 }
+
+/* ===== v0.1.9: accent-colored lists + slash commands (issue #22) ===== */
+
+/* Bullets, numbered markers and every circle checkbox now follow the
+   user's accent color from Settings instead of muted gray. Later rules
+   override the original muted borders by cascade. */
+.note-content-preview .md-list li::marker {
+  color: var(--accent);
+  font-weight: 700;
+}
+.note-content-preview .md-checkbox {
+  border-color: var(--accent);
+}
+.circle-checkbox {
+  border-color: var(--accent);
+}
+.circle-checkbox:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+/* Slash command popup ("/" while editing), anchored near the caret. */
+.note-editor-with-lines {
+  position: relative;
+}
+.slash-menu {
+  position: absolute;
+  z-index: 30;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 170px;
+  max-height: 220px;
+  overflow-y: auto;
+  font-size: 12px;
+}
+.slash-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  border: none;
+  background: none;
+  color: var(--text);
+  padding: 5px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.slash-item.active {
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  color: var(--accent);
+}
+.slash-item-hint {
+  color: var(--text-muted);
+  font-size: 10px;
+  font-family: "SF Mono", Consolas, monospace;
+}
+.slash-item.active .slash-item-hint {
+  color: var(--accent);
+  opacity: 0.8;
+}

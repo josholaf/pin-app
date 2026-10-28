@@ -14,6 +14,7 @@ import {
 // The inline-code toolbar button wraps the selection in backticks; spelled
 // out via charCode so this file contains no raw backtick characters.
 const BACKTICK = String.fromCharCode(96);
+const FENCE = BACKTICK + BACKTICK + BACKTICK;
 
 type Props = {
   theme: Theme;
@@ -41,6 +42,27 @@ type Props = {
   closeWindow: () => void;
 };
 
+/** v0.1.9: blocks insertable via the "/" slash menu (issue #22).
+ *  `wrap` items place the caret inside the inserted markers. */
+type SlashItem = { id: string; label: string; hint: string; md: string; wrap?: boolean };
+const SLASH_ITEMS: SlashItem[] = [
+  { id: "h1", label: "Heading 1", hint: "#", md: "# " },
+  { id: "h2", label: "Heading 2", hint: "##", md: "## " },
+  { id: "h3", label: "Heading 3", hint: "###", md: "### " },
+  { id: "h4", label: "Heading 4", hint: "####", md: "#### " },
+  { id: "task", label: "Task", hint: "Checkbox", md: "- [ ] " },
+  { id: "bullet", label: "Bullet list", hint: "List", md: "- " },
+  { id: "numbered", label: "Numbered list", hint: "1. 2. 3.", md: "1. " },
+  { id: "bold", label: "Bold", hint: "**text**", md: "**text**", wrap: true },
+  { id: "italic", label: "Italic", hint: "*text*", md: "*text*", wrap: true },
+  { id: "strike", label: "Strikethrough", hint: "~~text~~", md: "~~text~~", wrap: true },
+  { id: "code", label: "Code block", hint: FENCE + "lang", md: FENCE + "python\n\n" + FENCE + "\n" },
+  { id: "quote", label: "Quote", hint: ">", md: "> " },
+  { id: "table", label: "Table", hint: "| col |", md: "\n| Column | Column |\n| --- | --- |\n| Cell | Cell |\n\n" },
+  { id: "link", label: "Link", hint: "[text](url)", md: "[text](https://)" },
+  { id: "divider", label: "Divider", hint: "---", md: "\n---\n" },
+];
+
 export function MarkdownNote(p: Props) {
   const noteEditorRef = useRef<HTMLTextAreaElement | null>(null);
   const lineNumRef = useRef<HTMLDivElement | null>(null);
@@ -54,6 +76,11 @@ export function MarkdownNote(p: Props) {
   const [flash, setFlash] = useState<string | null>(null);
   const flashTimer = useRef<number | null>(null);
   const lastSavedAt = useRef<number>(0);
+  // v0.1.9: slash command menu (issue #22)
+  const [slashMenu, setSlashMenu] = useState<{ top: number; left: number; tokenStart: number } | null>(null);
+  const [slashQuery, setSlashQuery] = useState("");
+  const [slashIdx, setSlashIdx] = useState(0);
+
   useEffect(() => {
     const goOnline = () => setOnline(true);
     const goOffline = () => setOnline(false);
@@ -88,6 +115,13 @@ export function MarkdownNote(p: Props) {
     .filter((t) => !p.noteTags.includes(t))
     .filter((t) => !tagInput.trim() || t.includes(tagInput.trim().replace(/^#/, "").toLowerCase()))
     .slice(0, 6);
+
+  /** v0.1.9: slash items matching what was typed after the "/". */
+  const slashFiltered = SLASH_ITEMS.filter((it) =>
+    !slashQuery ||
+    it.label.toLowerCase().includes(slashQuery.toLowerCase()) ||
+    it.id.startsWith(slashQuery.toLowerCase())
+  );
 
   /** Show a short confirmation message in the status bar. */
   const flashMessage = (msg: string) => {
@@ -146,6 +180,45 @@ export function MarkdownNote(p: Props) {
     if (ta && gutter) gutter.scrollTop = ta.scrollTop;
   };
 
+  /** v0.1.9: open the slash menu when a "/" word is being typed (issue #22).
+   *  Anchors the popup near the caret and remembers where the token starts. */
+  const detectSlash = (value: string, caret: number) => {
+    const upto = value.slice(0, caret);
+    const m = upto.match(/(?:^|\n|\s)\/([\w-]*)$/);
+    if (!m) { setSlashMenu(null); return; }
+    const query = m[1];
+    setSlashQuery(query);
+    const tokenStart = caret - query.length - 1;
+    const before = value.slice(0, tokenStart);
+    const lines = before.split("\n");
+    const lineIdx = lines.length - 1;
+    const col = lines[lines.length - 1].length;
+    const ta = noteEditorRef.current;
+    const scrollTop = ta ? ta.scrollTop : 0;
+    const fs = p.settings.fontSize || 14;
+    const top = Math.max(4, 12 + lineIdx * fs * 1.5 - scrollTop + fs * 1.7);
+    const left = 44 + col * fs * 0.6;
+    setSlashMenu({ top, left: Math.min(left, 170), tokenStart });
+    setSlashIdx(0);
+  };
+
+  /** v0.1.9: insert the chosen block, replacing the "/query" token. */
+  const applySlash = (item: SlashItem) => {
+    const ta = noteEditorRef.current;
+    if (!slashMenu || !ta) { setSlashMenu(null); return; }
+    const start = slashMenu.tokenStart;
+    const end = ta.selectionStart;
+    const next = p.noteContent.slice(0, start) + item.md + p.noteContent.slice(end);
+    p.setNoteContent(next);
+    setSlashMenu(null);
+    requestAnimationFrame(() => {
+      ta.focus();
+      const pos = start + (item.wrap ? 2 : item.md.length);
+      ta.setSelectionRange(pos, pos);
+      updateCursor();
+    });
+  };
+
   const enterEdit = () => {
     setEditing(true);
     requestAnimationFrame(() => {
@@ -158,7 +231,7 @@ export function MarkdownNote(p: Props) {
       }
     });
   };
-  const exitEdit = () => setEditing(false);
+  const exitEdit = () => { setEditing(false); setSlashMenu(null); };
 
   const insertMd = (before: string, after = "") => {
     const el = noteEditorRef.current;
@@ -202,7 +275,21 @@ export function MarkdownNote(p: Props) {
     enterEdit();
   };
 
+  const onEditorChange = (v: string) => {
+    p.setNoteContent(v);
+    updateCursor();
+    const ta = noteEditorRef.current;
+    detectSlash(v, ta ? (ta.selectionStart ?? v.length) : v.length);
+  };
+
   const onEditorKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    // v0.1.9: slash menu keyboard control (issue #22)
+    if (slashMenu && slashFiltered.length > 0) {
+      if (e.key === "ArrowDown") { e.preventDefault(); setSlashIdx((i) => (i + 1) % slashFiltered.length); return; }
+      if (e.key === "ArrowUp") { e.preventDefault(); setSlashIdx((i) => (i - 1 + slashFiltered.length) % slashFiltered.length); return; }
+      if (e.key === "Enter" || e.key === "Tab") { e.preventDefault(); applySlash(slashFiltered[slashIdx]); return; }
+      if (e.key === "Escape") { e.preventDefault(); setSlashMenu(null); return; }
+    }
     if (e.key === "Escape") { e.preventDefault(); exitEdit(); return; }
     if (e.ctrlKey || e.metaKey) {
       const k = e.key.toLowerCase();
@@ -337,17 +424,32 @@ export function MarkdownNote(p: Props) {
                   ref={noteEditorRef}
                   className="note-content note-content-edit note-content-lines"
                   value={p.noteContent}
-                  onChange={(e) => { p.setNoteContent(e.target.value); updateCursor(); }}
+                  onChange={(e) => onEditorChange(e.target.value)}
                   onKeyDown={onEditorKeyDown}
                   onKeyUp={updateCursor}
                   onClick={updateCursor}
                   onSelect={updateCursor}
                   onScroll={syncGutterScroll}
                   onBlur={exitEdit}
-                  placeholder={isMd ? "Write markdown… (Esc to preview)" : "Write… (Esc to finish)"}
+                  placeholder={isMd ? "Write markdown… (Esc to preview, / for blocks)" : "Write… (Esc to finish)"}
                   autoFocus
                   spellCheck={false}
                 />
+                {slashMenu && slashFiltered.length > 0 && (
+                  <div className="slash-menu" style={{ top: slashMenu.top, left: slashMenu.left }}>
+                    {slashFiltered.map((it, i) => (
+                      <button
+                        key={it.id}
+                        className={"slash-item " + (i === slashIdx ? "active" : "")}
+                        onMouseDown={(e) => { e.preventDefault(); applySlash(it); }}
+                        onMouseEnter={() => setSlashIdx(i)}
+                      >
+                        <span className="slash-item-label">{it.label}</span>
+                        <span className="slash-item-hint">{it.hint}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             ) : (
               <div
