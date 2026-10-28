@@ -77,23 +77,24 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.6' }}
-          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.6' }}"
+          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.7' }}
+          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.7' }}"
           releaseBody: |
-            **Pin v0.1.6** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
+            **Pin v0.1.7** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
 
-            ## What's new in v0.1.6
+            ## What's new in v0.1.7
 
             ### ✨ New in this release
-            - **Stats footer** (#16) — a compact bar at the bottom of the main window showing your note, task, word and trash counts
-            - **Pomodoro focus session counter** (#16) — track completed focus sessions per day, right in the pomodoro bar (n/4)
-            - **Ctrl+S save flash with undo safety net** (#16) — press Ctrl+S for an instant "Saved" flash, and Ctrl+Z to undo recent note edits
+            - **Instant dark mode** (#18) — the saved theme is applied before the app renders, so dark mode never flashes light on launch, and theme flips from the Settings window land in 150 ms
+            - **Themed window controls** (#18) — the titlebar with the app logo now has its own minimize and close buttons that follow dark mode (native frame decorations off)
+            - **Full right-click note menu** (#18) — Edit, Rename, Pin to desktop, Favorite, Delete and Change icon, all in one menu
+            - **Colored tags with suggestions** (#18) — every tag keeps its own color on chips and filters, and the tag input suggests tags you already created
+            - **Markdown table button** (#18) — one click inserts a ready-made table skeleton (tables render with alignment)
+            - **Syntax-colored code blocks** (#18) — ```python (or js, ts, rust, c/cpp, bash, json, yaml, sql) shows the language label and colors keywords, strings, comments, numbers and function calls
 
-            ### 🚀 Shipped since v0.1.5
-            - **Trash with restore** (#4) — a full in-app trash view opened from the command palette; restore notes, folders and tasks
-            - **Favorite notes** (#10) — star your best notes and keep them at the top of the list
-            - **Font fixes** (#12) — the app font now applies everywhere, including note and folder names; 45 note icons; the pomodoro bar stays visible when you resize the window
-            - **Modern font dropdown** (#14) — a rounded 16px pill-style font picker, with JetBrains Mono bundled and available offline
+            ### 🚀 Previously shipped
+            - Stats footer, pomodoro focus session counter, Ctrl+S save flash with undo (v0.1.6)
+            - Trash with restore (#4), favorite notes (#10), font inheritance fix + 45 icons (#12), modern font dropdown with bundled JetBrains Mono (#14)
 
             ## Downloads
             - **Windows**: `.msi` or `.exe` (NSIS)
