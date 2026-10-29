@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Settings, Moon, Sun, X, HardDriveDownload, HardDriveUpload, Trash2 } from "lucide-react";
+import { Settings, Moon, Sun, X, HardDriveDownload, HardDriveUpload, Trash2, ChevronDown, Check } from "lucide-react";
 import type { Store } from "@tauri-apps/plugin-store";
 import { appDataDir } from "@tauri-apps/api/path";
 import { save, open } from "@tauri-apps/plugin-dialog";
@@ -23,6 +23,9 @@ export function SettingsWindow(p: Props) {
   const [dataDir, setDataDir] = useState("");
   const [stats, setStats] = useState<{ notes: number; tasks: number; folders: number } | null>(null);
   const [status, setStatus] = useState<string | null>(null);
+  // v0.1.12: smart font dropdown state (issue #28)
+  const [fontMenuOpen, setFontMenuOpen] = useState(false);
+  const [fontQuery, setFontQuery] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -106,6 +109,18 @@ export function SettingsWindow(p: Props) {
     }
   };
 
+  // ===== v0.1.12: smart font dropdown helpers (issue #28) =====
+  const currentFont = FONT_OPTIONS.find((f) => f.value === p.settings.fontFamily) || FONT_OPTIONS[0];
+  const qf = fontQuery.trim().toLowerCase();
+  const filteredFonts = qf
+    ? FONT_OPTIONS.filter((f) => f.label.toLowerCase().includes(qf))
+    : FONT_OPTIONS;
+  const pickFont = (value: string) => {
+    p.setSettings({ ...p.settings, fontFamily: value });
+    setFontMenuOpen(false);
+    setFontQuery("");
+  };
+
   return (
     <div className="pin-window settings-window" data-tauri-drag-region style={{ fontFamily: p.settings.fontFamily }}>
       <header className="titlebar" data-tauri-drag-region>
@@ -116,15 +131,50 @@ export function SettingsWindow(p: Props) {
         </div>
       </header>
       <div className="settings-panel settings-panel-standalone">
-        <label className="settings-row">
+        {/* v0.1.12: smart modern font dropdown (issue #28) — every option
+            previews in its own font, live search, Enter picks, Esc closes. */}
+        <div className="settings-row">
           <span>Font style</span>
-          <select className="settings-select" value={FONT_OPTIONS.find((f) => f.value === p.settings.fontFamily)?.id || "system"} onChange={(e) => {
-            const opt = FONT_OPTIONS.find((f) => f.id === e.target.value);
-            if (opt) p.setSettings({ ...p.settings, fontFamily: opt.value });
-          }}>
-            {FONT_OPTIONS.map((f) => <option key={f.id} value={f.id}>{f.label}</option>)}
-          </select>
-        </label>
+          <div className={"font-dropdown " + (fontMenuOpen ? "open" : "")}>
+            <button className="font-drop-btn" onClick={() => { setFontMenuOpen((v) => !v); setFontQuery(""); }}>
+              <span className="font-drop-current" style={{ fontFamily: currentFont.value }}>{"Aa 123 · " + currentFont.label}</span>
+              <ChevronDown size={15} className={"font-drop-chevron " + (fontMenuOpen ? "up" : "")} />
+            </button>
+            {fontMenuOpen && (
+              <>
+                <div className="font-drop-overlay" onClick={() => setFontMenuOpen(false)} />
+                <div className="font-drop-menu">
+                  <input
+                    className="font-drop-search"
+                    autoFocus
+                    placeholder="Search fonts..."
+                    value={fontQuery}
+                    onChange={(e) => setFontQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Escape") { e.preventDefault(); setFontMenuOpen(false); }
+                      if (e.key === "Enter") { e.preventDefault(); const f = filteredFonts[0]; if (f) pickFont(f.value); }
+                    }}
+                  />
+                  <div className="font-drop-list">
+                    {filteredFonts.map((f) => (
+                      <button
+                        key={f.id}
+                        className={"font-drop-item " + (f.id === currentFont.id ? "active" : "")}
+                        onClick={() => pickFont(f.value)}
+                      >
+                        <span className="font-drop-item-label" style={{ fontFamily: f.value }}>{f.label}</span>
+                        <span className="font-drop-item-sample" style={{ fontFamily: f.value }}>Aa 123</span>
+                        {f.id === currentFont.id && <Check size={14} className="font-drop-check" />}
+                      </button>
+                    ))}
+                    {filteredFonts.length === 0 && <div className="font-drop-empty">No matching fonts</div>}
+                  </div>
+                  <div className="font-drop-hint">Enter picks the first match - Esc closes</div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
         <div className="settings-row">
           <span>Accent color</span>
           <div className="accent-swatches">

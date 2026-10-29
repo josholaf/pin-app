@@ -1,7 +1,7 @@
 {
   "name": "pin",
   "private": true,
-  "version": "0.1.11",
+  "version": "0.1.12",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,7 +10,10 @@
     "tauri": "tauri"
   },
   "dependencies": {
+    "@fontsource/fira-code": "^5.1.0",
+    "@fontsource/hack": "^5.1.0",
     "@fontsource/jetbrains-mono": "^5.1.0",
+    "@fontsource/source-code-pro": "^5.1.0",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-dialog": "^2",
     "@tauri-apps/plugin-fs": "^2",

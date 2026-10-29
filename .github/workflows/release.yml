@@ -77,19 +77,19 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.11' }}
-          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.11' }}"
+          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.12' }}
+          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.12' }}"
           releaseBody: |
-            **Pin v0.1.11** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
+            **Pin v0.1.12** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
 
-            ## What's new in v0.1.11
+            ## What's new in v0.1.12
 
             ### ✨ New in this release
-            - **Photos in notes** (#26) — new Image button in the markdown toolbar (multi-select) and paste-from-clipboard support; every photo renders with a soft 12px rounded radius. Also available as `/image` in the slash menu.
-            - **Photo columns** (#26) — select your photo lines, open the Columns menu and pick 1, 2, 3 or 4 columns; photos snap into an equal-width grid.
-            - **Audio recording** (#26) — new Mic button records straight into the note (red pulse + timer while recording); stop and the recording is kept in the note with an inline player you can play anytime.
+            - **Coding fonts** (#28) — Fira Code, Source Code Pro and Hack join the font options next to JetBrains Mono. Bundled with the app, so they work offline.
+            - **Smart font dropdown** (#28) — the Settings font picker is now a custom dropdown: every option previews in its own font with an "Aa 123" sample, live search filters by name, Enter picks the first match, Esc closes, and the active font shows a checkmark with smooth open/close animation.
 
             ### 🚀 Previously shipped
+            - Photo upload with 12px radius, 1-4 column grids, in-note audio recording and playback (v0.1.11)
             - Tags on command (`/tags` picker, Obsidian-style), `==highlight==` and colored text (v0.1.10)
             - Accent-colored bullets and checkboxes + slash command menu (v0.1.9)
             - Line numbers in the note editor (v0.1.8)
