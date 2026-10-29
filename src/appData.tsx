@@ -228,9 +228,16 @@ export function highlightCode(code: string, langRaw: string): string {
   return parts.join("");
 }
 
-/** Inline markdown: code, bold, italic, strikethrough, images, links. */
+/** Inline markdown: code, bold, italic, strikethrough, images, links.
+ *  v0.1.10: ==highlight== marks and colored <span style="color: ..."> text (issue #24). */
 function inlineMd(s: string): string {
   return s
+    // v0.1.10: re-allow a single colored-span form so text color works in
+    // the preview (the raw HTML was escaped above; this un-escapes just
+    // this exact pattern, everything else stays escaped and safe).
+    .replace(/&lt;span style=&quot;color:\s*([^&]+)&quot;&gt;([\s\S]*?)&lt;\/span&gt;/g, '<span style="color:$1">$2</span>')
+    // v0.1.10: ==text== marker highlight, MacDown/Obsidian style.
+    .replace(/==([^=\n]+)==/g, '<mark class="md-highlight">$1</mark>')
     .replace(/`([^`\n]+)`/g, '<code class="md-code">$1</code>')
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
     .replace(/~~(.+?)~~/g, "<s>$1</s>")

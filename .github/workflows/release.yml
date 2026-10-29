@@ -77,18 +77,19 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.9' }}
-          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.9' }}"
+          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.10' }}
+          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.10' }}"
           releaseBody: |
-            **Pin v0.1.9** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
+            **Pin v0.1.10** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
 
-            ## What's new in v0.1.9
+            ## What's new in v0.1.10
 
             ### ✨ New in this release
-            - **Accent-colored lists** (#22) — bullet markers, numbered markers and circle checkboxes (task list and markdown preview) now use your accent color from Settings instead of muted gray
-            - **Slash commands** (#22) — type "/" while editing to insert blocks fast: Heading 1-4, Task, Bullet list, Numbered list, Bold, Italic, Strikethrough, Code block, Quote, Table, Link, Divider. Arrow keys navigate, Enter/Tab inserts, Esc closes; keep typing to filter
+            - **Tags on command** (#24) — tag chips are gone from the notes list and the note header. Type `/tags` in the editor to open the tag picker: every tag in Obsidian style (plain colored text, no chip boxes); tap to add or remove a tag on the note, or type a brand-new one. Search still matches tags.
+            - **Text highlighting** (#24) — MacDown-style: `==text==` renders with a marker-highlight background, and `<span style="color: ...">text</span>` renders with a custom text color. New Highlighter and Palette buttons in the markdown toolbar, plus `highlight` and `colored text` entries in the `/` slash menu.
 
             ### 🚀 Previously shipped
+            - Accent-colored bullets and checkboxes + slash command menu (v0.1.9)
             - Line numbers in the note editor (v0.1.8)
             - Instant dark mode, themed window controls, full right-click note menu, colored tags with suggestions, markdown table button, syntax-highlighted code blocks (v0.1.7)
             - Stats footer, pomodoro focus session counter, Ctrl+S save flash with undo (v0.1.6)

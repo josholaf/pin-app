@@ -1312,3 +1312,113 @@ body {
   color: var(--accent);
   opacity: 0.8;
 }
+
+/* ===== v0.1.10: hidden tags via "/tags" + markdown highlight (issue #24) ===== */
+
+/* Marker highlight: ==text== renders like a physical highlighter pen. */
+.note-content-preview .md-highlight {
+  background: #ffe066;
+  color: inherit;
+  border-radius: 3px;
+  padding: 0 3px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+[data-theme="dark"] .note-content-preview .md-highlight {
+  background: rgba(255, 213, 79, 0.45);
+  color: inherit;
+}
+
+/* "/tags" picker: Obsidian-style tags — plain colored text, no chip
+   box, no border, no background (issue #24). */
+.tag-panel {
+  position: absolute;
+  z-index: 35;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 150px;
+  max-width: 210px;
+  max-height: 240px;
+  overflow: hidden;
+  font-size: 12px;
+}
+.tag-panel-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  padding: 1px 6px 3px;
+}
+.tag-panel-list {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.tag-panel-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  text-align: left;
+  border: none;
+  background: none;
+  color: var(--tag-color, var(--text));
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  opacity: 0.75;
+}
+.tag-panel-item:hover {
+  background: rgba(128, 128, 128, 0.12);
+  opacity: 1;
+}
+.tag-panel-item.on {
+  opacity: 1;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.tag-panel-check {
+  font-size: 10px;
+  opacity: 0.8;
+}
+.tag-panel-new {
+  border: none;
+  border-top: 1px solid var(--border);
+  background: transparent;
+  outline: none;
+  font-size: 11px;
+  padding: 5px 8px 3px;
+  color: inherit;
+  width: 100%;
+}
+.tag-panel-empty {
+  font-size: 11px;
+  color: var(--text-muted);
+  padding: 4px 8px;
+}
+.tag-panel-hint {
+  font-size: 9px;
+  color: var(--text-muted);
+  opacity: 0.7;
+  padding: 3px 6px 1px;
+}
+
+/* Any tag chip rendered anywhere else also becomes plain colored text
+   (Obsidian style): no box, no border, no background. */
+.tag-chip {
+  background: none !important;
+  border: none !important;
+  padding: 0;
+  font-weight: 600;
+}

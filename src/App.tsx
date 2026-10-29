@@ -9,7 +9,7 @@ import {
   Coffee, Settings, Pencil, Trash2, Undo2, Command, Star, Minus,
 } from "lucide-react";
 import {
-  DEFAULT_SETTINGS, NOTE_COLORS, tagColor,
+  DEFAULT_SETTINGS, NOTE_COLORS,
   FOCUS_SECONDS, BREAK_SECONDS, playBeep, getIcon, ICON_BANK,
   type Task, type Theme, type NoteColor, type PomodoroMode, type AppSettings,
   type NoteFolder, type Note,
@@ -129,6 +129,9 @@ function App() {
   const timerRef = useRef<number | null>(null);
   const justFinishedRef = useRef(false);
   // v0.1.5: tags filter, trash, command palette
+  // v0.1.10: the tag filter row is gone from the list (issue #24) — tags are
+  // managed through the "/tags" picker inside a note. The state stays so
+  // the search/filter logic is untouched.
   const [tagFilter, setTagFilter] = useState<string | null>(null);
   const [trashOpen, setTrashOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -508,7 +511,8 @@ function App() {
     setFolders((prev) => prev.filter((f) => !f.deletedAt));
     setTasks((prev) => prev.filter((t) => !t.deletedAt));
   };
-  // v0.1.5: note tags (issue #5)
+  // v0.1.5: note tags (issue #5). v0.1.10: tags are added/removed from the
+  // "/tags" picker inside the note editor (issue #24).
   const addTagToNote = (id: string, raw: string) => {
     const tag = raw.trim().replace(/^#/, "").toLowerCase();
     if (!tag) return;
@@ -715,7 +719,7 @@ function App() {
   }
   activeNotes.slice(0, 20).forEach((n) => {
     const label = n.title || "Untitled";
-    paletteItems.push({ id: "open-" + n.id, title: "Open: " + label, subtitle: (n.tags || []).map((t) => "#" + t).join(" ") || "Note", run: () => openNote(n) });
+    paletteItems.push({ id: "open-" + n.id, title: "Open: " + label, subtitle: "Note", run: () => openNote(n) });
     paletteItems.push({ id: "pin-" + n.id, title: "Pin to desktop: " + label, subtitle: "Float this note on top", run: () => { pinNoteToDesktop(n); } });
   });
   const pq = paletteQuery.trim().toLowerCase();
@@ -799,19 +803,8 @@ function App() {
             </>
           ) : null}
         </div>
-        {allTags.length > 0 && (
-          <div className="tag-filter-row">
-            {allTags.map((t) => (
-              <button
-                key={t}
-                className={"tag-filter-chip " + (tagFilter === t ? "active" : "")}
-                style={{ borderColor: tagColor(t), ...(tagFilter === t ? {} : { color: tagColor(t) }) }}
-                onClick={() => setTagFilter(tagFilter === t ? null : t)}
-              >{"#" + t}</button>
-            ))}
-            {tagFilter && <button className="icon-btn" title="Clear tag filter" onClick={() => setTagFilter(null)}><X size={12} /></button>}
-          </div>
-        )}
+        {/* v0.1.10: the tag filter chip row is hidden (issue #24) — search
+            still matches tags, and tags are managed via "/tags" in a note. */}
         {showNewFolder && (
           <div className="new-folder-row">
             <input value={newFolderName} onChange={(e) => setNewFolderName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && createFolder()} placeholder="Folder name..." autoFocus />
