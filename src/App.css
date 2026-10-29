@@ -1538,3 +1538,143 @@ body {
   opacity: 1 !important;
   background: rgba(229, 57, 53, 0.12) !important;
 }
+.font-dropdown {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+.font-drop-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-radius: 14px;
+  padding: 10px 14px;
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.font-dropdown.open .font-drop-btn {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+.font-drop-btn:hover {
+  border-color: var(--accent);
+}
+.font-drop-current {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+.font-drop-chevron {
+  flex-shrink: 0;
+  opacity: 0.6;
+  transition: transform 0.18s ease;
+}
+.font-drop-chevron.up {
+  transform: rotate(180deg);
+}
+.font-drop-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+}
+.font-drop-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 46;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  animation: font-drop-in 0.16s ease;
+}
+@keyframes font-drop-in {
+  from { opacity: 0; transform: translateY(-6px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.font-drop-search {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  font-size: 12px;
+  padding: 7px 12px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+.font-drop-search:focus {
+  border-color: var(--accent);
+}
+.font-drop-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+.font-drop-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  background: none;
+  color: var(--text);
+  font-size: 13px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s ease;
+}
+.font-drop-item:hover {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+.font-drop-item.active {
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  color: var(--accent);
+}
+.font-drop-item-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.font-drop-item-sample {
+  flex-shrink: 0;
+  font-size: 11px;
+  opacity: 0.55;
+}
+.font-drop-item.active .font-drop-item-sample {
+  color: var(--accent);
+  opacity: 0.8;
+}
+.font-drop-check {
+  flex-shrink: 0;
+}
+.font-drop-empty {
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 8px 10px;
+}
+.font-drop-hint {
+  font-size: 9px;
+  color: var(--text-muted);
+  opacity: 0.7;
+  padding: 2px 8px 0;
+}
