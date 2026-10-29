@@ -1422,3 +1422,119 @@ body {
   padding: 0;
   font-weight: 600;
 }
+
+/* ===== v0.1.11: photos with 12px radius + column grids + audio (issue #26) ===== */
+
+/* Uploaded and linked photos render with a soft 12px radius (issue #26). */
+.note-content-preview .md-img {
+  border-radius: 12px;
+}
+
+/* Photo column grids: ":::N ... :::" wraps photo lines into a grid
+   with N equal columns (1, 2, 3 or 4). */
+.note-content-preview .md-cols {
+  display: grid;
+  gap: 8px;
+  margin: 6px 0;
+}
+.note-content-preview .md-cols-1 { grid-template-columns: 1fr; }
+.note-content-preview .md-cols-2 { grid-template-columns: repeat(2, 1fr); }
+.note-content-preview .md-cols-3 { grid-template-columns: repeat(3, 1fr); }
+.note-content-preview .md-cols-4 { grid-template-columns: repeat(4, 1fr); }
+.note-content-preview .md-cols .md-p {
+  margin: 0;
+  min-width: 0;
+}
+.note-content-preview .md-cols .md-p .md-img {
+  width: 100%;
+  margin: 0;
+  height: auto;
+}
+
+/* Column picker popup in the markdown toolbar (1-4 columns). */
+.cols-menu-wrapper {
+  position: relative;
+  display: inline-flex;
+}
+.cols-menu {
+  position: absolute;
+  top: 26px;
+  left: 0;
+  z-index: 40;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 96px;
+}
+.cols-menu-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  padding: 1px 6px 3px;
+}
+.cols-menu-item {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+}
+.cols-menu-item:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.cols-menu-hint {
+  font-size: 9px;
+  color: var(--text-muted);
+  opacity: 0.7;
+  padding: 2px 6px 0;
+}
+
+/* In-note audio players ([[audio|...]] recordings). */
+.note-content-preview .md-audio {
+  width: 100%;
+  margin: 4px 0;
+  border-radius: 8px;
+  outline: none;
+  height: 36px;
+}
+
+/* Recording indicator in the toolbar: red pulse + elapsed time. */
+.rec-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #e53935;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 0 6px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.rec-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #e53935;
+  animation: rec-pulse 1s ease-in-out infinite;
+}
+@keyframes rec-pulse {
+  50% { opacity: 0.35; }
+}
+.rec-stop-btn {
+  color: #e53935 !important;
+  opacity: 1 !important;
+  background: rgba(229, 57, 53, 0.12) !important;
+}

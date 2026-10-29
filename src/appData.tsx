@@ -229,7 +229,8 @@ export function highlightCode(code: string, langRaw: string): string {
 }
 
 /** Inline markdown: code, bold, italic, strikethrough, images, links.
- *  v0.1.10: ==highlight== marks and colored <span style="color: ..."> text (issue #24). */
+ *  v0.1.10: ==highlight== marks and colored <span style="color: ..."> text (issue #24).
+ *  v0.1.11: embedded audio players via [[audio|data:...]] (issue #26). */
 function inlineMd(s: string): string {
   return s
     // v0.1.10: re-allow a single colored-span form so text color works in
@@ -238,12 +239,15 @@ function inlineMd(s: string): string {
     .replace(/&lt;span style=&quot;color:\s*([^&]+)&quot;&gt;([\s\S]*?)&lt;\/span&gt;/g, '<span style="color:$1">$2</span>')
     // v0.1.10: ==text== marker highlight, MacDown/Obsidian style.
     .replace(/==([^=\n]+)==/g, '<mark class="md-highlight">$1</mark>')
+    // v0.1.11: [[audio|<src>]] renders as an inline audio player kept in the note (issue #26).
+    .replace(/\[\[audio\|([^\]\n]+)\]\]/g, '<audio class="md-audio" controls preload="metadata" src="$1"></audio>')
     .replace(/`([^`\n]+)`/g, '<code class="md-code">$1</code>')
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
     .replace(/~~(.+?)~~/g, "<s>$1</s>")
     .replace(/(^|[^A-Za-z0-9_])\*([^*\n]+)\*(?!\*)/g, "$1<em>$2</em>")
     .replace(/(^|[^A-Za-z0-9_])_([^_\n]+)_(?!_)/g, "$1<em>$2</em>")
-    .replace(/!\[([^\]\n]*)\]\((https?:\/\/[^\s)]+)\)/g, '<img class="md-img" src="$2" alt="$1" loading="lazy" />')
+    // v0.1.11: images also accept data: URIs so uploaded photos render (issue #26).
+    .replace(/!\[([^\]\n]*)\]\(((?:https?:\/\/|data:)[^\s)]+)\)/g, '<img class="md-img" src="$2" alt="$1" loading="lazy" />')
     .replace(/\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a class="md-link" href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
     .replace(/(^|[\s(])(https?:\/\/[^\s<)]+)/g, function (_all: string, pre: string, url: string) {
       const trimmed = url.replace(/&quot;$/, "");
@@ -275,7 +279,8 @@ function tableAligns(sep: string): string[] {
  *  bold, italic, strikethrough, inline and fenced code (with language label
  *  and syntax coloring), nested bullet/numbered lists, interactive task
  *  checkboxes, blockquotes (multi-line merged), pipe tables with alignment,
- *  images, links and horizontal rules. */
+ *  images (http and uploaded data URIs), audio players, column grids,
+ *  links and horizontal rules. */
 export function markdownToHtml(md: string): string {
   if (!md.trim()) return "";
 
@@ -316,6 +321,22 @@ export function markdownToHtml(md: string): string {
     if (/^\s*(-{3,}|\*{3,}|_{3,})\s*$/.test(line)) {
       closeAllLists();
       out.push('<hr class="md-hr">');
+      i += 1;
+      continue;
+    }
+
+    // v0.1.11: photo column grids — ":::N" opens an N-column grid,
+    // ":::" closes it (issue #26).
+    const gridOpen = line.match(/^:::([1-4])\s*$/);
+    if (gridOpen) {
+      closeAllLists();
+      out.push('<div class="md-cols md-cols-' + gridOpen[1] + '">');
+      i += 1;
+      continue;
+    }
+    if (/^:::\s*$/.test(line)) {
+      closeAllLists();
+      out.push("</div>");
       i += 1;
       continue;
     }
