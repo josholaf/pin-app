@@ -77,18 +77,20 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.10' }}
-          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.10' }}"
+          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.11' }}
+          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.11' }}"
           releaseBody: |
-            **Pin v0.1.10** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
+            **Pin v0.1.11** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
 
-            ## What's new in v0.1.10
+            ## What's new in v0.1.11
 
             ### ✨ New in this release
-            - **Tags on command** (#24) — tag chips are gone from the notes list and the note header. Type `/tags` in the editor to open the tag picker: every tag in Obsidian style (plain colored text, no chip boxes); tap to add or remove a tag on the note, or type a brand-new one. Search still matches tags.
-            - **Text highlighting** (#24) — MacDown-style: `==text==` renders with a marker-highlight background, and `<span style="color: ...">text</span>` renders with a custom text color. New Highlighter and Palette buttons in the markdown toolbar, plus `highlight` and `colored text` entries in the `/` slash menu.
+            - **Photos in notes** (#26) — new Image button in the markdown toolbar (multi-select) and paste-from-clipboard support; every photo renders with a soft 12px rounded radius. Also available as `/image` in the slash menu.
+            - **Photo columns** (#26) — select your photo lines, open the Columns menu and pick 1, 2, 3 or 4 columns; photos snap into an equal-width grid.
+            - **Audio recording** (#26) — new Mic button records straight into the note (red pulse + timer while recording); stop and the recording is kept in the note with an inline player you can play anytime.
 
             ### 🚀 Previously shipped
+            - Tags on command (`/tags` picker, Obsidian-style), `==highlight==` and colored text (v0.1.10)
             - Accent-colored bullets and checkboxes + slash command menu (v0.1.9)
             - Line numbers in the note editor (v0.1.8)
             - Instant dark mode, themed window controls, full right-click note menu, colored tags with suggestions, markdown table button, syntax-highlighted code blocks (v0.1.7)

@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState, type MouseEvent, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type MouseEvent, type KeyboardEvent, type ClipboardEvent } from "react";
 import {
   Moon, Sun, X, Bold, Italic, List, ListOrdered, CheckSquare,
   Heading, Code, TextQuote, Link as LinkIcon, Strikethrough, ArrowLeft,
-  Pin, Download, Copy, Table, Highlighter, Palette,
+  Pin, Download, Copy, Table, Highlighter, Palette, ImagePlus, Mic, Square, LayoutGrid,
 } from "lucide-react";
 import { save } from "@tauri-apps/plugin-dialog";
 import { writeTextFile } from "@tauri-apps/plugin-fs";
@@ -49,10 +49,12 @@ type Props = {
 
 /** v0.1.9: blocks insertable via the "/" slash menu (issue #22).
  *  `wrap` items place the caret inside the inserted markers.
- *  v0.1.10: `action: "tags"` opens the tag picker instead of inserting (issue #24). */
-type SlashItem = { id: string; label: string; hint: string; md: string; wrap?: boolean; action?: "tags" };
+ *  v0.1.10: `action: "tags"` opens the tag picker instead of inserting (issue #24).
+ *  v0.1.11: `action: "image"` opens the photo picker (issue #26). */
+type SlashItem = { id: string; label: string; hint: string; md: string; wrap?: boolean; action?: "tags" | "image" };
 const SLASH_ITEMS: SlashItem[] = [
   { id: "tags", label: "Tags", hint: "add / remove", md: "", action: "tags" },
+  { id: "image", label: "Image", hint: "upload photo", md: "", action: "image" },
   { id: "h1", label: "Heading 1", hint: "#", md: "# " },
   { id: "h2", label: "Heading 2", hint: "##", md: "## " },
   { id: "h3", label: "Heading 3", hint: "###", md: "### " },
@@ -75,6 +77,8 @@ const SLASH_ITEMS: SlashItem[] = [
 export function MarkdownNote(p: Props) {
   const noteEditorRef = useRef<HTMLTextAreaElement | null>(null);
   const lineNumRef = useRef<HTMLDivElement | null>(null);
+  // v0.1.11: hidden file input for photo uploads (issue #26)
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   // Single-pane auto-preview: rendered view by default; tap/click to edit.
   const [editing, setEditing] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
@@ -90,6 +94,14 @@ export function MarkdownNote(p: Props) {
   // v0.1.10: tag picker opened by the "/tags" slash command (issue #24).
   const [tagPanel, setTagPanel] = useState<{ top: number; left: number } | null>(null);
   const [newTag, setNewTag] = useState("");
+  // v0.1.11: photo column picker (1-4 columns) over the selection (issue #26)
+  const [colsMenuOpen, setColsMenuOpen] = useState(false);
+  // v0.1.11: in-note audio recording (issue #26)
+  const [recording, setRecording] = useState(false);
+  const [recSeconds, setRecSeconds] = useState(0);
+  const recTimerRef = useRef<number | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
 
   useEffect(() => {
     const goOnline = () => setOnline(true);
@@ -207,7 +219,8 @@ export function MarkdownNote(p: Props) {
   };
 
   /** v0.1.9: insert the chosen block, replacing the "/query" token.
-   *  v0.1.10: the "/tags" command opens the tag picker instead (issue #24). */
+   *  v0.1.10: the "/tags" command opens the tag picker instead (issue #24).
+   *  v0.1.11: the "/image" command opens the photo picker (issue #26). */
   const applySlash = (item: SlashItem) => {
     const ta = noteEditorRef.current;
     if (!slashMenu || !ta) { setSlashMenu(null); return; }
@@ -224,6 +237,18 @@ export function MarkdownNote(p: Props) {
         ta.setSelectionRange(start, start);
         updateCursor();
       });
+      return;
+    }
+    if (item.action === "image") {
+      // strip the "/image" token, then open the photo file picker
+      p.setNoteContent(p.noteContent.slice(0, start) + p.noteContent.slice(end));
+      setSlashMenu(null);
+      requestAnimationFrame(() => {
+        ta.focus();
+        ta.setSelectionRange(start, start);
+        updateCursor();
+      });
+      if (fileInputRef.current) fileInputRef.current.click();
       return;
     }
     const next = p.noteContent.slice(0, start) + item.md + p.noteContent.slice(end);
@@ -288,6 +313,8 @@ export function MarkdownNote(p: Props) {
       flipTask(Number(box.dataset.task), box.dataset.done !== "1");
       return;
     }
+    // v0.1.11: clicks inside audio players play/pause, they do not open the editor (issue #26)
+    if ((e.target as HTMLElement).closest("audio")) return;
     const link = (e.target as HTMLElement).closest("a");
     if (link) return; // let links open normally
     enterEdit();
@@ -298,6 +325,22 @@ export function MarkdownNote(p: Props) {
     updateCursor();
     const ta = noteEditorRef.current;
     detectSlash(v, ta ? (ta.selectionStart ?? v.length) : v.length);
+  };
+
+  // v0.1.11: paste photos straight into the note (issue #26)
+  const onEditorPaste = (e: ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    const imageFiles: File[] = [];
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith("image/")) {
+        const f = items[i].getAsFile();
+        if (f) imageFiles.push(f);
+      }
+    }
+    if (imageFiles.length === 0) return; // normal text paste
+    e.preventDefault();
+    insertImageFiles(imageFiles);
   };
 
   const onEditorKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -331,10 +374,112 @@ export function MarkdownNote(p: Props) {
     setNewTag("");
   };
 
+  // ===== v0.1.11: photo upload + column grids + audio recording (issue #26) =====
+
+  const blobToDataURL = (blob: Blob): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ""));
+      reader.onerror = () => reject(new Error("read failed"));
+      reader.readAsDataURL(blob);
+    });
+
+  /** Turn picked/pasted image files into markdown photo lines at the caret. */
+  const insertImageFiles = async (files: File[]) => {
+    for (const f of files) {
+      try {
+        const dataUrl = await blobToDataURL(f);
+        insertMd("\n![photo](" + dataUrl + ")\n");
+      } catch { flashMessage("Could not add image"); }
+    }
+    flashMessage(files.length + (files.length === 1 ? " photo added" : " photos added"));
+  };
+
+  const onFileInputPicked = () => {
+    const input = fileInputRef.current;
+    if (!input || !input.files || input.files.length === 0) return;
+    insertImageFiles(Array.from(input.files));
+    input.value = ""; // allow picking the same file twice
+  };
+
+  /** Wrap the current selection in a :::N column grid block. */
+  const applyColumns = (n: number) => {
+    setColsMenuOpen(false);
+    const el = noteEditorRef.current;
+    if (!el) { p.setNoteContent(":::" + n + "\n" + p.noteContent + "\n:::"); return; }
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const before = p.noteContent.slice(0, start);
+    const sel = p.noteContent.slice(start, end);
+    const after = p.noteContent.slice(end);
+    // keep grid markers on their own lines
+    const pre = before.endsWith("\n") || before === "" ? before : before + "\n";
+    const post = after.startsWith("\n") || after === "" ? after : "\n" + after;
+    const next = pre + ":::" + n + "\n" + (sel || "![photo](https://)") + "\n:::\n" + post;
+    p.setNoteContent(next);
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(start, start + sel.length);
+      updateCursor();
+    });
+  };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mr = new MediaRecorder(stream);
+      chunksRef.current = [];
+      mr.ondataavailable = (ev) => { if (ev.data && ev.data.size > 0) chunksRef.current.push(ev.data); };
+      mr.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        const type = mr.mimeType || "audio/webm";
+        const blob = new Blob(chunksRef.current, { type });
+        if (blob.size === 0) { flashMessage("Recording empty"); return; }
+        try {
+          const dataUrl = await blobToDataURL(blob);
+          insertMd("\n[[audio|" + dataUrl + "]]\n");
+          flashMessage("Recording added to note");
+        } catch { flashMessage("Could not save recording"); }
+      };
+      mr.start();
+      mediaRecorderRef.current = mr;
+      setRecording(true);
+      setRecSeconds(0);
+      if (recTimerRef.current) clearInterval(recTimerRef.current);
+      recTimerRef.current = window.setInterval(() => setRecSeconds((s) => s + 1), 1000);
+    } catch {
+      flashMessage("Microphone unavailable");
+    }
+  };
+
+  const stopRecording = () => {
+    if (recTimerRef.current) { clearInterval(recTimerRef.current); recTimerRef.current = null; }
+    try { mediaRecorderRef.current?.stop(); } catch { /* ignore */ }
+    setRecording(false);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (recTimerRef.current) clearInterval(recTimerRef.current);
+      try { if (mediaRecorderRef.current?.state === "recording") mediaRecorderRef.current.stop(); } catch { /* ignore */ }
+    };
+  }, []);
+
+  const recLabel = Math.floor(recSeconds / 60).toString() + ":" + (recSeconds % 60).toString().padStart(2, "0");
+
   return (
     <div className="pin-window note-window" data-tauri-drag-region style={{ background: bgColor, fontFamily: p.settings.fontFamily, fontSize: p.settings.fontSize }}>
       <div className="note-layout">
         <div className="note-main">
+          {/* v0.1.11: hidden photo picker used by the toolbar button and "/image" */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            style={{ display: "none" }}
+            onChange={onFileInputPicked}
+          />
           <header className="titlebar" data-tauri-drag-region style={{ background: bgColor }}>
             <button onClick={p.onBack} className="icon-btn" title="Back to notes"><ArrowLeft size={16} /></button>
             <div
@@ -401,6 +546,27 @@ export function MarkdownNote(p: Props) {
               <button type="button" className="icon-btn" title="Table" onMouseDown={startToolbarAction} onClick={() => insertMd("\n| Column | Column |\n| --- | --- |\n| Cell | Cell |\n\n")}><Table size={14} /></button>
               <button type="button" className="icon-btn" title="Quote" onMouseDown={startToolbarAction} onClick={() => insertMd("> ")}><TextQuote size={14} /></button>
               <button type="button" className="icon-btn" title="Link" onMouseDown={startToolbarAction} onClick={() => insertMd("[", "](https://)")}><LinkIcon size={14} /></button>
+              <button type="button" className="icon-btn" title="Add photo (or paste an image)" onMouseDown={startToolbarAction} onClick={() => { if (fileInputRef.current) fileInputRef.current.click(); }}><ImagePlus size={14} /></button>
+              <div className="cols-menu-wrapper">
+                <button type="button" className="icon-btn" title="Arrange selected photos in columns" onMouseDown={startToolbarAction} onClick={() => setColsMenuOpen((v) => !v)}><LayoutGrid size={14} /></button>
+                {colsMenuOpen && (
+                  <div className="cols-menu">
+                    <div className="cols-menu-title">Columns</div>
+                    {[1, 2, 3, 4].map((n) => (
+                      <button key={n} className="cols-menu-item" onMouseDown={(e) => { e.preventDefault(); applyColumns(n); }}>{n}</button>
+                    ))}
+                    <div className="cols-menu-hint">Select photos first</div>
+                  </div>
+                )}
+              </div>
+              {recording ? (
+                <>
+                  <span className="rec-indicator"><span className="rec-dot" />{recLabel}</span>
+                  <button type="button" className="icon-btn rec-stop-btn" title="Stop recording and add to note" onMouseDown={startToolbarAction} onClick={stopRecording}><Square size={14} /></button>
+                </>
+              ) : (
+                <button type="button" className="icon-btn" title="Record audio into this note" onMouseDown={startToolbarAction} onClick={startRecording}><Mic size={14} /></button>
+              )}
               <div className="md-toolbar-spacer" />
             </div>
           )}
@@ -422,6 +588,7 @@ export function MarkdownNote(p: Props) {
                   onClick={updateCursor}
                   onSelect={updateCursor}
                   onScroll={syncGutterScroll}
+                  onPaste={onEditorPaste}
                   onBlur={exitEdit}
                   placeholder={isMd ? "Write markdown… (Esc to preview, / for blocks, /tags for tags)" : "Write… (Esc to finish)"}
                   autoFocus
