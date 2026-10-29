@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState, type MouseEvent, type KeyboardEvent, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type MouseEvent, type KeyboardEvent } from "react";
 import {
   Moon, Sun, X, Bold, Italic, List, ListOrdered, CheckSquare,
   Heading, Code, TextQuote, Link as LinkIcon, Strikethrough, ArrowLeft,
-  Pin, Download, Copy, Tag, Table,
+  Pin, Download, Copy, Table, Highlighter, Palette,
 } from "lucide-react";
 import { save } from "@tauri-apps/plugin-dialog";
 import { writeTextFile } from "@tauri-apps/plugin-fs";
@@ -15,6 +15,11 @@ import {
 // out via charCode so this file contains no raw backtick characters.
 const BACKTICK = String.fromCharCode(96);
 const FENCE = BACKTICK + BACKTICK + BACKTICK;
+
+// v0.1.10: the colored-text snippet. Kept in one place so the toolbar
+// button and the slash menu always insert the same thing.
+const COLOR_SPAN_OPEN = '<span style="color: #e91e63">';
+const COLOR_SPAN_CLOSE = "</span>";
 
 type Props = {
   theme: Theme;
@@ -43,9 +48,11 @@ type Props = {
 };
 
 /** v0.1.9: blocks insertable via the "/" slash menu (issue #22).
- *  `wrap` items place the caret inside the inserted markers. */
-type SlashItem = { id: string; label: string; hint: string; md: string; wrap?: boolean };
+ *  `wrap` items place the caret inside the inserted markers.
+ *  v0.1.10: `action: "tags"` opens the tag picker instead of inserting (issue #24). */
+type SlashItem = { id: string; label: string; hint: string; md: string; wrap?: boolean; action?: "tags" };
 const SLASH_ITEMS: SlashItem[] = [
+  { id: "tags", label: "Tags", hint: "add / remove", md: "", action: "tags" },
   { id: "h1", label: "Heading 1", hint: "#", md: "# " },
   { id: "h2", label: "Heading 2", hint: "##", md: "## " },
   { id: "h3", label: "Heading 3", hint: "###", md: "### " },
@@ -56,6 +63,8 @@ const SLASH_ITEMS: SlashItem[] = [
   { id: "bold", label: "Bold", hint: "**text**", md: "**text**", wrap: true },
   { id: "italic", label: "Italic", hint: "*text*", md: "*text*", wrap: true },
   { id: "strike", label: "Strikethrough", hint: "~~text~~", md: "~~text~~", wrap: true },
+  { id: "highlight", label: "Highlight", hint: "==text==", md: "==text==", wrap: true },
+  { id: "color", label: "Colored text", hint: "<span>", md: COLOR_SPAN_OPEN + "text" + COLOR_SPAN_CLOSE },
   { id: "code", label: "Code block", hint: FENCE + "lang", md: FENCE + "python\n\n" + FENCE + "\n" },
   { id: "quote", label: "Quote", hint: ">", md: "> " },
   { id: "table", label: "Table", hint: "| col |", md: "\n| Column | Column |\n| --- | --- |\n| Cell | Cell |\n\n" },
@@ -71,8 +80,6 @@ export function MarkdownNote(p: Props) {
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [iconPickerPos, setIconPickerPos] = useState<{ x: number; y: number } | null>(null);
   const [online, setOnline] = useState(navigator.onLine);
-  const [tagInput, setTagInput] = useState("");
-  const [tagSuggestOpen, setTagSuggestOpen] = useState(false);
   const [flash, setFlash] = useState<string | null>(null);
   const flashTimer = useRef<number | null>(null);
   const lastSavedAt = useRef<number>(0);
@@ -80,6 +87,9 @@ export function MarkdownNote(p: Props) {
   const [slashMenu, setSlashMenu] = useState<{ top: number; left: number; tokenStart: number } | null>(null);
   const [slashQuery, setSlashQuery] = useState("");
   const [slashIdx, setSlashIdx] = useState(0);
+  // v0.1.10: tag picker opened by the "/tags" slash command (issue #24).
+  const [tagPanel, setTagPanel] = useState<{ top: number; left: number } | null>(null);
+  const [newTag, setNewTag] = useState("");
 
   useEffect(() => {
     const goOnline = () => setOnline(true);
@@ -109,12 +119,6 @@ export function MarkdownNote(p: Props) {
   const words = p.noteContent.trim() ? p.noteContent.trim().split(/\s+/).length : 0;
   /** v0.1.8: one gutter number per content line, like VS Code (issue #20). */
   const lineCount = p.noteContent.split("\n").length;
-
-  /** v0.1.7: tags you already created, matching what you are typing (issue #18). */
-  const tagSuggestions = (p.allTags || [])
-    .filter((t) => !p.noteTags.includes(t))
-    .filter((t) => !tagInput.trim() || t.includes(tagInput.trim().replace(/^#/, "").toLowerCase()))
-    .slice(0, 6);
 
   /** v0.1.9: slash items matching what was typed after the "/". */
   const slashFiltered = SLASH_ITEMS.filter((it) =>
@@ -202,12 +206,26 @@ export function MarkdownNote(p: Props) {
     setSlashIdx(0);
   };
 
-  /** v0.1.9: insert the chosen block, replacing the "/query" token. */
+  /** v0.1.9: insert the chosen block, replacing the "/query" token.
+   *  v0.1.10: the "/tags" command opens the tag picker instead (issue #24). */
   const applySlash = (item: SlashItem) => {
     const ta = noteEditorRef.current;
     if (!slashMenu || !ta) { setSlashMenu(null); return; }
     const start = slashMenu.tokenStart;
     const end = ta.selectionStart;
+    if (item.action === "tags") {
+      // strip the "/tags" token from the text and open the picker there
+      p.setNoteContent(p.noteContent.slice(0, start) + p.noteContent.slice(end));
+      setSlashMenu(null);
+      setTagPanel({ top: slashMenu.top, left: Math.min(slashMenu.left + 16, 190) });
+      setNewTag("");
+      requestAnimationFrame(() => {
+        ta.focus();
+        ta.setSelectionRange(start, start);
+        updateCursor();
+      });
+      return;
+    }
     const next = p.noteContent.slice(0, start) + item.md + p.noteContent.slice(end);
     p.setNoteContent(next);
     setSlashMenu(null);
@@ -231,7 +249,7 @@ export function MarkdownNote(p: Props) {
       }
     });
   };
-  const exitEdit = () => { setEditing(false); setSlashMenu(null); };
+  const exitEdit = () => { setEditing(false); setSlashMenu(null); setTagPanel(null); };
 
   const insertMd = (before: string, after = "") => {
     const el = noteEditorRef.current;
@@ -283,6 +301,8 @@ export function MarkdownNote(p: Props) {
   };
 
   const onEditorKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    // v0.1.10: Esc closes the tag picker first (issue #24)
+    if (tagPanel && e.key === "Escape") { e.preventDefault(); setTagPanel(null); return; }
     // v0.1.9: slash menu keyboard control (issue #22)
     if (slashMenu && slashFiltered.length > 0) {
       if (e.key === "ArrowDown") { e.preventDefault(); setSlashIdx((i) => (i + 1) % slashFiltered.length); return; }
@@ -304,9 +324,11 @@ export function MarkdownNote(p: Props) {
     if (!editing) enterEdit();
   };
 
-  const addTag = () => {
-    p.onAddTag(tagInput);
-    setTagInput("");
+  /** v0.1.10: add a brand-new tag from the picker's little input (issue #24). */
+  const submitNewTag = () => {
+    if (!newTag.trim()) return;
+    p.onAddTag(newTag);
+    setNewTag("");
   };
 
   return (
@@ -362,45 +384,15 @@ export function MarkdownNote(p: Props) {
               <button onClick={p.closeWindow} className="icon-btn" title="Close"><X size={16} /></button>
             </div>
           </header>
-          <div className="note-tags-row">
-            <Tag size={11} className="note-tags-icon" />
-            {p.noteTags.map((t) => (
-              <span key={t} className="tag-chip" style={{ "--tag-color": tagColor(t) } as CSSProperties}>
-                {"#" + t}
-                <button className="tag-chip-x" title="Remove tag" onClick={() => p.onRemoveTag(t)}><X size={9} /></button>
-              </span>
-            ))}
-            <div className="tag-suggest-wrap">
-              <input
-                className="cm-tag-input"
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onFocus={() => setTagSuggestOpen(true)}
-                onBlur={() => { setTimeout(() => setTagSuggestOpen(false), 150); }}
-                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTag(); } }}
-                placeholder="+ tag"
-              />
-              {tagSuggestOpen && tagSuggestions.length > 0 && (
-                <div className="tag-suggest-pop">
-                  {tagSuggestions.map((t) => (
-                    <button
-                      key={t}
-                      className="tag-suggest-item"
-                      style={{ color: tagColor(t) }}
-                      onMouseDown={(e) => { e.preventDefault(); p.onAddTag(t); setTagInput(""); }}
-                    >
-                      {"#" + t}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
+          {/* v0.1.10: the always-visible tag row is gone — tags live in the
+              "/tags" slash picker now (issue #24). */}
           {isMd && (
             <div className="md-toolbar">
               <button type="button" className="icon-btn" title="Bold (Ctrl+B)" onMouseDown={startToolbarAction} onClick={() => insertMd("**", "**")}><Bold size={14} /></button>
               <button type="button" className="icon-btn" title="Italic (Ctrl+I)" onMouseDown={startToolbarAction} onClick={() => insertMd("*", "*")}><Italic size={14} /></button>
               <button type="button" className="icon-btn" title="Strikethrough" onMouseDown={startToolbarAction} onClick={() => insertMd("~~", "~~")}><Strikethrough size={14} /></button>
+              <button type="button" className="icon-btn" title="Highlight (==text==)" onMouseDown={startToolbarAction} onClick={() => insertMd("==", "==")}><Highlighter size={14} /></button>
+              <button type="button" className="icon-btn" title="Colored text" onMouseDown={startToolbarAction} onClick={() => insertMd(COLOR_SPAN_OPEN, COLOR_SPAN_CLOSE)}><Palette size={14} /></button>
               <button type="button" className="icon-btn" title="Heading" onMouseDown={startToolbarAction} onClick={() => insertMd("## ")}><Heading size={14} /></button>
               <button type="button" className="icon-btn" title="Inline code" onMouseDown={startToolbarAction} onClick={() => insertMd(BACKTICK, BACKTICK)}><Code size={14} /></button>
               <button type="button" className="icon-btn" title="Bullet list" onMouseDown={startToolbarAction} onClick={() => insertMd("- ")}><List size={14} /></button>
@@ -431,7 +423,7 @@ export function MarkdownNote(p: Props) {
                   onSelect={updateCursor}
                   onScroll={syncGutterScroll}
                   onBlur={exitEdit}
-                  placeholder={isMd ? "Write markdown… (Esc to preview, / for blocks)" : "Write… (Esc to finish)"}
+                  placeholder={isMd ? "Write markdown… (Esc to preview, / for blocks, /tags for tags)" : "Write… (Esc to finish)"}
                   autoFocus
                   spellCheck={false}
                 />
@@ -448,6 +440,41 @@ export function MarkdownNote(p: Props) {
                         <span className="slash-item-hint">{it.hint}</span>
                       </button>
                     ))}
+                  </div>
+                )}
+                {/* v0.1.10: "/tags" picker — Obsidian-style colored text,
+                    no chip boxes; tap to toggle a tag on this note (issue #24). */}
+                {tagPanel && (
+                  <div className="tag-panel" style={{ top: tagPanel.top, left: tagPanel.left }}>
+                    <div className="tag-panel-title">Tags</div>
+                    <div className="tag-panel-list">
+                      {(p.allTags || []).length === 0 && (
+                        <div className="tag-panel-empty">No tags yet.</div>
+                      )}
+                      {(p.allTags || []).map((t) => {
+                        const on = p.noteTags.includes(t);
+                        return (
+                          <button
+                            key={t}
+                            className={"tag-panel-item" + (on ? " on" : "")}
+                            style={{ color: tagColor(t) }}
+                            onMouseDown={(e) => { e.preventDefault(); on ? p.onRemoveTag(t) : p.onAddTag(t); }}
+                          >
+                            {"#" + t}
+                            {on && <span className="tag-panel-check">✓</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <input
+                      className="tag-panel-new"
+                      value={newTag}
+                      onChange={(e) => setNewTag(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); submitNewTag(); } }}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      placeholder="+ new tag"
+                    />
+                    <div className="tag-panel-hint">Tap to add / remove - Esc closes</div>
                   </div>
                 )}
               </div>
