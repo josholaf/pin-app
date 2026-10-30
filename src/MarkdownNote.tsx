@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type MouseEvent, type KeyboardEvent, type 
 import {
   Moon, Sun, X, Bold, Italic, List, ListOrdered, CheckSquare,
   Heading, Code, TextQuote, Link as LinkIcon, Strikethrough, ArrowLeft,
-  Pin, Download, Copy, Table, Highlighter, Palette, ImagePlus, Mic, Square, LayoutGrid,
+  Pin, Download, Copy, Table, Highlighter, Palette, ImagePlus, Mic, Square, LayoutGrid, Link2,
 } from "lucide-react";
 import { save } from "@tauri-apps/plugin-dialog";
 import { writeTextFile } from "@tauri-apps/plugin-fs";
@@ -45,12 +45,20 @@ type Props = {
   savedAt?: number;
   toggleTheme: () => void;
   closeWindow: () => void;
+  /** v0.1.14: other notes, for [[wiki-link]] autocomplete (issue #34). */
+  allNotes?: { id: string; title: string }[];
+  /** v0.1.14: open (or create) the note a [[wiki-link]] points to. */
+  onOpenWikiLink?: (title: string) => void;
+  /** v0.1.14: notes that link to this one ("Linked mentions"). */
+  backlinks?: { id: string; title: string }[];
+  /** v0.1.14: open a backlink by id. */
+  onOpenNoteById?: (id: string) => void;
 };
 
 /** v0.1.9: blocks insertable via the "/" slash menu (issue #22).
  *  `wrap` items place the caret inside the inserted markers.
  *  v0.1.10: `action: "tags"` opens the tag picker instead of inserting (issue #24).
- *  v0.1.11: `action: "image"` opens the photo picker (issue #26). */
+ *  v0.1.11: `action: "image"` opens the photo picker instead of inserting (issue #26). */
 type SlashItem = { id: string; label: string; hint: string; md: string; wrap?: boolean; action?: "tags" | "image" };
 const SLASH_ITEMS: SlashItem[] = [
   { id: "tags", label: "Tags", hint: "add / remove", md: "", action: "tags" },
@@ -91,6 +99,10 @@ export function MarkdownNote(p: Props) {
   const [slashMenu, setSlashMenu] = useState<{ top: number; left: number; tokenStart: number } | null>(null);
   const [slashQuery, setSlashQuery] = useState("");
   const [slashIdx, setSlashIdx] = useState(0);
+  // v0.1.14: [[wiki-link]] autocomplete (issue #34)
+  const [wikiMenu, setWikiMenu] = useState<{ top: number; left: number; tokenStart: number } | null>(null);
+  const [wikiQuery, setWikiQuery] = useState("");
+  const [wikiIdx, setWikiIdx] = useState(0);
   // v0.1.10: tag picker opened by the "/tags" slash command (issue #24).
   const [tagPanel, setTagPanel] = useState<{ top: number; left: number } | null>(null);
   const [newTag, setNewTag] = useState("");
@@ -138,6 +150,11 @@ export function MarkdownNote(p: Props) {
     it.label.toLowerCase().includes(slashQuery.toLowerCase()) ||
     it.id.startsWith(slashQuery.toLowerCase())
   );
+
+  /** v0.1.14: note titles matching the [[wiki-link query. */
+  const wikiFiltered = (p.allNotes || [])
+    .filter((n) => n.title.toLowerCase().includes(wikiQuery.toLowerCase()))
+    .slice(0, 8);
 
   /** Show a short confirmation message in the status bar. */
   const flashMessage = (msg: string) => {
@@ -196,15 +213,8 @@ export function MarkdownNote(p: Props) {
     if (ta && gutter) gutter.scrollTop = ta.scrollTop;
   };
 
-  /** v0.1.9: open the slash menu when a "/" word is being typed (issue #22).
-   *  Anchors the popup near the caret and remembers where the token starts. */
-  const detectSlash = (value: string, caret: number) => {
-    const upto = value.slice(0, caret);
-    const m = upto.match(/(?:^|\n|\s)\/([\w-]*)$/);
-    if (!m) { setSlashMenu(null); return; }
-    const query = m[1];
-    setSlashQuery(query);
-    const tokenStart = caret - query.length - 1;
+  /** Shared caret-to-popup math for the slash and wiki menus. */
+  const caretPopupPos = (value: string, tokenStart: number) => {
     const before = value.slice(0, tokenStart);
     const lines = before.split("\n");
     const lineIdx = lines.length - 1;
@@ -214,8 +224,53 @@ export function MarkdownNote(p: Props) {
     const fs = p.settings.fontSize || 14;
     const top = Math.max(4, 12 + lineIdx * fs * 1.5 - scrollTop + fs * 1.7);
     const left = 44 + col * fs * 0.6;
-    setSlashMenu({ top, left: Math.min(left, 170), tokenStart });
+    return { top, left: Math.min(left, 170) };
+  };
+
+  /** v0.1.9: open the slash menu when a "/" word is being typed (issue #22).
+   *  Anchors the popup near the caret and remembers where the token starts. */
+  const detectSlash = (value: string, caret: number) => {
+    const upto = value.slice(0, caret);
+    const m = upto.match(/(?:^|\n|\s)\/([\w-]*)$/);
+    if (!m) { setSlashMenu(null); return; }
+    const query = m[1];
+    setSlashQuery(query);
+    const tokenStart = caret - query.length - 1;
+    const pos = caretPopupPos(value, tokenStart);
+    setSlashMenu({ top: pos.top, left: pos.left, tokenStart });
     setSlashIdx(0);
+  };
+
+  /** v0.1.14: open the [[wiki-link]] autocomplete while typing "[[query"
+   *  (issue #34). Remembers where the "[[" token starts. */
+  const detectWiki = (value: string, caret: number) => {
+    const upto = value.slice(0, caret);
+    const m = upto.match(/\[\[([^\]\n]*)$/);
+    if (!m || !p.allNotes || p.allNotes.length === 0) { setWikiMenu(null); return; }
+    const query = m[1];
+    const tokenStart = caret - query.length - 2;
+    const pos = caretPopupPos(value, tokenStart);
+    setWikiMenu({ top: pos.top, left: pos.left, tokenStart });
+    setWikiQuery(query);
+    setWikiIdx(0);
+  };
+
+  /** v0.1.14: complete "[[que" into "[[Note Title]]" (issue #34). */
+  const applyWiki = (note: { id: string; title: string }) => {
+    const ta = noteEditorRef.current;
+    if (!wikiMenu || !ta) { setWikiMenu(null); return; }
+    const start = wikiMenu.tokenStart;
+    const end = ta.selectionStart;
+    const insertion = "[[" + note.title + "]]";
+    const next = p.noteContent.slice(0, start) + insertion + p.noteContent.slice(end);
+    p.setNoteContent(next);
+    setWikiMenu(null);
+    requestAnimationFrame(() => {
+      ta.focus();
+      const pos = start + insertion.length;
+      ta.setSelectionRange(pos, pos);
+      updateCursor();
+    });
   };
 
   /** v0.1.9: insert the chosen block, replacing the "/query" token.
@@ -274,7 +329,7 @@ export function MarkdownNote(p: Props) {
       }
     });
   };
-  const exitEdit = () => { setEditing(false); setSlashMenu(null); setTagPanel(null); };
+  const exitEdit = () => { setEditing(false); setSlashMenu(null); setWikiMenu(null); setTagPanel(null); };
 
   const insertMd = (before: string, after = "") => {
     const el = noteEditorRef.current;
@@ -308,6 +363,9 @@ export function MarkdownNote(p: Props) {
   };
 
   const onPreviewClick = (e: MouseEvent<HTMLDivElement>) => {
+    // v0.1.14: [[wiki-links]] open the target note (issue #34)
+    const wl = (e.target as HTMLElement).closest(".md-wikilink") as HTMLElement | null;
+    if (wl && p.onOpenWikiLink) { p.onOpenWikiLink(wl.dataset.note || wl.textContent || ""); return; }
     const box = (e.target as HTMLElement).closest(".md-checkbox") as HTMLElement | null;
     if (box) {
       flipTask(Number(box.dataset.task), box.dataset.done !== "1");
@@ -324,7 +382,9 @@ export function MarkdownNote(p: Props) {
     p.setNoteContent(v);
     updateCursor();
     const ta = noteEditorRef.current;
-    detectSlash(v, ta ? (ta.selectionStart ?? v.length) : v.length);
+    const caret = ta ? (ta.selectionStart ?? v.length) : v.length;
+    detectSlash(v, caret);
+    detectWiki(v, caret);
   };
 
   // v0.1.11: paste photos straight into the note (issue #26)
@@ -346,6 +406,13 @@ export function MarkdownNote(p: Props) {
   const onEditorKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     // v0.1.10: Esc closes the tag picker first (issue #24)
     if (tagPanel && e.key === "Escape") { e.preventDefault(); setTagPanel(null); return; }
+    // v0.1.14: [[wiki-link]] autocomplete keyboard control (issue #34)
+    if (wikiMenu && wikiFiltered.length > 0) {
+      if (e.key === "ArrowDown") { e.preventDefault(); setWikiIdx((i) => (i + 1) % wikiFiltered.length); return; }
+      if (e.key === "ArrowUp") { e.preventDefault(); setWikiIdx((i) => (i - 1 + wikiFiltered.length) % wikiFiltered.length); return; }
+      if (e.key === "Enter" || e.key === "Tab") { e.preventDefault(); applyWiki(wikiFiltered[wikiIdx]); return; }
+      if (e.key === "Escape") { e.preventDefault(); setWikiMenu(null); return; }
+    }
     // v0.1.9: slash menu keyboard control (issue #22)
     if (slashMenu && slashFiltered.length > 0) {
       if (e.key === "ArrowDown") { e.preventDefault(); setSlashIdx((i) => (i + 1) % slashFiltered.length); return; }
@@ -538,6 +605,7 @@ export function MarkdownNote(p: Props) {
               <button type="button" className="icon-btn" title="Strikethrough" onMouseDown={startToolbarAction} onClick={() => insertMd("~~", "~~")}><Strikethrough size={14} /></button>
               <button type="button" className="icon-btn" title="Highlight (==text==)" onMouseDown={startToolbarAction} onClick={() => insertMd("==", "==")}><Highlighter size={14} /></button>
               <button type="button" className="icon-btn" title="Colored text" onMouseDown={startToolbarAction} onClick={() => insertMd(COLOR_SPAN_OPEN, COLOR_SPAN_CLOSE)}><Palette size={14} /></button>
+              <button type="button" className="icon-btn" title="Wiki-link ([[note]])" onMouseDown={startToolbarAction} onClick={() => insertMd("[[", "]]")}><Link2 size={14} /></button>
               <button type="button" className="icon-btn" title="Heading" onMouseDown={startToolbarAction} onClick={() => insertMd("## ")}><Heading size={14} /></button>
               <button type="button" className="icon-btn" title="Inline code" onMouseDown={startToolbarAction} onClick={() => insertMd(BACKTICK, BACKTICK)}><Code size={14} /></button>
               <button type="button" className="icon-btn" title="Bullet list" onMouseDown={startToolbarAction} onClick={() => insertMd("- ")}><List size={14} /></button>
@@ -590,7 +658,7 @@ export function MarkdownNote(p: Props) {
                   onScroll={syncGutterScroll}
                   onPaste={onEditorPaste}
                   onBlur={exitEdit}
-                  placeholder={isMd ? "Write markdown… (Esc to preview, / for blocks, /tags for tags)" : "Write… (Esc to finish)"}
+                  placeholder={isMd ? "Write markdown… (Esc to preview, / for blocks, [[ for note links, /tags for tags)" : "Write… (Esc to finish)"}
                   autoFocus
                   spellCheck={false}
                 />
@@ -607,6 +675,22 @@ export function MarkdownNote(p: Props) {
                         <span className="slash-item-hint">{it.hint}</span>
                       </button>
                     ))}
+                  </div>
+                )}
+                {/* v0.1.14: [[wiki-link]] autocomplete (issue #34). */}
+                {wikiMenu && wikiFiltered.length > 0 && (
+                  <div className="slash-menu wiki-menu" style={{ top: wikiMenu.top, left: wikiMenu.left }}>
+                    {wikiFiltered.map((n, i) => (
+                      <button
+                        key={n.id}
+                        className={"slash-item " + (i === wikiIdx ? "active" : "")}
+                        onMouseDown={(e) => { e.preventDefault(); applyWiki(n); }}
+                        onMouseEnter={() => setWikiIdx(i)}
+                      >
+                        <span className="slash-item-label">[[{n.title}]]</span>
+                      </button>
+                    ))}
+                    <div className="wiki-menu-hint">Enter to link - Esc to close</div>
                   </div>
                 )}
                 {/* v0.1.10: "/tags" picker — Obsidian-style colored text,
@@ -653,6 +737,20 @@ export function MarkdownNote(p: Props) {
               />
             )}
           </div>
+          {/* v0.1.14: backlinks — other notes that link to this one (issue #34). */}
+          {!editing && (p.backlinks?.length ?? 0) > 0 && (
+            <div className="backlinks-section">
+              <div className="backlinks-title">Linked mentions ({p.backlinks!.length})</div>
+              <div className="backlinks-list">
+                {p.backlinks!.map((b) => (
+                  <button key={b.id} className="backlink-item" onClick={() => p.onOpenNoteById?.(b.id)}>
+                    <Link2 size={11} />
+                    <span>{b.title}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           <div className="note-status-bar">
             <span className="status-pos">Ln {cursorPos.line}, Col {cursorPos.col}</span>
             <span className={"status-net " + (online ? "is-online" : "is-offline")} title={online ? "Online" : "Offline"}>

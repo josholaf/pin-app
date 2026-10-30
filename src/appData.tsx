@@ -33,6 +33,9 @@ export type Note = {
   tags?: string[];
   favorite?: boolean;
   deletedAt?: number;
+  /** v0.1.14: reminder timestamp + when it last fired (issue #34). */
+  reminderAt?: number;
+  reminderFiredAt?: number;
 };
 
 export const NOTE_COLORS: { id: NoteColor; label: string; light: string; dark: string }[] = [
@@ -254,7 +257,8 @@ export function detectLang(code: string): string {
 
 /** Inline markdown: code, bold, italic, strikethrough, images, links.
  *  v0.1.10: ==highlight== marks and colored <span style="color: ..."> text (issue #24).
- *  v0.1.11: embedded audio players via [[audio|data:...]] (issue #26). */
+ *  v0.1.11: embedded audio players via [[audio|data:...]] (issue #26).
+ *  v0.1.14: [[note name]] wiki-links to other notes (issue #34). */
 function inlineMd(s: string): string {
   return s
     // v0.1.10: re-allow a single colored-span form so text color works in
@@ -265,6 +269,8 @@ function inlineMd(s: string): string {
     .replace(/==([^=\n]+)==/g, '<mark class="md-highlight">$1</mark>')
     // v0.1.11: [[audio|<src>]] renders as an inline audio player kept in the note (issue #26).
     .replace(/\[\[audio\|([^\]\n]+)\]\]/g, '<audio class="md-audio" controls preload="metadata" src="$1"></audio>')
+    // v0.1.14: [[note name]] renders as a clickable wiki-link (issue #34).
+    .replace(/\[\[([^\]\n]+)\]\]/g, '<span class="md-wikilink" data-note="$1">[[$1]]</span>')
     .replace(/`([^`\n]+)`/g, '<code class="md-code">$1</code>')
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
     .replace(/~~(.+?)~~/g, "<s>$1</s>")
