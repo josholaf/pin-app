@@ -77,24 +77,23 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.14' }}
-          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.14' }}"
+          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.15' }}
+          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.15' }}"
           releaseBody: |
-            **Pin v0.1.14** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
+            **Pin v0.1.15** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
 
-            ## What's new in v0.1.14
+            ## What's new in v0.1.15
 
             ### ✨ New in this release
-            - **Wiki-links** (#34) — type `[[` in a note to autocomplete other note titles, click a link in the preview to open (or create) the target note, and see a "Linked mentions" backlinks section under the preview.
-            - **Reminders** (#34) — right-click a note → Reminder, pick a date and time, and get a beep + in-app toast when it's due. A clock badge shows on notes with reminders (red when due).
-            - **Library export / import** (#34) — command palette: Export library as a ZIP of Markdown files, or import existing .md files and .zip archives back into Pin.
-            - **Themed cursor & selection** (#34) — the text caret and the copy/delete selection highlight now follow your accent color.
+            - **Quick capture box** (#36) — press the global Ctrl+Shift+P hotkey from anywhere in the OS: Pin comes to the front with a small capture box. Type a thought, hit Enter, the note saves instantly (first line becomes the title). Also on the Zap button and in the command palette.
+            - **Graph view** (#36) — an SVG map of your notes and their [[wiki-links]]: notes are nodes, links are edges, favorites sit closer to the center. Click a node to open its note, and use the search box (or the command palette) to filter nodes by title or content.
 
             ### 🚀 Previously shipped
+            - Wiki-links with autocomplete + backlinks, note reminders with toast and due badge, library ZIP export/import, themed caret and selection (v0.1.14)
             - Clean note list + macOS-style code blocks with language detection (v0.1.13)
             - Coding fonts (Fira Code, Source Code Pro, Hack) + smart font dropdown with per-font previews (v0.1.12)
             - Photo upload with 12px radius, 1-4 column grids, in-note audio recording and playback (v0.1.11)
-            - Tags on command (`/tags` picker, Obsidian-style), `==highlight==` and colored text (v0.1.10)
+            - Tags on command (/tags picker, Obsidian-style), ==highlight== and colored text (v0.1.10)
             - Accent-colored bullets and checkboxes + slash command menu (v0.1.9)
             - Line numbers in the note editor (v0.1.8)
             - Instant dark mode, themed window controls, full right-click note menu, colored tags with suggestions, markdown table button, syntax-highlighted code blocks (v0.1.7)
