@@ -233,6 +233,25 @@ export function highlightCode(code: string, langRaw: string): string {
   return parts.join("");
 }
 
+/** v0.1.13: guess the language of an untagged fenced code block from its
+ *  content, so the macOS-style title bar can name it (issue #30).
+ *  Checks the strongest signatures first; returns "" when unsure. */
+export function detectLang(code: string): string {
+  const s = code.slice(0, 4000);
+  if (/^\s*(<!DOCTYPE|<html\b|\s*<[a-z]+[\s>])/i.test(s) || /<\/[a-z]+>/i.test(s)) return "html";
+  if (/^\s*[{[][\s\S]*[}\]]\s*$/.test(s) && /"[A-Za-z_]+"\s*:/.test(s)) return "json";
+  if (/(\bfn\s+[A-Za-z_]\w*\s*\(|\blet\s+mut\b|\bimpl\s+[A-Za-z_]|\bmatch\s+\w+\s*\{)/.test(s)) return "rust";
+  if (/(\bdef\s+[A-Za-z_]\w*\s*\(|^\s*import\s+\w+|\bprint\s*\(|\belif\b)/m.test(s)) return "python";
+  if (/(#include\s*<|\bstd::|int\s+main\s*\()/.test(s)) return "cpp";
+  if (/(\bpackage\s+main\b|\bfunc\s+[A-Za-z_]\w*\s*\()/.test(s)) return "go";
+  if (/\bSELECT\b[\s\S]*\bFROM\b/i.test(s)) return "sql";
+  if (/^\s*[.#@][\w-]+[^{\n]*\{|^[a-z-]+\s*:\s*[^;{}]+;\s*$/m.test(s)) return "css";
+  if (/^\s*(\$|sudo |apt |npm |yarn |git |cd |ls |echo |export |#!)/m.test(s)) return "bash";
+  if (/\b(function\s|const\s|let\s|=>|console\.log\b)/.test(s)) return "js";
+  if (/^\s*[a-z-]+\s*:\s*\S/m.test(s) && !/[{};]/.test(s)) return "yaml";
+  return "";
+}
+
 /** Inline markdown: code, bold, italic, strikethrough, images, links.
  *  v0.1.10: ==highlight== marks and colored <span style="color: ..."> text (issue #24).
  *  v0.1.11: embedded audio players via [[audio|data:...]] (issue #26). */
@@ -290,7 +309,7 @@ export function markdownToHtml(md: string): string {
   if (!md.trim()) return "";
 
   const codeBlocks: string[] = [];
-  let text = md.replace(/```(\w*)\n?([\s\S]*?)```/g, function (_all: string, lang: string, code: string) {
+  let text = md.replace(/```([\w#+.-]*)\n?([\s\S]*?)```/g, function (_all: string, lang: string, code: string) {
     codeBlocks.push(lang + " LANG" + code.replace(/\n+$/, ""));
     return " CB" + (codeBlocks.length - 1) + " ";
   });
@@ -449,9 +468,20 @@ export function markdownToHtml(md: string): string {
     const sep = raw.indexOf(" LANG");
     const lang = sep >= 0 ? raw.slice(0, sep) : "";
     const code = sep >= 0 ? raw.slice(sep + 5) : raw;
-    const label = lang ? '<div class="md-code-lang">' + lang + "</div>" : "";
-    // v0.1.7: syntax coloring inside fenced blocks (issue #18)
-    return label + '<pre class="md-code-block"><code>' + highlightCode(code, lang) + "</code></pre>";
+    // v0.1.13: macOS-style code window — red/yellow/green traffic lights in
+    // the title bar, language name on the right side, rendered live by the
+    // preview while you edit inside the block (issue #30). Untagged blocks
+    // get their language auto-detected from the code itself.
+    const display = (lang || detectLang(code)).toLowerCase();
+    const label = display ? '<span class="md-code-lang">' + escapeHtml(display) + "</span>" : "";
+    return (
+      '<div class="md-code-window"><div class="md-code-titlebar">' +
+      '<span class="md-dot md-dot-red"></span><span class="md-dot md-dot-yellow"></span><span class="md-dot md-dot-green"></span>' +
+      label +
+      "</div>" +
+      // v0.1.7: syntax coloring inside fenced blocks (issue #18)
+      '<pre class="md-code-block"><code>' + highlightCode(code, lang || display) + "</code></pre></div>"
+    );
   });
 }
 

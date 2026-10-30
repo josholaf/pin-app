@@ -6,7 +6,7 @@ import { register, unregister, isRegistered } from "@tauri-apps/plugin-global-sh
 import {
   Pin, Moon, Sun, Plus, X, Play, Pause, RotateCcw, Search,
   ChevronDown, ChevronRight, FolderPlus, Flame, Folder, FolderOpen,
-  Coffee, Settings, Pencil, Trash2, Undo2, Command, Star, Minus,
+  Coffee, Settings, Trash2, Undo2, Command, Minus,
 } from "lucide-react";
 import {
   DEFAULT_SETTINGS, NOTE_COLORS,
@@ -465,6 +465,16 @@ function App() {
     if (openNoteId === id) setNoteIcon(iconId);
     setContextMenu(null);
   };
+  /** v0.1.13: change a note's color straight from the list context menu (issue #30). */
+  const setNoteColorFor = (id: string, color: NoteColor) => {
+    const n = notes.find((x) => x.id === id);
+    if (!n) return;
+    const updated = { ...n, color };
+    setNotes(notes.map((x) => (x.id === id ? updated : x)));
+    persistNote(updated);
+    if (openNoteId === id) setNoteColor(color);
+    setContextMenu(null);
+  };
   /** Toggle a note's favorite; favorites sort to the top of every list (issue #10). */
   const toggleFavorite = (id: string) => {
     const n = notes.find((x) => x.id === id);
@@ -830,24 +840,19 @@ function App() {
                   )}
                   <span className="folder-count">{folderNotes.length}</span>
                   <button className="icon-btn" onClick={() => createNoteInFolder(folder.id)}><Plus size={14} /></button>
-                  <button className="icon-btn delete-btn" onClick={() => deleteFolder(folder.id)}><X size={12} /></button>
                 </div>
                 {isExpanded && (
                   <div className="folder-notes">
                     {folderNotes.map((note) => {
                       const NoteIcon = getIcon(note.icon).Icon;
                       return (
-                        <div key={note.id} className="note-row" onContextMenu={(e) => { e.preventDefault(); setContextMenu({ type: "note", id: note.id, x: e.clientX, y: e.clientY }); }}>
+                        <div key={note.id} className="note-row" title="Right-click for options" onContextMenu={(e) => { e.preventDefault(); setContextMenu({ type: "note", id: note.id, x: e.clientX, y: e.clientY }); }}>
                           <NoteIcon size={13} />
                           {renamingId === note.id ? (
                             <input className="rename-input" value={renameText} autoFocus onChange={(e) => setRenameText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") renameNote(note.id, renameText); if (e.key === "Escape") setRenamingId(null); }} onBlur={() => renameNote(note.id, renameText)} />
                           ) : (
                             <button className="note-open-btn" onClick={() => openNote(note)}>{note.title || "Untitled"}</button>
                           )}
-                          <button className={"icon-btn star-btn " + (note.favorite ? "active" : "")} title={note.favorite ? "Remove favorite" : "Add favorite"} onClick={() => toggleFavorite(note.id)}><Star size={12} fill={note.favorite ? "currentColor" : "none"} /></button>
-                          <button className="icon-btn" title="Pin to desktop" onClick={() => pinNoteToDesktop(note)}><Pin size={12} /></button>
-                          <button className="icon-btn" title="Rename" onClick={() => startRename(note.id, note.title || "Untitled")}><Pencil size={12} /></button>
-                          <button className="icon-btn delete-btn" onClick={() => deleteNoteFromList(note.id)}><X size={12} /></button>
                         </div>
                       );
                     })}
@@ -859,17 +864,13 @@ function App() {
           {unfiledNotes.map((note) => {
             const NoteIcon = getIcon(note.icon).Icon;
             return (
-              <div key={note.id} className="note-row" onContextMenu={(e) => { e.preventDefault(); setContextMenu({ type: "note", id: note.id, x: e.clientX, y: e.clientY }); }}>
+              <div key={note.id} className="note-row" title="Right-click for options" onContextMenu={(e) => { e.preventDefault(); setContextMenu({ type: "note", id: note.id, x: e.clientX, y: e.clientY }); }}>
                 <NoteIcon size={13} />
                 {renamingId === note.id ? (
                   <input className="rename-input" value={renameText} autoFocus onChange={(e) => setRenameText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") renameNote(note.id, renameText); if (e.key === "Escape") setRenamingId(null); }} onBlur={() => renameNote(note.id, renameText)} />
                 ) : (
                   <button className="note-open-btn" onClick={() => openNote(note)}>{note.title || "Untitled"}</button>
                 )}
-                <button className={"icon-btn star-btn " + (note.favorite ? "active" : "")} title={note.favorite ? "Remove favorite" : "Add favorite"} onClick={() => toggleFavorite(note.id)}><Star size={12} fill={note.favorite ? "currentColor" : "none"} /></button>
-                <button className="icon-btn" title="Pin to desktop" onClick={() => pinNoteToDesktop(note)}><Pin size={12} /></button>
-                <button className="icon-btn" title="Rename" onClick={() => startRename(note.id, note.title || "Untitled")}><Pencil size={12} /></button>
-                <button className="icon-btn delete-btn" onClick={() => deleteNoteFromList(note.id)}><X size={12} /></button>
               </div>
             );
           })}
@@ -948,6 +949,22 @@ function App() {
             )}
             {contextMenu.type === "note" && (
               <button onClick={() => toggleFavorite(contextMenu.id)}>{notes.find((x) => x.id === contextMenu.id)?.favorite ? "Remove favorite" : "Add favorite"}</button>
+            )}
+            {contextMenu.type === "note" && (
+              <div className="context-menu-icons">
+                <div className="context-menu-icons-title">Change color</div>
+                <div className="context-color-grid">
+                  {NOTE_COLORS.map((c) => (
+                    <button
+                      key={c.id}
+                      className={"color-option " + (notes.find((x) => x.id === contextMenu.id)?.color === c.id ? "active" : "")}
+                      style={{ background: c.light }}
+                      title={c.label}
+                      onClick={() => setNoteColorFor(contextMenu.id, c.id)}
+                    />
+                  ))}
+                </div>
+              </div>
             )}
             <button className="danger" onClick={() => {
               if (contextMenu.type === "folder") deleteFolder(contextMenu.id);

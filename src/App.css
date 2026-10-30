@@ -1109,7 +1109,7 @@ body {
 [data-theme="dark"] .palette { --palette-bg: #2b2b2b; --palette-fg: #eee; }
 .palette-input { border: none; border-bottom: 1px solid rgba(128, 128, 128, 0.3); padding: 10px 12px; font-size: 13px; background: transparent; color: inherit; outline: none; }
 .palette-items { overflow-y: auto; flex: 1; }
-.palette-item { display: block; width: 100%; text-align: left; border: none; background: none; padding: 7px 12px; cursor: pointer; color: inherit; }
+.palette-item { display: block; width: 100%;; text-align: left; border: none; background: none; padding: 7px 12px; cursor: pointer; color: inherit; }
 .palette-item:hover { background: rgba(76, 175, 80, 0.16); }
 .palette-item-title { font-size: 13px; }
 .palette-item-sub { font-size: 11px; opacity: 0.6; }
@@ -1538,6 +1538,8 @@ body {
   opacity: 1 !important;
   background: rgba(229, 57, 53, 0.12) !important;
 }
+
+/* ===== v0.1.12: smart modern font dropdown (issue #28) ===== */
 .font-dropdown {
   position: relative;
   display: block;
@@ -1677,4 +1679,80 @@ body {
   color: var(--text-muted);
   opacity: 0.7;
   padding: 2px 8px 0;
+}
+
+/* ===== v0.1.13: clean note rows + macOS-style code windows (issue #30) ===== */
+
+/* Note rows are clean now: just icon + title, all actions live in the
+   right-click context menu (issue #30). */
+.note-row {
+  cursor: context-menu;
+}
+
+/* Color swatch grid inside the note context menu. */
+.context-color-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
+  padding: 0 2px;
+}
+.context-color-grid .color-option {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+}
+
+/* macOS-style code block: rounded window with its own title bar holding
+   the red / yellow / green traffic lights and the language name on the
+   right side. Rendered live by the preview while editing (issue #30). */
+.md-code-window {
+  margin: 6px 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--input-bg) 88%, var(--titlebar-bg));
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+[data-theme="dark"] .md-code-window {
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+.md-code-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: color-mix(in srgb, var(--titlebar-bg) 55%, transparent);
+  border-bottom: 1px solid var(--border);
+  user-select: none;
+}
+.md-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+.md-dot-red { background: #ff5f57; }
+.md-dot-yellow { background: #febc2e; }
+.md-dot-green { background: #28c840; }
+
+/* Language label sits on the right side of the Mac title bar. The old
+   floating-label styles are reset inside the window. */
+.md-code-window .md-code-lang {
+  margin: 0 0 0 auto;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+/* The pre fills the rest of the window with no gaps. */
+.md-code-window .md-code-block {
+  margin: 0;
+  border-radius: 0;
+  background: transparent;
 }
