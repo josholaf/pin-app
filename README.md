@@ -6,14 +6,26 @@ Small floating windows that stay on top (or on the desktop layer) so you can kee
 
 ## Features
 
-- **Sticky-note windows** — frameless, transparent, always-on-top or desktop layer
+- **Sticky-note windows** — frameless, always-on-top or desktop layer
 - **Folders** — organize notes under folders
 - **Lucide icons** — assign icons to notes and folders
-- **Per-note colors**
-- **Pomodoro timer** (25 min focus / 5 min break) with sound + auto-switch
+- **Per-note colors** — pick from the right-click menu or the note title bar
+- **Markdown notes** — headings, lists, interactive task checkboxes, tables, quotes, images, links, `==highlight==` and colored text
+- **macOS-style code blocks** — every fenced code block renders as a little Mac window: red / yellow / green traffic lights and the language name on the right side
+- **Code language detection** — fence tags accept any language (````html`, ````rust`, ````c++` ...), and untagged blocks get their language auto-detected from the code itself
+- **Syntax highlighting** — keywords, strings, numbers, comments and functions colored in light and dark themes
+- **Coding fonts** — Fira Code, Source Code Pro, Hack and JetBrains Mono bundled for offline use, plus system, serif, rounded and casual fonts
+- **Smart font dropdown** — each font previews in its own typeface with an "Aa 123" sample, live search, keyboard navigation
+- **Clean note list** — rows are just icon + title; every action lives in the right-click menu: Edit, Rename, Pin to desktop, Favorite, Change color, Change icon, Delete
+- **Tags** — Obsidian-style colored tags added with the `/tags` picker, searchable across notes
+- **Photos & audio** — upload photos (soft 12px radius), lay them out in 1–4 column grids, record audio straight into a note
+- **Editor extras** — line numbers, slash command menu (`/`), live markdown preview, `Ctrl+S` save flash and `Ctrl+Z` undo
+- **Trash** — deleted notes, folders and tasks land in trash first, restore or purge from there
+- **Command palette** — `Ctrl+K` for everything, `Ctrl+Shift+P` quick capture from anywhere
+- **Pomodoro timer** (25 min focus / 5 min break) with sound + auto-switch, and a daily focus-session counter
 - **Daily writing streak** — fire icon in the title bar that grows when you create or write notes
 - **Settings** — font size, font style, accent color, always-on-top vs stay on desktop
-- **Dark mode**
+- **Dark mode** — instant flip, themed controls
 - Local-only storage (no cloud)
 
 ## Usage
@@ -21,9 +33,12 @@ Small floating windows that stay on top (or on the desktop layer) so you can kee
 ### Main window
 - **+** → new sticky note
 - **Folder+** → create a folder
-- Click folder / note icons to change them
-- Click a note name to open it as a floating window
-- Gear icon → Settings (font, accent, window behavior)
+- **Click a note** → open it in the editor
+- **Right-click a note** → full menu: Edit, Rename, Pin to desktop, Favorite, Change color, Change icon, Delete
+- **Right-click a folder** → Rename, New note, Delete
+- **Search box** → live search across titles, content and tags
+- **Ctrl+K** → command palette
+- Gear icon → Settings (fonts, accent, window behavior)
 - Fire badge (top right) → your current daily writing streak
 <img width="284" height="410" alt="Screenshot 2026-10-25 202521" src="https://github.com/user-attachments/assets/cb08b959-9c86-43df-9077-af5501631579" />
 <img width="249" height="343" alt="Screenshot 2026-10-25 202627" src="https://github.com/user-attachments/assets/3a3d05dc-9367-4ff3-81c6-ca6634a872aa" />
@@ -32,9 +47,11 @@ Small floating windows that stay on top (or on the desktop layer) so you can kee
 
 
 
-### Note windows
-- Title + body, color picker, icon sidebar
-- Auto-saves as you type
+### Note editor
+- Markdown with live preview, toolbar shortcuts, line numbers and slash commands
+- Type ````html` (or any language) to get a macOS-style code window with syntax coloring
+- `/tags` → tag picker; `==text==` → highlight; upload photos and record audio from the toolbar
+- Auto-saves as you type, `Ctrl+S` for an instant save, `Ctrl+Z` to undo
 
 
 ---
