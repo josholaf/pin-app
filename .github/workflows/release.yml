@@ -77,18 +77,18 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.15' }}
-          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.15' }}"
+          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.16' }}
+          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.16' }}"
           releaseBody: |
-            **Pin v0.1.15** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
+            **Pin v0.1.16** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
 
-            ## What's new in v0.1.15
+            ## What's new in v0.1.16
 
             ### ✨ New in this release
-            - **Quick capture box** (#36) — press the global Ctrl+Shift+P hotkey from anywhere in the OS: Pin comes to the front with a small capture box. Type a thought, hit Enter, the note saves instantly (first line becomes the title). Also on the Zap button and in the command palette.
-            - **Graph view** (#36) — an SVG map of your notes and their [[wiki-links]]: notes are nodes, links are edges, favorites sit closer to the center. Click a node to open its note, and use the search box (or the command palette) to filter nodes by title or content.
+            - **Focus mode** (#38) — pop the open note into a distraction-free overlay. Only the title and your words are visible, everything else fades away. Typewriter scrolling keeps the caret near the center of the screen, a quiet word count sits at the bottom, and Esc (or the expand button in the toolbar) brings the normal editor back. Edits save through the existing autosave.
 
             ### 🚀 Previously shipped
+            - Quick capture box on the global Ctrl+Shift+P hotkey + graph view with search (v0.1.15)
             - Wiki-links with autocomplete + backlinks, note reminders with toast and due badge, library ZIP export/import, themed caret and selection (v0.1.14)
             - Clean note list + macOS-style code blocks with language detection (v0.1.13)
             - Coding fonts (Fira Code, Source Code Pro, Hack) + smart font dropdown with per-font previews (v0.1.12)

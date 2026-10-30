@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type MouseEvent, type KeyboardEvent, type 
 import {
   Moon, Sun, X, Bold, Italic, List, ListOrdered, CheckSquare,
   Heading, Code, TextQuote, Link as LinkIcon, Strikethrough, ArrowLeft,
-  Pin, Download, Copy, Table, Highlighter, Palette, ImagePlus, Mic, Square, LayoutGrid, Link2,
+  Pin, Download, Copy, Table, Highlighter, Palette, ImagePlus, Mic, Square, LayoutGrid, Link2, Maximize2,
 } from "lucide-react";
 import { save } from "@tauri-apps/plugin-dialog";
 import { writeTextFile } from "@tauri-apps/plugin-fs";
@@ -114,6 +114,9 @@ export function MarkdownNote(p: Props) {
   const recTimerRef = useRef<number | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  // v0.1.16: focus mode — distraction-free overlay on the open note (issue #38)
+  const [focusMode, setFocusMode] = useState(false);
+  const focusRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
     const goOnline = () => setOnline(true);
@@ -212,6 +215,24 @@ export function MarkdownNote(p: Props) {
     const gutter = lineNumRef.current;
     if (ta && gutter) gutter.scrollTop = ta.scrollTop;
   };
+
+  /** v0.1.16: focus mode — typewriter scrolling keeps the caret vertically
+   *  centered while writing, so the eye never has to chase the text (issue #38). */
+  const typewriterScroll = () => {
+    const el = focusRef.current;
+    if (!el) return;
+    const caret = el.selectionStart ?? 0;
+    const lineIdx = el.value.slice(0, caret).split("\n").length - 1;
+    const lineH = (p.settings.fontSize || 14) * 1.7;
+    el.scrollTop = Math.max(0, lineIdx * lineH - el.clientHeight / 2);
+  };
+  useEffect(() => {
+    if (!focusMode) return;
+    requestAnimationFrame(() => {
+      const el = focusRef.current;
+      if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
+    });
+  }, [focusMode]);
 
   /** Shared caret-to-popup math for the slash and wiki menus. */
   const caretPopupPos = (value: string, tokenStart: number) => {
@@ -635,6 +656,7 @@ export function MarkdownNote(p: Props) {
               ) : (
                 <button type="button" className="icon-btn" title="Record audio into this note" onMouseDown={startToolbarAction} onClick={startRecording}><Mic size={14} /></button>
               )}
+              <button type="button" className="icon-btn" title="Focus mode — just the title and your words (Esc to exit)" onMouseDown={startToolbarAction} onClick={() => setFocusMode(true)}><Maximize2 size={14} /></button>
               <div className="md-toolbar-spacer" />
             </div>
           )}
@@ -785,6 +807,39 @@ export function MarkdownNote(p: Props) {
                     <Icon size={18} />
                   </button>
                 ))}
+              </div>
+            </div>
+          </div>
+        )}
+        {/* v0.1.16: focus mode — everything fades away except the title,
+            the text and a quiet word count (issue #38). */}
+        {focusMode && (
+          <div className="focus-overlay" style={{ background: bgColor }}>
+            <button className="icon-btn focus-exit" title="Exit focus mode (Esc)" onClick={() => setFocusMode(false)}><X size={16} /></button>
+            <div className="focus-inner">
+              <input
+                className="focus-title"
+                value={p.noteTitle}
+                onChange={(e) => p.setNoteTitle(e.target.value)}
+                placeholder="Title..."
+                style={{ fontFamily: p.settings.fontFamily }}
+              />
+              <textarea
+                ref={focusRef}
+                className="focus-editor"
+                value={p.noteContent}
+                onChange={(e) => { p.setNoteContent(e.target.value); requestAnimationFrame(typewriterScroll); }}
+                onKeyUp={typewriterScroll}
+                onClick={typewriterScroll}
+                onKeyDown={(e) => { if (e.key === "Escape") { e.preventDefault(); setFocusMode(false); } }}
+                placeholder="Just write…"
+                autoFocus
+                spellCheck={false}
+                style={{ fontFamily: p.settings.fontFamily, fontSize: (p.settings.fontSize || 14) + 2 }}
+              />
+              <div className="focus-footer">
+                <span className="focus-hint">Focus mode — Esc to exit</span>
+                <span className="focus-words">{words} {words === 1 ? "word" : "words"}</span>
               </div>
             </div>
           </div>
