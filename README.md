@@ -17,6 +17,8 @@ Small floating windows that stay on top (or on the desktop layer) so you can kee
 - **Coding fonts** — Fira Code, Source Code Pro, Hack and JetBrains Mono bundled for offline use, plus system, serif, rounded and casual fonts
 - **Smart font dropdown** — each font previews in its own typeface with an "Aa 123" sample, live search, keyboard navigation
 - **Wiki-links** — type `[[` to autocomplete note titles, click a link in the preview to open (or create) the target note, with a "Linked mentions" backlinks section
+- **Graph view** — an SVG map of notes (nodes) and wiki-links (edges); click a node to open its note, search filters nodes by title or content
+- **Quick capture** — global Ctrl+Shift+P hotkey from anywhere in the OS opens a small capture box; type, hit Enter, the note saves instantly (first line becomes the title)
 - **Reminders** — right-click a note → Reminder, pick a date and time; get a beep + in-app toast when due, with a clock badge on the note (red when due)
 - **Library export / import** — command palette: export all notes as a ZIP of Markdown files, import .md files or .zip archives back into Pin
 - **Clean note list** — rows are just icon + title; every action lives in the right-click menu: Edit, Rename, Pin to desktop, Favorite, Reminder, Change color, Change icon, Delete
@@ -35,12 +37,13 @@ Small floating windows that stay on top (or on the desktop layer) so you can kee
 
 ### Main window
 - **+** → new sticky note
+- **⚡ (Zap)** → quick capture box (same as global Ctrl+Shift+P)
 - **Folder+** → create a folder
 - **Click a note** → open it in the editor
 - **Right-click a note** → full menu: Edit, Rename, Pin to desktop, Favorite, Reminder, Change color, Change icon, Delete
 - **Right-click a folder** → Rename, New note, Delete
 - **Search box** → live search across titles, content and tags
-- **Ctrl+K** → command palette (export library, import notes, everything else)
+- **Ctrl+K** → command palette (graph view, quick capture, export library, import notes, everything else)
 - Gear icon → Settings (fonts, accent, window behavior)
 - Fire badge (top right) → your current daily writing streak
 <img width="284" height="410" alt="Screenshot 2026-10-25 202521" src="https://github.com/user-attachments/assets/cb08b959-9c86-43df-9077-af5501631579" />

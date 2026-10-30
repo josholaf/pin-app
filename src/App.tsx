@@ -9,7 +9,7 @@ import { register, unregister, isRegistered } from "@tauri-apps/plugin-global-sh
 import {
   Pin, Moon, Sun, Plus, X, Play, Pause, RotateCcw, Search,
   ChevronDown, ChevronRight, FolderPlus, Flame, Folder, FolderOpen,
-  Coffee, Settings, Trash2, Undo2, Command, Minus, Clock,
+  Coffee, Settings, Trash2, Undo2, Command, Minus, Clock, Zap,
 } from "lucide-react";
 import {
   DEFAULT_SETTINGS, NOTE_COLORS,
@@ -148,6 +148,12 @@ function App() {
   // and the toast shown when a reminder comes due.
   const [reminderDraft, setReminderDraft] = useState("");
   const [reminderToast, setReminderToast] = useState<{ id: string; title: string } | null>(null);
+  // v0.1.15: quick capture box opened by the global hotkey, and the
+  // wiki-link graph view with its search box (issue #36).
+  const [quickCaptureOpen, setQuickCaptureOpen] = useState(false);
+  const [quickCaptureText, setQuickCaptureText] = useState("");
+  const [graphOpen, setGraphOpen] = useState(false);
+  const [graphQuery, setGraphQuery] = useState("");
   const totalSeconds = pomodoroMode === "focus" ? FOCUS_SECONDS : BREAK_SECONDS;
   const progress = ((totalSeconds - secondsLeft) / totalSeconds) * 100;
 
@@ -361,6 +367,8 @@ function App() {
     setNoteFormat(note.format || "md");
     setOpenNoteId(note.id);
     setContextMenu(null);
+    // v0.1.15: leaving the list view also closes the graph (issue #36)
+    setGraphOpen(false);
     // v0.1.6: fresh undo history per opened note (issue #16)
     undoStackRef.current = [];
     lastPushRef.current = 0;
@@ -500,6 +508,19 @@ function App() {
     recordActivity();
     openNote(note);
   };
+  // v0.1.15: save the quick capture box. First line becomes the title,
+  // the whole text stays as the note content (issue #36).
+  const quickCaptureSave = () => {
+    const text = quickCaptureText.trim();
+    if (!text) return;
+    const firstLine = text.split("\n")[0].trim().slice(0, 80);
+    const note: Note = { id: crypto.randomUUID(), title: firstLine || "Untitled", content: text, color: "yellow", icon: "sticky-note", folderId: null, createdAt: Date.now(), format: "md" };
+    setNotes([note, ...notes]);
+    persistNote(note);
+    recordActivity();
+    setQuickCaptureText("");
+    setQuickCaptureOpen(false);
+  };
   // v0.1.5: deleting a note moves it to Trash (soft delete) instead of
   // destroying it immediately (issue #4).
   const deleteNoteFromList = (id: string) => {
@@ -592,6 +613,8 @@ function App() {
     setTagFilter(null);
     setTrashOpen(false);
     setFocusDone(null);
+    setGraphOpen(false);
+    setQuickCaptureOpen(false);
   };
 
   // ===== v0.1.14: wiki-links, reminders, export / import (issue #34) =====
@@ -706,9 +729,9 @@ function App() {
   };
 
   // Global quick-capture hotkey (Ctrl/Cmd+Shift+P): bring Pin to the
-  // front and drop you straight into a fresh note, from anywhere.
+  // front and open the quick capture box, from anywhere in the OS (issue #36).
   const quickCaptureRef = useRef<() => void>(() => {});
-  quickCaptureRef.current = () => createNoteInFolder(null);
+  quickCaptureRef.current = () => { setQuickCaptureText(""); setQuickCaptureOpen(true); };
   useEffect(() => {
     if (windowLabel !== "main") return;
     (async () => {
@@ -783,6 +806,40 @@ function App() {
     : [];
   const linkableNotes = activeNotes.map((n) => ({ id: n.id, title: n.title || "Untitled" }));
 
+  // ===== v0.1.15: graph view over the wiki-links (issue #36) =====
+  // Nodes are notes, edges are [[wiki-links]] between note titles.
+  // Layout: deterministic ring, favorites pulled toward the center so
+  // hubs are easy to spot. The search box dims non-matching nodes.
+  const gq = graphQuery.trim().toLowerCase();
+  const graphNodes = activeNotes.map((n, i) => {
+    const count = Math.max(activeNotes.length, 1);
+    const angle = (i / count) * Math.PI * 2;
+    const radius = n.favorite ? 60 : 110;
+    const cx = 160;
+    const cy = 150;
+    return {
+      id: n.id,
+      title: n.title || "Untitled",
+      x: cx + radius * Math.cos(angle),
+      y: cy + radius * Math.sin(angle),
+      favorite: !!n.favorite,
+      dimmed: !!gq && !((n.title || "").toLowerCase().includes(gq) || (n.content || "").toLowerCase().includes(gq)),
+    };
+  });
+  const nodePos = new Map(graphNodes.map((g) => [g.id, g]));
+  const titleToId = new Map(activeNotes.map((n) => [(n.title || "").trim().toLowerCase(), n.id]));
+  const graphEdges: { from: string; to: string }[] = [];
+  activeNotes.forEach((n) => {
+    const raw = (n.content || "").match(/\[\[([^\]\n]+)\]\]/g) || [];
+    raw.forEach((link) => {
+      const target = titleToId.get(link.slice(2, -2).trim().toLowerCase());
+      if (target && target !== n.id) {
+        graphEdges.push({ from: n.id, to: target });
+      }
+    });
+  });
+  const linkedCount = new Set([...graphEdges.map((e) => e.from), ...graphEdges.map((e) => e.to)]).size;
+
   if (windowLabel === "settings") {
     return (
       <SettingsWindow
@@ -856,6 +913,9 @@ function App() {
     // v0.1.14: library backup (issue #34)
     { id: "export-zip", title: "Export library (ZIP)", subtitle: "Backup all notes as .md files in a ZIP", run: () => { exportLibraryZip(); } },
     { id: "import-notes", title: "Import notes", subtitle: "Bring in .md files or a ZIP backup", run: () => { importNotes(); } },
+    // v0.1.15: quick capture box + wiki-link graph (issue #36)
+    { id: "quick-capture", title: "Quick capture", subtitle: "Type a thought, Enter to save (also Ctrl+Shift+P anywhere)", run: () => { setQuickCaptureText(""); setQuickCaptureOpen(true); } },
+    { id: "graph-view", title: "Graph view", subtitle: "Map of notes and their wiki-links, with search", run: () => { setGraphOpen(true); } },
   ];
   if (trashCount > 0) {
     paletteItems.push({ id: "empty-trash", title: "Empty trash", subtitle: "Delete all trashed notes forever", run: () => emptyTrash() });
@@ -887,7 +947,53 @@ function App() {
         </div>
       </header>
 
-      {trashOpen ? (
+      {graphOpen ? (
+        <div className="graph-section">
+          <div className="graph-header">
+            <span>Graph{" (" + linkedCount + " linked)"}</span>
+            <div className="graph-header-actions">
+              <div className="graph-search-row">
+                <Search size={12} className="search-icon" />
+                <input
+                  className="graph-search-input"
+                  value={graphQuery}
+                  onChange={(e) => setGraphQuery(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Escape") { e.preventDefault(); setGraphQuery(""); } }}
+                  placeholder="Search notes in graph..."
+                  autoFocus
+                />
+              </div>
+              <button className="small-btn trash-back-btn" onClick={() => { setGraphOpen(false); setGraphQuery(""); }} title="Back to notes">Back</button>
+            </div>
+          </div>
+          <div className="graph-canvas">
+            {activeNotes.length === 0 ? (
+              <p className="graph-empty">No notes yet. Create a note and link it with [[double brackets]] to build your graph.</p>
+            ) : (
+              <svg viewBox="0 0 320 300" className="graph-svg">
+                {graphEdges.map((e, i) => {
+                  const a = nodePos.get(e.from);
+                  const b = nodePos.get(e.to);
+                  if (!a || !b) return null;
+                  const dim = !!gq && (a.dimmed || b.dimmed);
+                  return <line key={i} x1={a.x} y1={a.y} x2={b.x} y2={b.y} className="graph-edge" style={{ opacity: dim ? 0.06 : 0.5 }} />;
+                })}
+                {graphNodes.map((g) => (
+                  <g key={g.id} className={"graph-node" + (g.dimmed ? " dimmed" : "") + (g.favorite ? " favorite" : "")} onClick={() => openNoteById(g.id)}>
+                    <circle cx={g.x} cy={g.y} r={g.favorite ? 9 : 7} className="graph-node-dot" />
+                    <text x={g.x} y={g.y + 18} textAnchor="middle" className="graph-node-label">{g.title.slice(0, 18)}</text>
+                  </g>
+                ))}
+              </svg>
+            )}
+          </div>
+          <div className="graph-legend">
+            <span><span className="graph-legend-dot" /> note</span>
+            <span><span className="graph-legend-dot favorite" /> favorite</span>
+            <span className="graph-legend-hint">Click a node to open its note. Type [[ in a note to link notes.</span>
+          </div>
+        </div>
+      ) : trashOpen ? (
         <div className="trash-section">
           <div className="trash-view-header">
             <span>Trash{trashCount > 0 ? " (" + trashCount + ")" : ""}</span>
@@ -932,6 +1038,7 @@ function App() {
         <div className="library-header">
           <span>Notes &amp; Folders</span>
           <div className="library-header-actions">
+            <button onClick={() => { setQuickCaptureText(""); setQuickCaptureOpen(true); }} title="Quick capture (Ctrl+Shift+P)" className="icon-btn"><Zap size={14} /></button>
             <button onClick={() => createNoteInFolder(null)} title="New Note" className="icon-btn"><Plus size={14} /></button>
             <button onClick={() => setShowNewFolder(true)} title="New Folder" className="icon-btn"><FolderPlus size={14} /></button>
           </div>
@@ -1033,6 +1140,34 @@ function App() {
         ))}
       </ul>
       </>
+      )}
+
+      {quickCaptureOpen && (
+        <div className="capture-overlay" onClick={() => setQuickCaptureOpen(false)}>
+          <div className="capture-box" onClick={(e) => e.stopPropagation()}>
+            <div className="capture-header">
+              <Zap size={13} className="capture-icon" />
+              <span className="capture-title">Quick capture</span>
+              <button className="icon-btn" title="Close (Esc)" onClick={() => setQuickCaptureOpen(false)}><X size={14} /></button>
+            </div>
+            <textarea
+              className="capture-input"
+              autoFocus
+              value={quickCaptureText}
+              onChange={(e) => setQuickCaptureText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); quickCaptureSave(); }
+                if (e.key === "Escape") { e.preventDefault(); setQuickCaptureOpen(false); }
+              }}
+              placeholder="Type a thought... Enter to save, Shift+Enter for a new line"
+              rows={3}
+            />
+            <div className="capture-footer">
+              <span className="capture-hint">First line becomes the title</span>
+              <button className="small-btn capture-save-btn" onClick={quickCaptureSave}>Save note</button>
+            </div>
+          </div>
+        </div>
       )}
 
       {paletteOpen && (

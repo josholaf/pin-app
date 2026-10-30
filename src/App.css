@@ -1949,3 +1949,172 @@ body {
   background: rgba(128, 128, 128, 0.18);
   color: var(--text);
 }
+/* ===== v0.1.15: quick capture box + graph view (issue #36) ===== */
+
+/* Quick capture overlay: small centered box, opened by the global
+   Ctrl+Shift+P hotkey or the Zap button in the library header. */
+.capture-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 48px;
+}
+.capture-box {
+  width: 292px;
+  background: var(--input-bg);
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.35);
+  padding: 10px 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: font-drop-in 0.16s ease;
+}
+.capture-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.capture-icon { color: var(--accent); }
+.capture-title { flex: 1; }
+.capture-input {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.45;
+  padding: 8px 10px;
+  outline: none;
+  resize: vertical;
+  min-height: 58px;
+  font-family: inherit;
+}
+.capture-input:focus { border-color: var(--accent); }
+.capture-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.capture-hint {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+.capture-save-btn { border: none; }
+
+/* Graph view: full list-area replacement with an SVG map of notes
+   (nodes) and [[wiki-links]] (edges). Search dims non-matching nodes. */
+.graph-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.graph-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+}
+.graph-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-transform: none;
+  font-weight: 400;
+}
+.graph-search-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.graph-search-input {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--input-bg);
+  color: var(--text);
+  font-size: 11px;
+  padding: 4px 10px;
+  outline: none;
+  width: 110px;
+}
+.graph-search-input:focus { border-color: var(--accent); }
+.graph-canvas {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.graph-svg {
+  width: 100%;
+  height: 100%;
+  max-height: 320px;
+}
+.graph-edge {
+  stroke: var(--accent);
+  stroke-width: 1;
+  transition: opacity 0.15s ease;
+}
+.graph-node { cursor: pointer; }
+.graph-node-dot {
+  fill: var(--accent);
+  stroke: var(--bg);
+  stroke-width: 1.5;
+  transition: r 0.15s ease, fill 0.15s ease;
+}
+.graph-node:hover .graph-node-dot { fill: var(--input-focus); }
+.graph-node.favorite .graph-node-dot { fill: #f5b400; }
+.graph-node-label {
+  font-size: 9px;
+  fill: var(--text-muted);
+  user-select: none;
+  pointer-events: none;
+}
+.graph-node.dimmed { opacity: 0.18; }
+.graph-empty {
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 16px;
+  margin: 0;
+  text-align: center;
+}
+.graph-legend {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 5px 14px;
+  border-top: 1px solid var(--border);
+  font-size: 10px;
+  color: var(--text-muted);
+}
+.graph-legend-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  margin-right: 4px;
+  vertical-align: -1px;
+}
+.graph-legend-dot.favorite { background: #f5b400; }
+.graph-legend-hint { flex: 1; text-align: right; min-width: 100%; }
