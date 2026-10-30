@@ -1756,3 +1756,196 @@ body {
   border-radius: 0;
   background: transparent;
 }
+
+/* ===== v0.1.14: wiki-links, reminders, themed caret & selection (issue #34) ===== */
+
+/* Themed cursor: the text caret follows the accent color (issue #34). */
+.pin-window input,
+.pin-window textarea {
+  caret-color: var(--accent);
+}
+
+/* Themed selection: copy/delete highlights use an accent tint (issue #34). */
+.pin-window ::selection {
+  background: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+.pin-window input::selection,
+.pin-window textarea::selection {
+  background: color-mix(in srgb, var(--accent) 40%, transparent);
+}
+
+/* [[Wiki-links]] in the preview: accent-colored, underlined, clickable. */
+.note-content-preview .md-wikilink {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.note-content-preview .md-wikilink:hover {
+  opacity: 0.8;
+}
+
+/* Wiki-link autocomplete hint inside the shared slash popup. */
+.wiki-menu-hint {
+  font-size: 9px;
+  color: var(--text-muted);
+  opacity: 0.7;
+  padding: 3px 8px 1px;
+  border-top: 1px solid var(--border);
+  margin-top: 2px;
+}
+
+/* "Linked mentions" backlinks section under the preview (issue #34). */
+.backlinks-section {
+  border-top: 1px solid var(--border);
+  padding: 6px 14px 8px;
+  flex-shrink: 0;
+  max-height: 110px;
+  overflow-y: auto;
+  background: color-mix(in srgb, var(--titlebar-bg) 35%, transparent);
+}
+.backlinks-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  padding: 2px 0 4px;
+}
+.backlinks-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.backlink-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  cursor: pointer;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.backlink-item:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Clock badge on notes with reminders (red when due, issue #34). */
+.reminder-badge {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-muted);
+  opacity: 0.75;
+  flex-shrink: 0;
+}
+.reminder-badge.due {
+  color: #e53935;
+  opacity: 1;
+  animation: rec-pulse 1.2s ease-in-out infinite;
+}
+
+/* Reminder section inside the note context menu (issue #34). */
+.context-menu-reminder {
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+  padding-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.reminder-input {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--input-bg);
+  color: var(--text);
+  font-size: 11px;
+  padding: 4px 8px;
+  outline: none;
+}
+.reminder-input:focus {
+  border-color: var(--accent);
+}
+.reminder-actions {
+  display: flex;
+  gap: 4px;
+}
+.reminder-set-btn {
+  flex: 1;
+  border: none;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 8px;
+  cursor: pointer;
+}
+.reminder-set-btn:hover {
+  opacity: 0.9;
+}
+.reminder-when {
+  font-size: 10px;
+  color: var(--text-muted);
+  padding: 0 4px;
+}
+
+/* Reminder toast: fixed overlay at the bottom of the main window. */
+.reminder-toast {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 14px;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--input-bg);
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.3);
+  padding: 8px 12px;
+  max-width: 90%;
+  animation: font-drop-in 0.18s ease;
+}
+.reminder-toast-icon {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.reminder-toast-text {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.reminder-toast-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.reminder-toast-actions button {
+  border: none;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+.reminder-toast-open {
+  background: var(--accent);
+  color: #fff;
+}
+.reminder-toast-dismiss {
+  background: rgba(128, 128, 128, 0.18);
+  color: var(--text);
+}

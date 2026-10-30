@@ -2,11 +2,14 @@ import { useState, useEffect, useRef } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { Store } from "@tauri-apps/plugin-store";
+import { save, open as openFileDialog } from "@tauri-apps/plugin-dialog";
+import { writeFile, readFile, readTextFile } from "@tauri-apps/plugin-fs";
+import JSZip from "jszip";
 import { register, unregister, isRegistered } from "@tauri-apps/plugin-global-shortcut";
 import {
   Pin, Moon, Sun, Plus, X, Play, Pause, RotateCcw, Search,
   ChevronDown, ChevronRight, FolderPlus, Flame, Folder, FolderOpen,
-  Coffee, Settings, Trash2, Undo2, Command, Minus,
+  Coffee, Settings, Trash2, Undo2, Command, Minus, Clock,
 } from "lucide-react";
 import {
   DEFAULT_SETTINGS, NOTE_COLORS,
@@ -141,6 +144,10 @@ function App() {
   const [savedAt, setSavedAt] = useState(0);
   const undoStackRef = useRef<string[]>([]);
   const lastPushRef = useRef(0);
+  // v0.1.14: note reminders (issue #34) — draft input in the context menu
+  // and the toast shown when a reminder comes due.
+  const [reminderDraft, setReminderDraft] = useState("");
+  const [reminderToast, setReminderToast] = useState<{ id: string; title: string } | null>(null);
   const totalSeconds = pomodoroMode === "focus" ? FOCUS_SECONDS : BREAK_SECONDS;
   const progress = ((totalSeconds - secondsLeft) / totalSeconds) * 100;
 
@@ -587,6 +594,117 @@ function App() {
     setFocusDone(null);
   };
 
+  // ===== v0.1.14: wiki-links, reminders, export / import (issue #34) =====
+
+  /** Open (or create) the note a [[wiki-link]] points to, Obsidian-style. */
+  const openWikiLink = (title: string) => {
+    const t = title.trim();
+    if (!t) return;
+    const found = notes.find((n) => !n.deletedAt && (n.title || "").trim().toLowerCase() === t.toLowerCase());
+    if (found) { openNote(found); return; }
+    const note: Note = { id: crypto.randomUUID(), title: t, content: "", color: "yellow", icon: "sticky-note", folderId: null, createdAt: Date.now(), format: "md" };
+    setNotes([note, ...notes]);
+    persistNote(note);
+    recordActivity();
+    openNote(note);
+  };
+  const openNoteById = (id: string) => {
+    const n = notes.find((x) => x.id === id);
+    if (n) openNote(n);
+  };
+
+  /** Set / clear a reminder on a note from the right-click menu. */
+  const setReminderFor = (id: string) => {
+    if (!reminderDraft) return;
+    const ts = new Date(reminderDraft).getTime();
+    if (isNaN(ts)) return;
+    const n = notes.find((x) => x.id === id);
+    if (!n) return;
+    const updated = { ...n, reminderAt: ts, reminderFiredAt: undefined };
+    setNotes(notes.map((x) => (x.id === id ? updated : x)));
+    persistNote(updated);
+    setReminderDraft("");
+    setContextMenu(null);
+  };
+  const clearReminderFor = (id: string) => {
+    const n = notes.find((x) => x.id === id);
+    if (!n) return;
+    const updated = { ...n, reminderAt: undefined, reminderFiredAt: undefined };
+    setNotes(notes.map((x) => (x.id === id ? updated : x)));
+    persistNote(updated);
+    setContextMenu(null);
+  };
+
+  // Poll for due reminders: fires once per reminder, plays the same beep
+  // as the pomodoro timer and raises the in-app toast.
+  useEffect(() => {
+    if (!ready || !store || windowLabel !== "main") return;
+    const tick = async () => {
+      const now = Date.now();
+      const due = notes.filter((n) => !n.deletedAt && n.reminderAt && n.reminderAt <= now && !n.reminderFiredAt);
+      if (due.length === 0) return;
+      setNotes((prev) => prev.map((n) => {
+        const hit = due.find((d) => d.id === n.id);
+        return hit ? { ...n, reminderFiredAt: now } : n;
+      }));
+      for (const n of due) await persistNote({ ...n, reminderFiredAt: now });
+      playBeep();
+      setReminderToast({ id: due[0].id, title: due[0].title || "Untitled" });
+    };
+    const id = setInterval(tick, 15000);
+    return () => clearInterval(id);
+  }, [ready, store, notes, windowLabel]);
+
+  /** Export every active note as a .md file inside one ZIP archive. */
+  const exportLibraryZip = async () => {
+    try {
+      const path = await save({ defaultPath: "pin-notes.zip", filters: [{ name: "ZIP archive", extensions: ["zip"] }] });
+      if (!path) return;
+      const zip = new JSZip();
+      const used = new Set<string>();
+      activeNotes.forEach((n) => {
+        let base = (n.title || "untitled").replace(/[<>:"/\\|?*]+/g, "-").trim() || "untitled";
+        let name = base + ".md";
+        let k = 2;
+        while (used.has(name)) { name = base + "-" + k + ".md"; k += 1; }
+        used.add(name);
+        zip.file(name, (n.content || "") + "\n");
+      });
+      const data = await zip.generateAsync({ type: "uint8array" });
+      await writeFile(path, data);
+    } catch { /* user cancelled or write failed */ }
+  };
+
+  /** Import .md files or a ZIP backup exported earlier; each file becomes a note. */
+  const importNotes = async () => {
+    try {
+      const picked = await openFileDialog({ multiple: true, filters: [{ name: "Notes", extensions: ["md", "zip"] }] });
+      if (!picked) return;
+      const paths = Array.isArray(picked) ? picked : [picked];
+      const created: Note[] = [];
+      for (const path of paths) {
+        if (path.toLowerCase().endsWith(".zip")) {
+          const data = await readFile(path);
+          const zip = await JSZip.loadAsync(data);
+          for (const entry of Object.values(zip.files)) {
+            if (entry.dir || !entry.name.toLowerCase().endsWith(".md")) continue;
+            const text = await entry.async("string");
+            const base = (entry.name.split("/").pop() || "Imported").replace(/\.md$/i, "");
+            created.push({ id: crypto.randomUUID(), title: base, content: text.replace(/\n+$/, ""), color: "yellow", icon: "sticky-note", folderId: null, createdAt: Date.now(), format: "md" });
+          }
+        } else {
+          const text = await readTextFile(path);
+          const base = (path.split(/[\\/]/).pop() || "Imported").replace(/\.md$/i, "");
+          created.push({ id: crypto.randomUUID(), title: base, content: text.replace(/\n+$/, ""), color: "yellow", icon: "sticky-note", folderId: null, createdAt: Date.now(), format: "md" });
+        }
+      }
+      if (created.length === 0) return;
+      setNotes([...created, ...notes]);
+      for (const n of created) await persistNote(n);
+      recordActivity();
+    } catch { /* user cancelled or read failed */ }
+  };
+
   // Global quick-capture hotkey (Ctrl/Cmd+Shift+P): bring Pin to the
   // front and drop you straight into a fresh note, from anywhere.
   const quickCaptureRef = useRef<() => void>(() => {});
@@ -657,6 +775,14 @@ function App() {
     0
   );
 
+  // v0.1.14: backlinks — other notes whose content links to the open note.
+  const backlinks = openNoteId && noteTitle.trim()
+    ? activeNotes
+        .filter((n) => n.id !== openNoteId && (n.content || "").includes("[[" + noteTitle.trim() + "]]"))
+        .map((n) => ({ id: n.id, title: n.title || "Untitled" }))
+    : [];
+  const linkableNotes = activeNotes.map((n) => ({ id: n.id, title: n.title || "Untitled" }));
+
   if (windowLabel === "settings") {
     return (
       <SettingsWindow
@@ -704,6 +830,10 @@ function App() {
         savedAt={savedAt}
         toggleTheme={toggleTheme}
         closeWindow={closeWindow}
+        allNotes={linkableNotes}
+        onOpenWikiLink={openWikiLink}
+        backlinks={backlinks}
+        onOpenNoteById={openNoteById}
       />
     );
   }
@@ -723,6 +853,9 @@ function App() {
     { id: "toggle-theme", title: "Toggle theme", subtitle: "Light / dark", run: () => toggleTheme() },
     { id: "settings", title: "Open settings", subtitle: "Preferences", run: () => { openSettingsWindow(); } },
     { id: "open-trash", title: "Open trash", subtitle: "Restore deleted notes, folders and tasks", run: () => { setTrashOpen(true); } },
+    // v0.1.14: library backup (issue #34)
+    { id: "export-zip", title: "Export library (ZIP)", subtitle: "Backup all notes as .md files in a ZIP", run: () => { exportLibraryZip(); } },
+    { id: "import-notes", title: "Import notes", subtitle: "Bring in .md files or a ZIP backup", run: () => { importNotes(); } },
   ];
   if (trashCount > 0) {
     paletteItems.push({ id: "empty-trash", title: "Empty trash", subtitle: "Delete all trashed notes forever", run: () => emptyTrash() });
@@ -845,6 +978,7 @@ function App() {
                   <div className="folder-notes">
                     {folderNotes.map((note) => {
                       const NoteIcon = getIcon(note.icon).Icon;
+                      const due = note.reminderAt !== undefined && note.reminderAt <= Date.now();
                       return (
                         <div key={note.id} className="note-row" title="Right-click for options" onContextMenu={(e) => { e.preventDefault(); setContextMenu({ type: "note", id: note.id, x: e.clientX, y: e.clientY }); }}>
                           <NoteIcon size={13} />
@@ -852,6 +986,9 @@ function App() {
                             <input className="rename-input" value={renameText} autoFocus onChange={(e) => setRenameText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") renameNote(note.id, renameText); if (e.key === "Escape") setRenamingId(null); }} onBlur={() => renameNote(note.id, renameText)} />
                           ) : (
                             <button className="note-open-btn" onClick={() => openNote(note)}>{note.title || "Untitled"}</button>
+                          )}
+                          {note.reminderAt !== undefined && (
+                            <Clock size={11} className={"reminder-badge" + (due ? " due" : "")} title={due ? "Reminder due" : "Reminder: " + new Date(note.reminderAt).toLocaleString()} />
                           )}
                         </div>
                       );
@@ -863,6 +1000,7 @@ function App() {
           })}
           {unfiledNotes.map((note) => {
             const NoteIcon = getIcon(note.icon).Icon;
+            const due = note.reminderAt !== undefined && note.reminderAt <= Date.now();
             return (
               <div key={note.id} className="note-row" title="Right-click for options" onContextMenu={(e) => { e.preventDefault(); setContextMenu({ type: "note", id: note.id, x: e.clientX, y: e.clientY }); }}>
                 <NoteIcon size={13} />
@@ -870,6 +1008,9 @@ function App() {
                   <input className="rename-input" value={renameText} autoFocus onChange={(e) => setRenameText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") renameNote(note.id, renameText); if (e.key === "Escape") setRenamingId(null); }} onBlur={() => renameNote(note.id, renameText)} />
                 ) : (
                   <button className="note-open-btn" onClick={() => openNote(note)}>{note.title || "Untitled"}</button>
+                )}
+                {note.reminderAt !== undefined && (
+                  <Clock size={11} className={"reminder-badge" + (due ? " due" : "")} title={due ? "Reminder due" : "Reminder: " + new Date(note.reminderAt).toLocaleString()} />
                 )}
               </div>
             );
@@ -950,27 +1091,35 @@ function App() {
             {contextMenu.type === "note" && (
               <button onClick={() => toggleFavorite(contextMenu.id)}>{notes.find((x) => x.id === contextMenu.id)?.favorite ? "Remove favorite" : "Add favorite"}</button>
             )}
-            {contextMenu.type === "note" && (
-              <div className="context-menu-icons">
-                <div className="context-menu-icons-title">Change color</div>
-                <div className="context-color-grid">
-                  {NOTE_COLORS.map((c) => (
-                    <button
-                      key={c.id}
-                      className={"color-option " + (notes.find((x) => x.id === contextMenu.id)?.color === c.id ? "active" : "")}
-                      style={{ background: c.light }}
-                      title={c.label}
-                      onClick={() => setNoteColorFor(contextMenu.id, c.id)}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
             <button className="danger" onClick={() => {
               if (contextMenu.type === "folder") deleteFolder(contextMenu.id);
               else deleteNoteFromList(contextMenu.id);
               setContextMenu(null);
             }}>Delete</button>
+            {contextMenu.type === "note" && (() => {
+              const n = notes.find((x) => x.id === contextMenu.id);
+              return (
+                <div className="context-menu-reminder">
+                  <div className="context-menu-icons-title">Reminder</div>
+                  <input
+                    type="datetime-local"
+                    className="reminder-input"
+                    value={reminderDraft}
+                    onChange={(e) => setReminderDraft(e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                  <div className="reminder-actions">
+                    <button className="small-btn reminder-set-btn" onClick={() => setReminderFor(contextMenu.id)}>Set</button>
+                    {n?.reminderAt !== undefined && (
+                      <button className="small-btn trash-back-btn" onClick={() => clearReminderFor(contextMenu.id)}>Clear</button>
+                    )}
+                  </div>
+                  {n?.reminderAt !== undefined && (
+                    <div className="reminder-when">{n.reminderAt <= Date.now() ? "Due / fired" : new Date(n.reminderAt).toLocaleString()}</div>
+                  )}
+                </div>
+              );
+            })()}
             {contextMenu.type === "note" && (
               <div className="context-menu-icons">
                 <div className="context-menu-icons-title">Change icon</div>
@@ -988,7 +1137,42 @@ function App() {
                 </div>
               </div>
             )}
+            {contextMenu.type === "note" && (
+              <div className="context-menu-icons">
+                <div className="context-menu-icons-title">Change color</div>
+                <div className="context-color-grid">
+                  {NOTE_COLORS.map((c) => (
+                    <button
+                      key={c.id}
+                      className={"color-option " + (notes.find((x) => x.id === contextMenu.id)?.color === c.id ? "active" : "")}
+                      style={{ background: c.light }}
+                      title={c.label}
+                      onClick={() => setNoteColorFor(contextMenu.id, c.id)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
+        </div>
+      )}
+
+      {reminderToast && (
+        <div className="reminder-toast">
+          <Clock size={14} className="reminder-toast-icon" />
+          <div className="reminder-toast-text">
+            <strong>Reminder</strong>
+            <span>{reminderToast.title}</span>
+          </div>
+          <button
+            className="small-btn"
+            onClick={() => {
+              const n = notes.find((x) => x.id === reminderToast.id);
+              setReminderToast(null);
+              if (n) openNote(n);
+            }}
+          >Open</button>
+          <button className="icon-btn" title="Dismiss" onClick={() => setReminderToast(null)}><X size={14} /></button>
         </div>
       )}
 

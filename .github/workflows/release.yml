@@ -77,19 +77,21 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.13' }}
-          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.13' }}"
+          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.14' }}
+          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.14' }}"
           releaseBody: |
-            **Pin v0.1.13** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
+            **Pin v0.1.14** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
 
-            ## What's new in v0.1.13
+            ## What's new in v0.1.14
 
             ### ✨ New in this release
-            - **Clean note list** (#30) — the inline delete / rename / pin / star buttons are gone from note and folder rows. Right-click any note for the full menu: Edit, Rename, Pin to desktop, Favorite, Change color, Change icon, Delete.
-            - **macOS-style code blocks** (#30) — every fenced code block renders as a little Mac window: red / yellow / green traffic lights in the title bar with the language name on the right side. The chrome appears automatically from the live preview while you edit inside the block.
-            - **Code language detection** (#30) — fence tags now accept any language (````html`, ````rust`, ````c++`, ````c#` ...), and untagged blocks get their language auto-detected from the code itself (HTML, Python, Rust, JS/TS, C/C++, JSON, SQL, CSS, Bash, Go, YAML).
+            - **Wiki-links** (#34) — type `[[` in a note to autocomplete other note titles, click a link in the preview to open (or create) the target note, and see a "Linked mentions" backlinks section under the preview.
+            - **Reminders** (#34) — right-click a note → Reminder, pick a date and time, and get a beep + in-app toast when it's due. A clock badge shows on notes with reminders (red when due).
+            - **Library export / import** (#34) — command palette: Export library as a ZIP of Markdown files, or import existing .md files and .zip archives back into Pin.
+            - **Themed cursor & selection** (#34) — the text caret and the copy/delete selection highlight now follow your accent color.
 
             ### 🚀 Previously shipped
+            - Clean note list + macOS-style code blocks with language detection (v0.1.13)
             - Coding fonts (Fira Code, Source Code Pro, Hack) + smart font dropdown with per-font previews (v0.1.12)
             - Photo upload with 12px radius, 1-4 column grids, in-note audio recording and playback (v0.1.11)
             - Tags on command (`/tags` picker, Obsidian-style), `==highlight==` and colored text (v0.1.10)
