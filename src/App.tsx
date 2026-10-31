@@ -884,7 +884,7 @@ function App() {
               },
             },
             { id: "quick", text: "Quick Note", action: () => { showQuickNoteRef.current(); } },
-            { id: "quit", text: "Quit", action: async () => { for (const w of getAll()) { await w.destroy(); } } },
+            { id: "quit", text: "Quit", action: async () => { const all = await getAll(); for (const w of all) { await w.destroy(); } } },
           ],
         });
         const trayIcon = await defaultWindowIcon();
@@ -1507,4 +1507,5 @@ function App() {
 }
 
 export default App;
+
 
