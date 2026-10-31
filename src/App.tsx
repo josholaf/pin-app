@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { getCurrentWindow, getAll } from "@tauri-apps/api/window";
-import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
+import { getCurrentWindow } from "@tauri-apps/api/window";
+import { WebviewWindow, getAll } from "@tauri-apps/api/webviewWindow";
 import { Store } from "@tauri-apps/plugin-store";
 import { save, open as openFileDialog } from "@tauri-apps/plugin-dialog";
 import { writeFile, readFile, readTextFile } from "@tauri-apps/plugin-fs";
