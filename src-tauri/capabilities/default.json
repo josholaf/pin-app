@@ -34,6 +34,11 @@
     "global-shortcut:allow-unregister",
     "global-shortcut:allow-is-registered",
     "http:default",
+    {
+      "identifier": "http:default",
+      "allow": [{ "url": "https://**" }, { "url": "http://**" }]
+    },
+    "opener:default",
     "clipboard-manager:allow-read-text"
   ]
 }

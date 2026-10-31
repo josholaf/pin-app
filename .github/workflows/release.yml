@@ -77,14 +77,21 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.27' }}
-          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.27' }}"
+          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.28' }}
+          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.28' }}"
           releaseBody: |
-            **Pin v0.1.27** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
+            **Pin v0.1.28** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
 
-            ## What's new in v0.1.27
+            ## What's new in v0.1.28
 
-            This release completes the release build fix (#44, #46): the capabilities file requested the non-existent core:process:allow-exit permission, which failed the Rust build; it now uses core:app:allow-exit, and the tray Quit action destroys all windows via getAllWindows() from @tauri-apps/api/window; npm install had also been failing since v0.1.12 on a phantom `@fontsource/hack` dependency that does not exist on npm, and the type-check then failed on a missing brace plus invalid props and a removed Tauri v2 module. With all that fixed, every feature shipped since v0.1.11 is finally in a published release:
+            ### 🐛 Fixes
+            - **External links open the browser** — clicking a link in a note now opens it in the default web browser, Obsidian-style; previously target="_blank" did nothing inside the app window
+            - **Web clipper works** — the http plugin grants no origins by default, so every page fetch was denied; the Web Clips fetch now allows https and http URLs
+            - Wiki-links ([[note]]) keep behaving like Obsidian: clicking opens the target note, creating it if missing
+
+            ### Previously (v0.1.27)
+
+            This release completes the release build fix (#44, #46): the capabilities file requested the non-existent core:process:allow-exit permission, which failed the Rust build; it now uses core:app:allow-exit, and the tray Quit action destroys all windows via getAllWindows() from @tauri-apps/api/window; npm install had also been failing since v0.1.12 on a phantom @fontsource/hack dependency that does not exist on npm, and the type-check then failed on a missing brace plus invalid props and a removed Tauri v2 module. With all that fixed, every feature shipped since v0.1.11 is finally in a published release:
 
             ### 📌 Web clipper (v0.1.18)
             - **Clip webpages** — paste a URL, Pin extracts just the article as clean markdown: no ads, nav, cookie banners, share bars or page address
