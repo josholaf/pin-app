@@ -77,14 +77,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.24' }}
-          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.24' }}"
+          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.25' }}
+          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.25' }}"
           releaseBody: |
-            **Pin v0.1.24** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
+            **Pin v0.1.25** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
 
-            ## What's new in v0.1.24
+            ## What's new in v0.1.25
 
-            This release completes the release build fix (#44, #46): the tray Quit action now calls exit(0) from @tauri-apps/api/process instead of the non-existent getAll export; npm install had also been failing since v0.1.12 on a phantom `@fontsource/hack` dependency that does not exist on npm, and the type-check then failed on a missing brace plus invalid props and a removed Tauri v2 module. With all that fixed, every feature shipped since v0.1.11 is finally in a published release:
+            This release completes the release build fix (#44, #46): the tray Quit action now destroys all windows via getAllWindows() from @tauri-apps/api/window, the supported v2 API; npm install had also been failing since v0.1.12 on a phantom `@fontsource/hack` dependency that does not exist on npm, and the type-check then failed on a missing brace plus invalid props and a removed Tauri v2 module. With all that fixed, every feature shipped since v0.1.11 is finally in a published release:
 
             ### 📌 Web clipper (v0.1.18)
             - **Clip webpages** — paste a URL, Pin extracts just the article as clean markdown: no ads, nav, cookie banners, share bars or page address
