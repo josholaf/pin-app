@@ -77,12 +77,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.25' }}
-          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.25' }}"
+          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.26' }}
+          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.26' }}"
           releaseBody: |
-            **Pin v0.1.25** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
+            **Pin v0.1.26** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
 
-            ## What's new in v0.1.25
+            ## What's new in v0.1.26
 
             This release completes the release build fix (#44, #46): the tray Quit action now destroys all windows via getAllWindows() from @tauri-apps/api/window, the supported v2 API; npm install had also been failing since v0.1.12 on a phantom `@fontsource/hack` dependency that does not exist on npm, and the type-check then failed on a missing brace plus invalid props and a removed Tauri v2 module. With all that fixed, every feature shipped since v0.1.11 is finally in a published release:
 
@@ -123,3 +123,12 @@ jobs:
           prerelease: false
           args: ${{ matrix.args }}
 
+
+      - name: Diagnose Windows bundle failure
+        if: failure() && matrix.platform == 'windows-latest'
+        shell: bash
+        run: |
+          npm run tauri build -- --bundles nsis > diag-nsis.log 2>&1 || true
+          npm run tauri build -- --bundles msi > diag-msi.log 2>&1 || true
+          { grep -iE "error|failed|panicked" diag-nsis.log | tail -n 25; grep -iE "error|failed|panicked" diag-msi.log | tail -n 25; tail -n 20 diag-msi.log; } > hits.txt || true
+          awk 'length($0)>0' hits.txt | tail -n 10 | while IFS= read -r line; do echo "::error::${line}"; done
