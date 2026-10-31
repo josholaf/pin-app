@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { WebviewWindow, getAll } from "@tauri-apps/api/webviewWindow";
+import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
+import { exit } from "@tauri-apps/api/process";
 import { Store } from "@tauri-apps/plugin-store";
 import { save, open as openFileDialog } from "@tauri-apps/plugin-dialog";
 import { writeFile, readFile, readTextFile } from "@tauri-apps/plugin-fs";
@@ -884,7 +885,7 @@ function App() {
               },
             },
             { id: "quick", text: "Quick Note", action: () => { showQuickNoteRef.current(); } },
-            { id: "quit", text: "Quit", action: async () => { const all = await getAll(); for (const w of all) { await w.destroy(); } } },
+            { id: "quit", text: "Quit", action: () => { void exit(0); } },
           ],
         });
         const trayIcon = await defaultWindowIcon();
