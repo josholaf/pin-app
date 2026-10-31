@@ -2402,3 +2402,26 @@ body {
   color: var(--accent);
   background: color-mix(in srgb, var(--accent) 14%, transparent);
 }
+
+
+/* ===== v0.1.18: Web clipper overlay (issue #42) ===== */
+.clip-box { max-width: 380px; }
+.clip-url-input {
+  width: 100%;
+  background: var(--input-bg);
+  color: var(--text);
+  border: 1px solid var(--input-border);
+  border-radius: 10px;
+  padding: 9px 11px;
+  font-size: 13px;
+  outline: none;
+  margin: 10px 0 8px;
+}
+.clip-url-input:focus { border-color: var(--accent); }
+.clip-url-input::placeholder { color: var(--text-muted); opacity: 0.7; }
+.clip-error {
+  font-size: 11px;
+  color: #ef5350;
+  margin-bottom: 6px;
+}
+.clip-spin { animation: rec-pulse 1s ease-in-out infinite; }
