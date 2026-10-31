@@ -77,31 +77,43 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.18' }}
-          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.18' }}"
+          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.19' }}
+          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.19' }}"
           releaseBody: |
-            **Pin v0.1.18** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
+            **Pin v0.1.19** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
 
-            ## What's new in v0.1.18
+            ## What's new in v0.1.19
 
-            ### ✨ New in this release
-            - **Clip webpages into notes** (#42) — paste a page URL into the Clip webpage dialog (command palette or the ⚡ button area) and Pin fetches the page, extracts just the article and saves it as a clean markdown note. Ads, scripts, navigation, cookie banners, share bars, sidebars, comments and other boilerplate are stripped out, and the page address is kept out of the note.
-            - **Clip selected text** (#42) — select text anywhere in the OS, copy it, then press Ctrl+Shift+C and the clipboard text becomes a note. No formatting junk, just the words.
-            - **Web Clips folder** (#42) — both clips land in a Web Clips folder that is created automatically, tagged `web` or `clip`, with the globe icon.
+            This release fixes the release build itself (#44): npm install has been failing since v0.1.12 on a phantom `@fontsource/hack` dependency that does not exist on npm (Hack is not a Google Font, so Fontsource never published it). With that removed, every feature shipped since v0.1.11 is finally in a published release:
 
-            ### 🚀 Previously shipped
-            - Quick Note capture window on Ctrl+Shift+N with markdown, slash commands, voice notes, plus title modes and a tray icon (v0.1.17)
-            - Focus mode overlay with typewriter scrolling (v0.1.16)
-            - Quick capture box on the global Ctrl+Shift+P hotkey + graph view with search (v0.1.15)
-            - Wiki-links with autocomplete + backlinks, note reminders with toast and due badge, library ZIP export/import, themed caret and selection (v0.1.14)
-            - Clean note list + macOS-style code blocks with language detection (v0.1.13)
-            - Coding fonts (Fira Code, Source Code Pro, Hack) + smart font dropdown with per-font previews (v0.1.12)
-            - Photo upload with 12px radius, 1-4 column grids, in-note audio recording and playback (v0.1.11)
-            - Tags on command (/tags picker, Obsidian-style), ==highlight== and colored text (v0.1.10)
-            - Accent-colored bullets and checkboxes + slash command menu (v0.1.9)
-            - Line numbers in the note editor (v0.1.8)
-            - Instant dark mode, themed window controls, full right-click note menu, colored tags with suggestions, markdown table button, syntax-highlighted code blocks (v0.1.7)
-            - Stats footer, pomodoro focus session counter, Ctrl+S save flash with undo (v0.1.6)
+            ### 📌 Web clipper (v0.1.18)
+            - **Clip webpages** — paste a URL, Pin extracts just the article as clean markdown: no ads, nav, cookie banners, share bars or page address
+            - **Clip selected text** — copy text anywhere, press Ctrl+Shift+C, it becomes a note
+            - Both save into an auto-created Web Clips folder, tagged `web` / `clip`
+
+            ### 📌 Quick Note window + tray (v0.1.17)
+            - Ctrl+Shift+N opens a Spotlight-style black composer from anywhere; markdown, slash commands and voice notes inside; saves to a Quick Notes folder
+            - Title modes: Custom (leading `*` marks the title) or Date (DD-MM-YY)
+            - Tray icon (Show Pin / Quick Note / Quit); closing the main window hides it to the tray
+
+            ### 📌 Focus mode (v0.1.16)
+            - Distraction-free writing overlay with typewriter scrolling and a quiet word count
+
+            ### 📌 Quick capture + graph view (v0.1.15)
+            - Global Ctrl+Shift+P capture box, first line becomes the title
+            - Graph view mapping notes and their wiki-links, with search
+
+            ### 📌 Wiki-links, reminders, backup (v0.1.14)
+            - `[[wiki-links]]` with autocomplete and a Linked mentions backlinks section
+            - Note reminders with beep, toast and due badge
+            - Library export/import (ZIP of markdown)
+
+            ### 📌 Editor & list polish (v0.1.13)
+            - Clean note list, right-click menu with everything
+            - macOS-style code blocks with language detection and syntax coloring
+
+            ### 📌 Coding fonts (v0.1.12)
+            - JetBrains Mono, Fira Code and Source Code Pro bundled offline, plus a smart font dropdown with live search and per-font previews
 
             ## Downloads
             - **Windows**: `.msi` or `.exe` (NSIS)
