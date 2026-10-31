@@ -183,6 +183,21 @@ export function SettingsWindow(p: Props) {
             ))}
           </div>
         </div>
+        {/* v0.1.17: Quick Note capture title mode (issue #40) — custom
+            (leading * marks the title) or date (DD-MM-YY). */}
+        <div className="settings-row">
+          <span>Quick note title</span>
+          <div className="qn-mode-row">
+            <button
+              className={"qn-mode-btn " + (p.settings.captureTitleMode !== "date" ? "active" : "")}
+              onClick={() => p.setSettings({ ...p.settings, captureTitleMode: "custom" })}
+            >Custom (* marks it)</button>
+            <button
+              className={"qn-mode-btn " + (p.settings.captureTitleMode === "date" ? "active" : "")}
+              onClick={() => p.setSettings({ ...p.settings, captureTitleMode: "date" })}
+            >Date (DD-MM-YY)</button>
+          </div>
+        </div>
         <label className="settings-row toggle-row">
           <span>Keep notes over other windows</span>
           <input type="checkbox" checked={p.settings.alwaysOnTopDefault && !p.settings.stickToDesktop} onChange={(e) => p.setSettings({ ...p.settings, alwaysOnTopDefault: e.target.checked, stickToDesktop: e.target.checked ? false : p.settings.stickToDesktop })} />

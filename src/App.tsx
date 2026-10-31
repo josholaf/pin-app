@@ -6,6 +6,10 @@ import { save, open as openFileDialog } from "@tauri-apps/plugin-dialog";
 import { writeFile, readFile, readTextFile } from "@tauri-apps/plugin-fs";
 import JSZip from "jszip";
 import { register, unregister, isRegistered } from "@tauri-apps/plugin-global-shortcut";
+import { TrayIcon } from "@tauri-apps/api/tray";
+import { Menu } from "@tauri-apps/api/menu";
+import { defaultWindowIcon } from "@tauri-apps/api/app";
+import { exit } from "@tauri-apps/api/process";
 import {
   Pin, Moon, Sun, Plus, X, Play, Pause, RotateCcw, Search,
   ChevronDown, ChevronRight, FolderPlus, Flame, Folder, FolderOpen,
@@ -19,6 +23,7 @@ import {
 } from "./appData";
 import { MarkdownNote } from "./MarkdownNote";
 import { SettingsWindow } from "./SettingsWindow";
+import { QuickNoteCapture } from "./QuickNoteCapture";
 
 const noteKey = (id: string) => "note:" + id;
 
@@ -321,6 +326,12 @@ function App() {
   const toggleTheme = () => setTheme((p) => (p === "light" ? "dark" : "light"));
   const closeWindow = async () => {
     const win = getCurrentWindow();
+    // v0.1.17: closing the main window hides it to the tray instead of
+    // quitting — the tray menu keeps Pin reachable (issue #40).
+    if (windowLabel === "main") {
+      try { await win.hide(); } catch { /* ignore */ }
+      return;
+    }
     try {
       await win.close();
     } catch {
@@ -754,6 +765,84 @@ function App() {
     return () => { unregister("CommandOrControl+Shift+P").catch(() => {}); };
   }, [windowLabel]);
 
+  // ===== v0.1.17: Quick Note capture window + tray icon (issue #40) =====
+
+  /** Show the hidden Spotlight-style quicknote window, creating it on
+   *  first use (it is declared in tauri.conf.json as visible:false). */
+  const showQuickNote = async () => {
+    try {
+      let w = await WebviewWindow.getByLabel("quicknote");
+      if (!w) {
+        w = new WebviewWindow("quicknote", {
+          url: "index.html",
+          title: "Quick Note",
+          width: 460, height: 240,
+          decorations: false, transparent: false, alwaysOnTop: true, skipTaskbar: true, visible: false, center: true,
+        });
+        await new Promise((r) => setTimeout(r, 250));
+      }
+      await w.show();
+      await w.setFocus();
+    } catch { /* ignore */ }
+  };
+  const showQuickNoteRef = useRef<() => void>(() => {});
+  showQuickNoteRef.current = () => { showQuickNote(); };
+
+  // Global hotkey: Ctrl/Cmd+Shift+N summons the Quick Note window from
+  // anywhere in the OS, without opening the main app.
+  useEffect(() => {
+    if (windowLabel !== "main") return;
+    (async () => {
+      try {
+        const already = await isRegistered("CommandOrControl+Shift+N").catch(() => false);
+        if (!already) {
+          await register("CommandOrControl+Shift+N", async (event) => {
+            if (event.state === "Pressed") {
+              showQuickNoteRef.current();
+            }
+          });
+        }
+      } catch { /* shortcut unavailable (already taken by another app) */ }
+    })();
+    return () => { unregister("CommandOrControl+Shift+N").catch(() => {}); };
+  }, [windowLabel]);
+
+  // Tray icon keeps Pin reachable after the main window is hidden to the
+  // tray: Show Pin, Quick Note, Quit.
+  useEffect(() => {
+    if (windowLabel !== "main") return;
+    (async () => {
+      try {
+        const existing = await TrayIcon.getById("main");
+        if (existing) return;
+        const menu = await Menu.new({
+          items: [
+            {
+              id: "show",
+              text: "Show Pin",
+              action: async () => {
+                try {
+                  const win = getCurrentWindow();
+                  await win.show();
+                  await win.setFocus();
+                } catch { /* ignore */ }
+              },
+            },
+            { id: "quick", text: "Quick Note", action: () => { showQuickNoteRef.current(); } },
+            { id: "quit", text: "Quit", action: () => { exit(0); } },
+          ],
+        });
+        await TrayIcon.new({
+          id: "main",
+          icon: await defaultWindowIcon(),
+          tooltip: "Pin",
+          menu,
+          showMenuOnLeftClick: true,
+        });
+      } catch { /* tray unavailable */ }
+    })();
+  }, [windowLabel]);
+
   // v0.1.5: command palette toggle (issue #6)
   useEffect(() => {
     if (windowLabel !== "main" || openNoteId) return;
@@ -840,6 +929,11 @@ function App() {
   });
   const linkedCount = new Set([...graphEdges.map((e) => e.from), ...graphEdges.map((e) => e.to)]).size;
 
+  // v0.1.17: hidden Quick Note capture window (issue #40)
+  if (windowLabel === "quicknote") {
+    return <QuickNoteCapture />;
+  }
+
   if (windowLabel === "settings") {
     return (
       <SettingsWindow
@@ -916,6 +1010,8 @@ function App() {
     // v0.1.15: quick capture box + wiki-link graph (issue #36)
     { id: "quick-capture", title: "Quick capture", subtitle: "Type a thought, Enter to save (also Ctrl+Shift+P anywhere)", run: () => { setQuickCaptureText(""); setQuickCaptureOpen(true); } },
     { id: "graph-view", title: "Graph view", subtitle: "Map of notes and their wiki-links, with search", run: () => { setGraphOpen(true); } },
+    // v0.1.17: Quick Note window (issue #40)
+    { id: "quick-note-window", title: "Quick Note window", subtitle: "Spotlight-style capture window (also Ctrl+Shift+N anywhere)", run: () => { showQuickNote(); } },
   ];
   if (trashCount > 0) {
     paletteItems.push({ id: "empty-trash", title: "Empty trash", subtitle: "Delete all trashed notes forever", run: () => emptyTrash() });
@@ -941,9 +1037,9 @@ function App() {
           )}
           <button onClick={() => setPaletteOpen(true)} className="icon-btn" title="Command palette (Ctrl+K)"><Command size={16} /></button>
           <button onClick={openSettingsWindow} className="icon-btn" title="Settings"><Settings size={16} /></button>
-          <button onClick={toggleTheme} className="icon-btn" title="Theme">{theme === "light" ? <Moon size={16} /> : <Sun size={16} />}</button>
+          <button onClick={toggleTheme} className="icon-btn" title="Theme">{theme === "light" ? <Moon size={16} /> : <Sun size={16} /></button>
           <button onClick={minimizeWindow} className="icon-btn win-ctrl" title="Minimize"><Minus size={16} /></button>
-          <button onClick={closeWindow} className="icon-btn win-ctrl" title="Close"><X size={16} /></button>
+          <button onClick={closeWindow} className="icon-btn win-ctrl" title="Hide to tray"><X size={16} /></button>
         </div>
       </header>
 
