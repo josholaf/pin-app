@@ -2184,3 +2184,221 @@ body {
   user-select: none;
 }
 .focus-words { font-variant-numeric: tabular-nums; }
+
+/* ===== v0.1.17: Quick Note capture window + tray (issue #40) ===== */
+
+/* The whole hidden window is one ChatGPT-style black composer. */
+.qn-wrap {
+  height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 10px;
+  background: transparent;
+}
+.qn-box {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: #131313;
+  color: #ececec;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  padding: 10px 12px;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.5);
+  animation: font-drop-in 0.16s ease;
+}
+.qn-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #bbbbbb;
+  user-select: none;
+}
+.qn-head-icon { color: var(--accent); }
+.qn-head-title { color: #ececec; }
+.qn-head-hint {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 400;
+  color: #888888;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.qn-input {
+  flex: 1;
+  min-height: 0;
+  background: #1d1d1d;
+  color: #ececec;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 9px 11px;
+  font-size: 13px;
+  line-height: 1.5;
+  outline: none;
+  resize: none;
+  caret-color: var(--accent);
+}
+.qn-input:focus { border-color: var(--accent); }
+.qn-input::placeholder { color: #777777; }
+.qn-input::selection,
+.qn-input *::selection {
+  background: color-mix(in srgb, var(--accent) 40%, transparent);
+}
+.qn-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.qn-actions-hint {
+  font-size: 10px;
+  color: #888888;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.qn-actions-btns { display: flex; gap: 6px; }
+.qn-mic-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: #1d1d1d;
+  color: #ececec;
+  border-radius: 8px;
+  padding: 6px 9px;
+  cursor: pointer;
+}
+.qn-mic-btn:hover { border-color: var(--accent); color: var(--accent); }
+.qn-mic-btn.recording {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  animation: rec-pulse 1.4s ease-in-out infinite;
+}
+.qn-save-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+.qn-save-btn:hover { opacity: 0.9; }
+
+/* Recording: three accent-colored bars pulsing while the mic runs. */
+.qn-rec {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--accent);
+  font-weight: 700;
+}
+.qn-rec-bars {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 14px;
+}
+.qn-rec-bars i {
+  width: 3px;
+  border-radius: 2px;
+  background: var(--accent);
+  animation: qn-bar 0.9s ease-in-out infinite;
+}
+.qn-rec-bars i:nth-child(1) { height: 60%; animation-delay: 0s; }
+.qn-rec-bars i:nth-child(2) { height: 100%; animation-delay: 0.18s; }
+.qn-rec-bars i:nth-child(3) { height: 45%; animation-delay: 0.36s; }
+@keyframes qn-bar {
+  0%, 100% { transform: scaleY(0.45); }
+  50% { transform: scaleY(1); }
+}
+.qn-rec-time {
+  font-variant-numeric: tabular-nums;
+  font-size: 10px;
+}
+
+/* Saved flash, then the window quietly hides itself. */
+.qn-flash {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--accent);
+  animation: font-drop-in 0.2s ease;
+}
+
+/* Slash command menu inside the black box. */
+.qn-slash-menu {
+  position: absolute;
+  top: 34px;
+  left: 12px;
+  z-index: 30;
+  min-width: 150px;
+  background: #1d1d1d;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.55);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.qn-slash-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  border: none;
+  background: none;
+  color: #cccccc;
+  padding: 5px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.qn-slash-item.active {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  color: var(--accent);
+}
+.qn-slash-hint {
+  font-size: 10px;
+  color: #777777;
+  font-family: "SF Mono", Consolas, monospace;
+}
+.qn-slash-item.active .qn-slash-hint { color: var(--accent); opacity: 0.8; }
+
+/* Quick note title mode setting (Settings window). */
+.qn-mode-row { display: flex; gap: 6px; }
+.qn-mode-btn {
+  flex: 1;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--input-bg);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 8px;
+  cursor: pointer;
+}
+.qn-mode-btn:hover { border-color: var(--accent); }
+.qn-mode-btn.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}

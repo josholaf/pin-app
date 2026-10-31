@@ -11,6 +11,9 @@ export type Task = { id: string; text: string; done: boolean; createdAt: number;
 export type Theme = "light" | "dark";
 export type NoteColor = "yellow" | "pink" | "blue" | "green" | "purple" | "orange";
 export type PomodoroMode = "focus" | "break";
+/** v0.1.17: how the Quick Note capture window names notes (issue #40).
+ *  "custom" = a leading * marks the title, "date" = DD-MM-YY. */
+export type CaptureTitleMode = "custom" | "date";
 
 export type AppSettings = {
   fontSize: number;
@@ -18,6 +21,8 @@ export type AppSettings = {
   accentColor: string;
   alwaysOnTopDefault: boolean;
   stickToDesktop: boolean;
+  /** v0.1.17: Quick Note capture window title mode (issue #40). */
+  captureTitleMode: CaptureTitleMode;
 };
 
 export type NoteFolder = { id: string; name: string; icon: string; createdAt: number; deletedAt?: number };
@@ -101,6 +106,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   accentColor: "#4caf50",
   alwaysOnTopDefault: true,
   stickToDesktop: false,
+  captureTitleMode: "custom",
 };
 
 /** v0.1.12: font options, now including the most-used coding fonts —

@@ -16,6 +16,9 @@ Small floating windows that stay on top (or on the desktop layer) so you can kee
 - **Syntax highlighting** — keywords, strings, numbers, comments and functions colored in light and dark themes
 - **Coding fonts** — Fira Code, Source Code Pro, Hack and JetBrains Mono bundled for offline use, plus system, serif, rounded and casual fonts
 - **Smart font dropdown** — each font previews in its own typeface with an "Aa 123" sample, live search, keyboard navigation
+- **Quick Note capture window** — press **Ctrl+Shift+N** from anywhere in the OS and a Spotlight-style black composer pops up. Full markdown inside it, slash commands (/ heading, to-do, bullet, quote, highlight, table, code), and a mic button that records a voice note into the note with a pulsing accent-colored animation. Enter saves into the Quick Notes folder (created automatically) without opening the main app
+- **Quick note titles** — Settings → Quick note title: Custom (a leading `*` at the intro marks the title) or Date (DD-MM-YY; `*` overrides it)
+- **Tray icon** — Pin lives in the system tray (Show Pin / Quick Note / Quit); closing the main window hides it to the tray instead of quitting
 - **Wiki-links** — type `[[` to autocomplete note titles, click a link in the preview to open (or create) the target note, with a "Linked mentions" backlinks section
 - **Graph view** — an SVG map of notes (nodes) and wiki-links (edges); click a node to open its note, search filters nodes by title or content
 - **Quick capture** — global Ctrl+Shift+P hotkey from anywhere in the OS opens a small capture box; type, hit Enter, the note saves instantly (first line becomes the title)
@@ -27,10 +30,10 @@ Small floating windows that stay on top (or on the desktop layer) so you can kee
 - **Photos & audio** — upload photos (soft 12px radius), lay them out in 1–4 column grids, record audio straight into a note
 - **Editor extras** — line numbers, slash command menu (`/`), live markdown preview, `Ctrl+S` save flash and `Ctrl+Z` undo, themed cursor and selection that follow your accent color
 - **Trash** — deleted notes, folders and tasks land in trash first, restore or purge from there
-- **Command palette** — `Ctrl+K` for everything, `Ctrl+Shift+P` quick capture from anywhere
+- **Command palette** — `Ctrl+K` for everything, `Ctrl+Shift+P` quick capture and `Ctrl+Shift+N` Quick Note window from anywhere
 - **Pomodoro timer** (25 min focus / 5 min break) with sound + auto-switch, and a daily focus-session counter
 - **Daily writing streak** — fire icon in the title bar that grows when you create or write notes
-- **Settings** — font size, font style, accent color, always-on-top vs stay on desktop
+- **Settings** — font size, font style, accent color, quick note title mode, always-on-top vs stay on desktop
 - **Dark mode** — instant flip, themed controls
 - Local-only storage (no cloud)
 
@@ -44,15 +47,23 @@ Small floating windows that stay on top (or on the desktop layer) so you can kee
 - **Right-click a note** → full menu: Edit, Rename, Pin to desktop, Favorite, Reminder, Change color, Change icon, Delete
 - **Right-click a folder** → Rename, New note, Delete
 - **Search box** → live search across titles, content and tags
-- **Ctrl+K** → command palette (graph view, quick capture, export library, import notes, everything else)
-- Gear icon → Settings (fonts, accent, window behavior)
+- **Ctrl+K** → command palette (graph view, quick capture, Quick Note window, export library, import notes, everything else)
+- Gear icon → Settings (fonts, accent, quick note title mode, window behavior)
 - Fire badge (top right) → your current daily writing streak
+- Closing the window hides Pin to the tray; use the tray menu (Show Pin / Quick Note / Quit) to bring it back
 <img width="284" height="410" alt="Screenshot 2026-10-25 202521" src="https://github.com/user-attachments/assets/cb08b959-9c86-43df-9077-af5501631579" />
 <img width="249" height="343" alt="Screenshot 2026-10-25 202627" src="https://github.com/user-attachments/assets/3a3d05dc-9367-4ff3-81c6-ca6634a872aa" />
 <img width="269" height="393" alt="Screenshot 2026-10-25 203017" src="https://github.com/user-attachments/assets/5a829a9a-6a42-46de-b127-432997dabcc2" />
 
 
 
+
+### Quick Note window (Ctrl+Shift+N)
+- Black Spotlight-style composer that opens from anywhere in the OS
+- Markdown works (`##`, `[[links]]`, tables, code), plus slash commands: `/` heading, to-do, bullet, quote, highlight, table, code block
+- Start with `*` to make the first line the title (or use the Date title mode in Settings)
+- Mic button records a voice note into the note (accent-colored pulsing bars while recording)
+- Enter saves to the Quick Notes folder and hides the window; Shift+Enter makes a new line; Esc hides without saving
 
 ### Note editor
 - Markdown with live preview, toolbar shortcuts, line numbers and slash commands
