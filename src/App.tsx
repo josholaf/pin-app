@@ -24,6 +24,8 @@ import {
 import { MarkdownNote } from "./MarkdownNote";
 import { SettingsWindow } from "./SettingsWindow";
 import { QuickNoteCapture } from "./QuickNoteCapture";
+import { WebClipOverlay, WEB_CLIPS_FOLDER_ID, type WebClip } from "./WebClipper";
+import { readText as readClipboardText } from "@tauri-apps/plugin-clipboard-manager";
 
 const noteKey = (id: string) => "note:" + id;
 
@@ -157,6 +159,8 @@ function App() {
   // wiki-link graph view with its search box (issue #36).
   const [quickCaptureOpen, setQuickCaptureOpen] = useState(false);
   const [quickCaptureText, setQuickCaptureText] = useState("");
+  // v0.1.18: web clipper overlay (paste a URL, save the clean article)
+  const [clipOpen, setClipOpen] = useState(false);
   const [graphOpen, setGraphOpen] = useState(false);
   const [graphQuery, setGraphQuery] = useState("");
   const totalSeconds = pomodoroMode === "focus" ? FOCUS_SECONDS : BREAK_SECONDS;
@@ -532,6 +536,58 @@ function App() {
     setQuickCaptureText("");
     setQuickCaptureOpen(false);
   };
+  // ===== v0.1.18: web clipper — save pages and selections as clean notes (issue #42) =====
+
+  /** Save a clipped page / selection into the Web Clips folder. The page
+   *  address and ad boilerplate never make it into the note. */
+  const saveClipNote = (clip: { title: string; markdown: string }, tag: string) => {
+    if (!clip.markdown.trim()) return;
+    const note: Note = {
+      id: crypto.randomUUID(),
+      title: (clip.title || "Web clip").slice(0, 80),
+      content: clip.markdown,
+      color: "yellow",
+      icon: "globe",
+      folderId: WEB_CLIPS_FOLDER_ID,
+      createdAt: Date.now(),
+      format: "md",
+      tags: [tag],
+    };
+    if (!folders.some((f) => f.id === WEB_CLIPS_FOLDER_ID && !f.deletedAt)) {
+      const folder: NoteFolder = { id: WEB_CLIPS_FOLDER_ID, name: "Web Clips", icon: "globe", createdAt: Date.now() };
+      setFolders([...folders, folder]);
+    }
+    setNotes([note, ...notes]);
+    persistNote(note);
+    recordActivity();
+  };
+
+  // Global Ctrl/Cmd+Shift+C: copy selected text anywhere in the OS, hit
+  // the hotkey, and the clipboard text becomes a note in Web Clips.
+  const clipSelectionRef = useRef<() => void>(() => {});
+  clipSelectionRef.current = async () => {
+    try {
+      const text = (await readClipboardText()).trim();
+      if (!text) return;
+      const firstLine = text.split("\n")[0].trim().slice(0, 80);
+      saveClipNote({ title: firstLine || "Clipped selection", markdown: text }, "clip");
+    } catch { /* clipboard unavailable */ }
+  };
+  useEffect(() => {
+    if (windowLabel !== "main") return;
+    (async () => {
+      try {
+        const already = await isRegistered("CommandOrControl+Shift+C").catch(() => false);
+        if (!already) {
+          await register("CommandOrControl+Shift+C", async (event) => {
+            if (event.state === "Pressed") clipSelectionRef.current();
+          });
+        }
+      } catch { /* shortcut unavailable (already taken by another app) */ }
+    })();
+    return () => { unregister("CommandOrControl+Shift+C").catch(() => {}); };
+  }, [windowLabel]);
+
   // v0.1.5: deleting a note moves it to Trash (soft delete) instead of
   // destroying it immediately (issue #4).
   const deleteNoteFromList = (id: string) => {
@@ -1012,6 +1068,9 @@ function App() {
     { id: "graph-view", title: "Graph view", subtitle: "Map of notes and their wiki-links, with search", run: () => { setGraphOpen(true); } },
     // v0.1.17: Quick Note window (issue #40)
     { id: "quick-note-window", title: "Quick Note window", subtitle: "Spotlight-style capture window (also Ctrl+Shift+N anywhere)", run: () => { showQuickNote(); } },
+    // v0.1.18: web clipper (issue #42)
+    { id: "clip-webpage", title: "Clip webpage", subtitle: "Paste a URL, save the clean article without ads (Ctrl+K then type clip)", run: () => { setClipOpen(true); } },
+    { id: "clip-selection", title: "Clip selected text", subtitle: "Save copied text as a note (also Ctrl+Shift+C anywhere)", run: () => { clipSelectionRef.current(); } },
   ];
   if (trashCount > 0) {
     paletteItems.push({ id: "empty-trash", title: "Empty trash", subtitle: "Delete all trashed notes forever", run: () => emptyTrash() });
@@ -1266,6 +1325,13 @@ function App() {
         </div>
       )}
 
+      {/* v0.1.18: web clipper overlay (issue #42) */}
+      <WebClipOverlay
+        open={clipOpen}
+        onClose={() => setClipOpen(false)}
+        onSave={(clip: WebClip) => saveClipNote(clip, "web")}
+      />
+
       {paletteOpen && (
         <div className="palette-overlay" onClick={closePalette}>
           <div className="palette" onClick={(e) => e.stopPropagation()}>
@@ -1441,3 +1507,4 @@ function App() {
 }
 
 export default App;
+

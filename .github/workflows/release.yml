@@ -77,19 +77,20 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.17' }}
-          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.17' }}"
+          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.18' }}
+          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.18' }}"
           releaseBody: |
-            **Pin v0.1.17** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
+            **Pin v0.1.18** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
 
-            ## What's new in v0.1.17
+            ## What's new in v0.1.18
 
             ### ✨ New in this release
-            - **Quick Note capture window** (#40) — press Ctrl+Shift+N from anywhere in the OS and a Spotlight-style black composer appears. Full markdown works inside it, plus slash commands (/ heading, to-do, bullet, quote, highlight, table, code). Enter saves the note straight into the Quick Notes folder (created automatically) without opening the main app; Shift+Enter makes a new line, Esc hides it. The mic button records a voice note into the composer with a pulsing accent-colored animation while recording.
-            - **Quick note titles** (#40) — pick the title mode in Settings: Custom (a leading * at the intro marks the title) or Date (DD-MM-YY; * overrides it).
-            - **Tray icon** (#40) — Pin now lives in the system tray with Show Pin / Quick Note / Quit, and closing the main window hides it to the tray instead of quitting.
+            - **Clip webpages into notes** (#42) — paste a page URL into the Clip webpage dialog (command palette or the ⚡ button area) and Pin fetches the page, extracts just the article and saves it as a clean markdown note. Ads, scripts, navigation, cookie banners, share bars, sidebars, comments and other boilerplate are stripped out, and the page address is kept out of the note.
+            - **Clip selected text** (#42) — select text anywhere in the OS, copy it, then press Ctrl+Shift+C and the clipboard text becomes a note. No formatting junk, just the words.
+            - **Web Clips folder** (#42) — both clips land in a Web Clips folder that is created automatically, tagged `web` or `clip`, with the globe icon.
 
             ### 🚀 Previously shipped
+            - Quick Note capture window on Ctrl+Shift+N with markdown, slash commands, voice notes, plus title modes and a tray icon (v0.1.17)
             - Focus mode overlay with typewriter scrolling (v0.1.16)
             - Quick capture box on the global Ctrl+Shift+P hotkey + graph view with search (v0.1.15)
             - Wiki-links with autocomplete + backlinks, note reminders with toast and due badge, library ZIP export/import, themed caret and selection (v0.1.14)

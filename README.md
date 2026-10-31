@@ -11,6 +11,8 @@ Small floating windows that stay on top (or on the desktop layer) so you can kee
 - **Lucide icons** — assign icons to notes and folders
 - **Per-note colors** — pick from the right-click menu or the note title bar
 - **Markdown notes** — headings, lists, interactive task checkboxes, tables, quotes, images, links, `==highlight==` and colored text
+- **Web clipper** — paste a page URL (command palette → Clip webpage) and Pin saves just the article as a clean markdown note: ads, scripts, navigation, cookie banners, share bars, sidebars, comments and other boilerplate are stripped out, and the page address is kept out of the note
+- **Clip selected text** — copy text anywhere in the OS, then press **Ctrl+Shift+C** and the clipboard becomes a note; both kinds of clips land in a Web Clips folder that is created automatically
 - **macOS-style code blocks** — every fenced code block renders as a little Mac window: red / yellow / green traffic lights and the language name on the right side
 - **Code language detection** — fence tags accept any language (````html`, ````rust`, ````c++` ...), and untagged blocks get their language auto-detected from the code itself
 - **Syntax highlighting** — keywords, strings, numbers, comments and functions colored in light and dark themes
@@ -30,7 +32,7 @@ Small floating windows that stay on top (or on the desktop layer) so you can kee
 - **Photos & audio** — upload photos (soft 12px radius), lay them out in 1–4 column grids, record audio straight into a note
 - **Editor extras** — line numbers, slash command menu (`/`), live markdown preview, `Ctrl+S` save flash and `Ctrl+Z` undo, themed cursor and selection that follow your accent color
 - **Trash** — deleted notes, folders and tasks land in trash first, restore or purge from there
-- **Command palette** — `Ctrl+K` for everything, `Ctrl+Shift+P` quick capture and `Ctrl+Shift+N` Quick Note window from anywhere
+- **Command palette** — `Ctrl+K` for everything, `Ctrl+Shift+P` quick capture, `Ctrl+Shift+N` Quick Note window and `Ctrl+Shift+C` clip selected text from anywhere
 - **Pomodoro timer** (25 min focus / 5 min break) with sound + auto-switch, and a daily focus-session counter
 - **Daily writing streak** — fire icon in the title bar that grows when you create or write notes
 - **Settings** — font size, font style, accent color, quick note title mode, always-on-top vs stay on desktop
@@ -47,7 +49,7 @@ Small floating windows that stay on top (or on the desktop layer) so you can kee
 - **Right-click a note** → full menu: Edit, Rename, Pin to desktop, Favorite, Reminder, Change color, Change icon, Delete
 - **Right-click a folder** → Rename, New note, Delete
 - **Search box** → live search across titles, content and tags
-- **Ctrl+K** → command palette (graph view, quick capture, Quick Note window, export library, import notes, everything else)
+- **Ctrl+K** → command palette (graph view, quick capture, Quick Note window, clip webpage, clip selected text, export library, import notes, everything else)
 - Gear icon → Settings (fonts, accent, quick note title mode, window behavior)
 - Fire badge (top right) → your current daily writing streak
 - Closing the window hides Pin to the tray; use the tray menu (Show Pin / Quick Note / Quit) to bring it back
@@ -57,6 +59,11 @@ Small floating windows that stay on top (or on the desktop layer) so you can kee
 
 
 
+
+### Web clipper (Ctrl+K → Clip webpage, or Ctrl+Shift+C)
+- **Clip a page**: open the command palette → Clip webpage, paste a URL, hit Enter. Pin fetches the page and keeps only the article: headings, paragraphs, lists, quotes, code, tables and images. Ads, cookie banners, share bars, related posts and the page address are left out
+- **Clip selected text**: select text in any app, copy it (Ctrl+C), then press Ctrl+Shift+C. The clipboard text becomes a note
+- Both clips save into the **Web Clips** folder (created automatically), tagged `web` or `clip`, ready for your own tags and wiki-links
 
 ### Quick Note window (Ctrl+Shift+N)
 - Black Spotlight-style composer that opens from anywhere in the OS
