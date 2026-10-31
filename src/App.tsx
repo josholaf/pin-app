@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { getCurrentWindow } from "@tauri-apps/api/window";
+import { getCurrentWindow, getAll } from "@tauri-apps/api/window";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { Store } from "@tauri-apps/plugin-store";
 import { save, open as openFileDialog } from "@tauri-apps/plugin-dialog";
@@ -9,7 +9,6 @@ import { register, unregister, isRegistered } from "@tauri-apps/plugin-global-sh
 import { TrayIcon } from "@tauri-apps/api/tray";
 import { Menu } from "@tauri-apps/api/menu";
 import { defaultWindowIcon } from "@tauri-apps/api/app";
-import { exit } from "@tauri-apps/api/process";
 import {
   Pin, Moon, Sun, Plus, X, Play, Pause, RotateCcw, Search,
   ChevronDown, ChevronRight, FolderPlus, Flame, Folder, FolderOpen,
@@ -885,12 +884,13 @@ function App() {
               },
             },
             { id: "quick", text: "Quick Note", action: () => { showQuickNoteRef.current(); } },
-            { id: "quit", text: "Quit", action: () => { exit(0); } },
+            { id: "quit", text: "Quit", action: async () => { for (const w of getAll()) { await w.destroy(); } } },
           ],
         });
+        const trayIcon = await defaultWindowIcon();
         await TrayIcon.new({
           id: "main",
-          icon: await defaultWindowIcon(),
+          icon: trayIcon ?? undefined,
           tooltip: "Pin",
           menu,
           showMenuOnLeftClick: true,
@@ -1250,7 +1250,7 @@ function App() {
                             <button className="note-open-btn" onClick={() => openNote(note)}>{note.title || "Untitled"}</button>
                           )}
                           {note.reminderAt !== undefined && (
-                            <Clock size={11} className={"reminder-badge" + (due ? " due" : "")} title={due ? "Reminder due" : "Reminder: " + new Date(note.reminderAt).toLocaleString()} />
+                            <Clock size={11} className={"reminder-badge" + (due ? " due" : "")} />
                           )}
                         </div>
                       );
@@ -1272,7 +1272,7 @@ function App() {
                   <button className="note-open-btn" onClick={() => openNote(note)}>{note.title || "Untitled"}</button>
                 )}
                 {note.reminderAt !== undefined && (
-                  <Clock size={11} className={"reminder-badge" + (due ? " due" : "")} title={due ? "Reminder due" : "Reminder: " + new Date(note.reminderAt).toLocaleString()} />
+                  <Clock size={11} className={"reminder-badge" + (due ? " due" : "")} />
                 )}
               </div>
             );
