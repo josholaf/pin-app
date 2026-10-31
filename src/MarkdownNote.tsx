@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { save } from "@tauri-apps/plugin-dialog";
 import { writeTextFile } from "@tauri-apps/plugin-fs";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import {
   NOTE_COLORS, ICON_BANK, markdownToHtml, plainToHtml, getIcon, tagColor,
   type Theme, type NoteColor, type AppSettings,
@@ -394,8 +395,17 @@ export function MarkdownNote(p: Props) {
     }
     // v0.1.11: clicks inside audio players play/pause, they do not open the editor (issue #26)
     if ((e.target as HTMLElement).closest("audio")) return;
-    const link = (e.target as HTMLElement).closest("a");
-    if (link) return; // let links open normally
+    const link = (e.target as HTMLElement).closest("a") as HTMLAnchorElement | null;
+    if (link) {
+      // v0.1.28: external links open the system browser, Obsidian-style
+      // (target="_blank" does nothing in a Tauri webview).
+      const href = link.getAttribute("href") || "";
+      if (/^https?:\/\//i.test(href)) {
+        e.preventDefault();
+        void openUrl(href).catch(() => {});
+      }
+      return;
+    }
     enterEdit();
   };
 
@@ -848,3 +858,4 @@ export function MarkdownNote(p: Props) {
     </div>
   );
 }
+
