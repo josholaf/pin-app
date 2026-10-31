@@ -19,7 +19,7 @@
     "core:path:default",
     "core:menu:default",
     "core:tray:default",
-    "core:process:allow-exit",
+    "core:app:allow-exit",
     "store:default",
     "dialog:default",
     "fs:allow-read-text-file",
@@ -37,3 +37,4 @@
     "clipboard-manager:allow-read-text"
   ]
 }
+
