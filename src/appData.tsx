@@ -110,7 +110,9 @@ export const DEFAULT_SETTINGS: AppSettings = {
 };
 
 /** v0.1.12: font options, now including the most-used coding fonts —
- *  Fira Code, Source Code Pro and Hack — next to JetBrains Mono (issue #28). */
+ *  Fira Code and Source Code Pro — next to JetBrains Mono (issue #28).
+ *  v0.1.19: Hack removed - @fontsource/hack does not exist on npm and
+ *  broke npm install (issue #44). */
 export const FONT_OPTIONS = [
   { id: "system", label: "System", value: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' },
   { id: "serif", label: "Serif", value: 'Georgia, "Times New Roman", serif' },
@@ -118,7 +120,6 @@ export const FONT_OPTIONS = [
   { id: "jetbrains", label: "JetBrains Mono", value: '"JetBrains Mono", "SF Mono", "Cascadia Code", Consolas, monospace' },
   { id: "fira", label: "Fira Code", value: '"Fira Code", "SF Mono", "Cascadia Code", Consolas, monospace' },
   { id: "source", label: "Source Code Pro", value: '"Source Code Pro", "SF Mono", "Cascadia Code", Consolas, monospace' },
-  { id: "hack", label: "Hack", value: '"Hack", "SF Mono", "Cascadia Code", Consolas, monospace' },
   { id: "rounded", label: "Rounded", value: '"Segoe UI", system-ui, sans-serif' },
   { id: "casual", label: "Casual", value: '"Comic Sans MS", "Chalkboard SE", cursive' },
 ];

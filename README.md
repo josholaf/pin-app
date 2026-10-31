@@ -16,7 +16,7 @@ Small floating windows that stay on top (or on the desktop layer) so you can kee
 - **macOS-style code blocks** — every fenced code block renders as a little Mac window: red / yellow / green traffic lights and the language name on the right side
 - **Code language detection** — fence tags accept any language (````html`, ````rust`, ````c++` ...), and untagged blocks get their language auto-detected from the code itself
 - **Syntax highlighting** — keywords, strings, numbers, comments and functions colored in light and dark themes
-- **Coding fonts** — Fira Code, Source Code Pro, Hack and JetBrains Mono bundled for offline use, plus system, serif, rounded and casual fonts
+- **Coding fonts** — JetBrains Mono, Fira Code and Source Code Pro bundled for offline use, plus system, serif, rounded and casual fonts
 - **Smart font dropdown** — each font previews in its own typeface with an "Aa 123" sample, live search, keyboard navigation
 - **Quick Note capture window** — press **Ctrl+Shift+N** from anywhere in the OS and a Spotlight-style black composer pops up. Full markdown inside it, slash commands (/ heading, to-do, bullet, quote, highlight, table, code), and a mic button that records a voice note into the note with a pulsing accent-colored animation. Enter saves into the Quick Notes folder (created automatically) without opening the main app
 - **Quick note titles** — Settings → Quick note title: Custom (a leading `*` at the intro marks the title) or Date (DD-MM-YY; `*` overrides it)
