@@ -77,12 +77,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.19' }}
-          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.19' }}"
+          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.20' }}
+          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.20' }}"
           releaseBody: |
-            **Pin v0.1.19** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
+            **Pin v0.1.20** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
 
-            ## What's new in v0.1.19
+            ## What's new in v0.1.20
 
             This release fixes the release build itself (#44): npm install has been failing since v0.1.12 on a phantom `@fontsource/hack` dependency that does not exist on npm (Hack is not a Google Font, so Fontsource never published it). With that removed, every feature shipped since v0.1.11 is finally in a published release:
 
