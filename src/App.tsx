@@ -10,7 +10,7 @@ import { TrayIcon } from "@tauri-apps/api/tray";
 import { Menu } from "@tauri-apps/api/menu";
 import { defaultWindowIcon } from "@tauri-apps/api/app";
 import {
-  Pin, Moon, Sun, Plus, X, Play, Pause, RotateCcw, Search,
+  Pin, Moon, Sun, Plus, X, Play, Pause, RotateCcw, Search, Network,
   ChevronDown, ChevronRight, FolderPlus, Flame, Folder, FolderOpen,
   Coffee, Settings, Trash2, Undo2, Command, Minus, Clock, Zap,
 } from "lucide-react";
@@ -1094,6 +1094,7 @@ function App() {
               <span className="streak-count">{streak}</span>
             </div>
           )}
+          <button onClick={() => { setPaletteOpen(false); setGraphOpen(true); }} className="icon-btn" title="Graph view — map of notes and their wiki-links"><Network size={16} /></button>
           <button onClick={() => setPaletteOpen(true)} className="icon-btn" title="Command palette (Ctrl+K)"><Command size={16} /></button>
           <button onClick={openSettingsWindow} className="icon-btn" title="Settings"><Settings size={16} /></button>
           <button onClick={toggleTheme} className="icon-btn" title="Theme">{theme === "light" ? <Moon size={16} /> : <Sun size={16} />}</button>
@@ -1507,5 +1508,6 @@ function App() {
 }
 
 export default App;
+
 
 
