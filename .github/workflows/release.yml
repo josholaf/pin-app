@@ -77,14 +77,16 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.28' }}
-          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.28' }}"
+          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.29' }}
+          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.29' }}"
           releaseBody: |
-            **Pin v0.1.28** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
+            **Pin v0.1.29** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
 
-            ## What's new in v0.1.28
+            ## What's new in v0.1.29
 
-            ### 🐛 Fixes
+            - **Graph view button in the titlebar** — the graph view (a map of your notes and their wiki-links, with search) existed but was only reachable through the command palette; there is now a visible Graph button next to the palette button, so it can no longer hide
+
+            ### Fixes (v0.1.28)
             - **External links open the browser** — clicking a link in a note now opens it in the default web browser, Obsidian-style; previously target="_blank" did nothing inside the app window
             - **Web clipper works** — the http plugin grants no origins by default, so every page fetch was denied; the Web Clips fetch now allows https and http URLs
             - Wiki-links ([[note]]) keep behaving like Obsidian: clicking opens the target note, creating it if missing
