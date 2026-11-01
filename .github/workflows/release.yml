@@ -77,52 +77,25 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.29' }}
-          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.29' }}"
+          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.30' }}
+          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.30' }}"
           releaseBody: |
-            **Pin v0.1.29** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
+            **Pin v0.1.30** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
 
-            ## What's new in v0.1.29
+            ## What's new in v0.1.30
 
-            - **Graph view button in the titlebar** — the graph view (a map of your notes and their wiki-links, with search) existed but was only reachable through the command palette; there is now a visible Graph button next to the palette button, so it can no longer hide
+            - **Auto-pairing brackets** — typing `(`, `[`, `{` or `"` in a note now automatically inserts the closing character with the caret inside: `(` becomes `(|)`, and selecting text first wraps it in the pair
+            - **`[[ ]]` auto-pairs too** — typing `[` right after another `[` completes it into `[[|]]` ready for a note link
+            - **Typing a closer skips over it** — if the closing character is already at the caret, typing it again just moves past instead of doubling up
+            - **Wiki-links work in plain-text notes** — `[[note]]` links were only clickable in markdown notes; they now render as clickable links in TXT notes as well, and clicking a link whose brackets were passed as plain text no longer fails
+
+            ### Fixes (v0.1.29)
+            - **Graph view button in the titlebar** — the graph view existed but was only reachable through the command palette; there is now a visible Graph button next to the palette button
 
             ### Fixes (v0.1.28)
             - **External links open the browser** — clicking a link in a note now opens it in the default web browser, Obsidian-style; previously target="_blank" did nothing inside the app window
             - **Web clipper works** — the http plugin grants no origins by default, so every page fetch was denied; the Web Clips fetch now allows https and http URLs
             - Wiki-links ([[note]]) keep behaving like Obsidian: clicking opens the target note, creating it if missing
-
-            ### Previously (v0.1.27)
-
-            This release completes the release build fix (#44, #46): the capabilities file requested the non-existent core:process:allow-exit permission, which failed the Rust build; it now uses core:app:allow-exit, and the tray Quit action destroys all windows via getAllWindows() from @tauri-apps/api/window; npm install had also been failing since v0.1.12 on a phantom @fontsource/hack dependency that does not exist on npm, and the type-check then failed on a missing brace plus invalid props and a removed Tauri v2 module. With all that fixed, every feature shipped since v0.1.11 is finally in a published release:
-
-            ### 📌 Web clipper (v0.1.18)
-            - **Clip webpages** — paste a URL, Pin extracts just the article as clean markdown: no ads, nav, cookie banners, share bars or page address
-            - **Clip selected text** — copy text anywhere, press Ctrl+Shift+C, it becomes a note
-            - Both save into an auto-created Web Clips folder, tagged `web` / `clip`
-
-            ### 📌 Quick Note window + tray (v0.1.17)
-            - Ctrl+Shift+N opens a Spotlight-style black composer from anywhere; markdown, slash commands and voice notes inside; saves to a Quick Notes folder
-            - Title modes: Custom (leading `*` marks the title) or Date (DD-MM-YY)
-            - Tray icon (Show Pin / Quick Note / Quit); closing the main window hides it to the tray
-
-            ### 📌 Focus mode (v0.1.16)
-            - Distraction-free writing overlay with typewriter scrolling and a quiet word count
-
-            ### 📌 Quick capture + graph view (v0.1.15)
-            - Global Ctrl+Shift+P capture box, first line becomes the title
-            - Graph view mapping notes and their wiki-links, with search
-
-            ### 📌 Wiki-links, reminders, backup (v0.1.14)
-            - `[[wiki-links]]` with autocomplete and a Linked mentions backlinks section
-            - Note reminders with beep, toast and due badge
-            - Library export/import (ZIP of markdown)
-
-            ### 📌 Editor & list polish (v0.1.13)
-            - Clean note list, right-click menu with everything
-            - macOS-style code blocks with language detection and syntax coloring
-
-            ### 📌 Coding fonts (v0.1.12)
-            - JetBrains Mono, Fira Code and Source Code Pro bundled offline, plus a smart font dropdown with live search and per-font previews
 
             ## Downloads
             - **Windows**: `.msi` or `.exe` (NSIS)

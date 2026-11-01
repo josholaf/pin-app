@@ -387,7 +387,13 @@ export function MarkdownNote(p: Props) {
   const onPreviewClick = (e: MouseEvent<HTMLDivElement>) => {
     // v0.1.14: [[wiki-links]] open the target note (issue #34)
     const wl = (e.target as HTMLElement).closest(".md-wikilink") as HTMLElement | null;
-    if (wl && p.onOpenWikiLink) { p.onOpenWikiLink(wl.dataset.note || wl.textContent || ""); return; }
+    // v0.1.30: strip the surrounding brackets from the text fallback so a
+    // link without a data-note attribute still opens the right note.
+    if (wl && p.onOpenWikiLink) {
+      const target = (wl.dataset.note || wl.textContent || "").replace(/^\[\[/, "").replace(/\]\]$/, "").trim();
+      if (target) p.onOpenWikiLink(target);
+      return;
+    }
     const box = (e.target as HTMLElement).closest(".md-checkbox") as HTMLElement | null;
     if (box) {
       flipTask(Number(box.dataset.task), box.dataset.done !== "1");
@@ -452,6 +458,41 @@ export function MarkdownNote(p: Props) {
       if (e.key === "Escape") { e.preventDefault(); setSlashMenu(null); return; }
     }
     if (e.key === "Escape") { e.preventDefault(); exitEdit(); return; }
+    // v0.1.30: auto-pair brackets and quotes. Typing an opener inserts its
+    // closer with the caret inside (wrapping any selection); "[" right after
+    // another "[" becomes "[[ ]]"; typing a closer that already sits at the
+    // caret just skips over it instead of doubling up.
+    if (!e.ctrlKey && !e.metaKey && !e.altKey) {
+      const ta = e.currentTarget;
+      const val = ta.value;
+      const start = ta.selectionStart;
+      const end = ta.selectionEnd;
+      const nextChar = val.slice(end, end + 1);
+      if (start === end && nextChar === e.key && (e.key === ")" || e.key === "]" || e.key === "}" || e.key === '"')) {
+        e.preventDefault();
+        ta.setSelectionRange(end + 1, end + 1);
+        updateCursor();
+        return;
+      }
+      const closer = e.key === "(" ? ")" : e.key === "[" ? "]" : e.key === "{" ? "}" : e.key === '"' ? '"' : "";
+      if (closer) {
+        e.preventDefault();
+        const selected = val.slice(start, end);
+        const secondBracket = e.key === "[" && start === end && val.slice(0, start).endsWith("[");
+        const open = secondBracket ? "" : e.key;
+        const ins = open + selected + (secondBracket ? "]]" : closer);
+        const next = val.slice(0, start) + ins + val.slice(end);
+        p.setNoteContent(next);
+        requestAnimationFrame(() => {
+          const pos = start + open.length + selected.length;
+          ta.setSelectionRange(pos, pos);
+          updateCursor();
+          detectWiki(next, pos);
+          detectSlash(next, pos);
+        });
+        return;
+      }
+    }
     if (e.ctrlKey || e.metaKey) {
       const k = e.key.toLowerCase();
       if (k === "b" && isMd) { e.preventDefault(); insertMd("**", "**"); }

@@ -503,6 +503,10 @@ export function plainToHtml(text: string): string {
   if (!text.trim()) return "";
   return text
     .split("\n")
-    .map(function (l) { return '<div class="md-p">' + escapeHtml(l) + "</div>"; })
+    .map(function (l) {
+      // v0.1.30: [[wiki-links]] are clickable in plain-text (txt) notes too —
+      // before, they only rendered as links in markdown notes.
+      return '<div class="md-p">' + escapeHtml(l).replace(/\[\[([^\]\n]+)\]\]/g, '<span class="md-wikilink" data-note="$1">[[$1]]</span>') + "</div>";
+    })
     .join("");
 }
