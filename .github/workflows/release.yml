@@ -77,13 +77,17 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.30' }}
-          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.30' }}"
+          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.31' }}
+          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.31' }}"
           releaseBody: |
-            **Pin v0.1.30** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
+            **Pin v0.1.31** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
 
-            ## What's new in v0.1.30
+            ## What's new in v0.1.31
 
+            - **Animated graph view** — the graph is no longer a static ring: notes now sit in a live force-directed layout that keeps moving and settling, and every node can be dragged with the mouse or touchpad; drop it anywhere and the graph re-settles around it
+            - **Web clipper keeps markdown structure** — a heading 3 on the page now clips as `###` (not `####`), and images survive clipping: `<figure>`/`<picture>` images are kept, lazy-loaded images (`data-src`, `srcset`) are picked up, and relative image URLs are resolved to absolute ones
+
+            ### Fixes (v0.1.30)
             - **Auto-pairing brackets** — typing `(`, `[`, `{` or `"` in a note now automatically inserts the closing character with the caret inside: `(` becomes `(|)`, and selecting text first wraps it in the pair
             - **`[[ ]]` auto-pairs too** — typing `[` right after another `[` completes it into `[[|]]` ready for a note link
             - **Typing a closer skips over it** — if the closing character is already at the caret, typing it again just moves past instead of doubling up
