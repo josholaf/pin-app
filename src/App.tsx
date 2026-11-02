@@ -902,7 +902,7 @@ function App() {
 
   // v0.1.5: command palette toggle (issue #6)
   useEffect(() => {
-    if (windowLabel === "main" || openNoteId) return;
+    if (windowLabel !== "main" || openNoteId) return;
     const onKey = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
@@ -1089,7 +1089,7 @@ function App() {
           <button onClick={() => { setPaletteOpen(false); setGraphOpen(true); }} className="icon-btn" title="Graph view — map of notes and their wiki-links"><Network size={16} /></button>
           <button onClick={() => setPaletteOpen(true)} className="icon-btn" title="Command palette (Ctrl+K)"><Command size={16} /></button>
           <button onClick={openSettingsWindow} className="icon-btn" title="Settings"><Settings size={16} /></button>
-          <button onClick={toggleTheme} className="icon-btn" title="Theme">{theme === "light" ? <Moon size={16} /> : <Sun size={16} /></button>
+          <button onClick={toggleTheme} className="icon-btn" title="Theme">{theme === "light" ? <Moon size={16} /> : <Sun size={16} /> }</button>
           <button onClick={minimizeWindow} className="icon-btn win-ctrl" title="Minimize"><Minus size={16} /></button>
           <button onClick={closeWindow} className="icon-btn win-ctrl" title="Hide to tray"><X size={16} /></button>
         </div>
@@ -1482,3 +1482,6 @@ function App() {
 }
 
 export default App;
+
+
+
