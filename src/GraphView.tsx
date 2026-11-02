@@ -29,8 +29,6 @@ export function GraphView(props: { nodes: GraphNode[]; edges: GraphEdge[]; onOpe
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [, setFrame] = useState(0);
 
-  const nodesRef = useRef(props.nodes);
-  nodesRef.current = props.nodes;
   const edgesRef = useRef(props.edges);
   edgesRef.current = props.edges;
   const openRef = useRef(props.onOpen);
