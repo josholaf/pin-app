@@ -24,6 +24,7 @@ import { MarkdownNote } from "./MarkdownNote";
 import { SettingsWindow } from "./SettingsWindow";
 import { QuickNoteCapture } from "./QuickNoteCapture";
 import { WebClipOverlay, WEB_CLIPS_FOLDER_ID, type WebClip } from "./WebClipper";
+import { GraphView } from "./GraphView";
 import { readText as readClipboardText } from "@tauri-apps/plugin-clipboard-manager";
 
 const noteKey = (id: string) => "note:" + id;
@@ -901,7 +902,7 @@ function App() {
 
   // v0.1.5: command palette toggle (issue #6)
   useEffect(() => {
-    if (windowLabel !== "main" || openNoteId) return;
+    if (windowLabel === "main" || openNoteId) return;
     const onKey = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
@@ -953,25 +954,16 @@ function App() {
 
   // ===== v0.1.15: graph view over the wiki-links (issue #36) =====
   // Nodes are notes, edges are [[wiki-links]] between note titles.
-  // Layout: deterministic ring, favorites pulled toward the center so
-  // hubs are easy to spot. The search box dims non-matching nodes.
+  // v0.1.31: the layout is GraphView's force-directed simulation —
+  // animated, and every node can be dragged with mouse or touchpad.
+  // The search box dims non-matching nodes.
   const gq = graphQuery.trim().toLowerCase();
-  const graphNodes = activeNotes.map((n, i) => {
-    const count = Math.max(activeNotes.length, 1);
-    const angle = (i / count) * Math.PI * 2;
-    const radius = n.favorite ? 60 : 110;
-    const cx = 160;
-    const cy = 150;
-    return {
-      id: n.id,
-      title: n.title || "Untitled",
-      x: cx + radius * Math.cos(angle),
-      y: cy + radius * Math.sin(angle),
-      favorite: !!n.favorite,
-      dimmed: !!gq && !((n.title || "").toLowerCase().includes(gq) || (n.content || "").toLowerCase().includes(gq)),
-    };
-  });
-  const nodePos = new Map(graphNodes.map((g) => [g.id, g]));
+  const graphItems = activeNotes.map((n) => ({
+    id: n.id,
+    title: n.title || "Untitled",
+    favorite: !!n.favorite,
+    dimmed: !!gq && !((n.title || "").toLowerCase().includes(gq) || (n.content || "").toLowerCase().includes(gq)),
+  }));
   const titleToId = new Map(activeNotes.map((n) => [(n.title || "").trim().toLowerCase(), n.id]));
   const graphEdges: { from: string; to: string }[] = [];
   activeNotes.forEach((n) => {
@@ -1097,7 +1089,7 @@ function App() {
           <button onClick={() => { setPaletteOpen(false); setGraphOpen(true); }} className="icon-btn" title="Graph view — map of notes and their wiki-links"><Network size={16} /></button>
           <button onClick={() => setPaletteOpen(true)} className="icon-btn" title="Command palette (Ctrl+K)"><Command size={16} /></button>
           <button onClick={openSettingsWindow} className="icon-btn" title="Settings"><Settings size={16} /></button>
-          <button onClick={toggleTheme} className="icon-btn" title="Theme">{theme === "light" ? <Moon size={16} /> : <Sun size={16} />}</button>
+          <button onClick={toggleTheme} className="icon-btn" title="Theme">{theme === "light" ? <Moon size={16} /> : <Sun size={16} /></button>
           <button onClick={minimizeWindow} className="icon-btn win-ctrl" title="Minimize"><Minus size={16} /></button>
           <button onClick={closeWindow} className="icon-btn win-ctrl" title="Hide to tray"><X size={16} /></button>
         </div>
@@ -1123,30 +1115,12 @@ function App() {
             </div>
           </div>
           <div className="graph-canvas">
-            {activeNotes.length === 0 ? (
-              <p className="graph-empty">No notes yet. Create a note and link it with [[double brackets]] to build your graph.</p>
-            ) : (
-              <svg viewBox="0 0 320 300" className="graph-svg">
-                {graphEdges.map((e, i) => {
-                  const a = nodePos.get(e.from);
-                  const b = nodePos.get(e.to);
-                  if (!a || !b) return null;
-                  const dim = !!gq && (a.dimmed || b.dimmed);
-                  return <line key={i} x1={a.x} y1={a.y} x2={b.x} y2={b.y} className="graph-edge" style={{ opacity: dim ? 0.06 : 0.5 }} />;
-                })}
-                {graphNodes.map((g) => (
-                  <g key={g.id} className={"graph-node" + (g.dimmed ? " dimmed" : "") + (g.favorite ? " favorite" : "")} onClick={() => openNoteById(g.id)}>
-                    <circle cx={g.x} cy={g.y} r={g.favorite ? 9 : 7} className="graph-node-dot" />
-                    <text x={g.x} y={g.y + 18} textAnchor="middle" className="graph-node-label">{g.title.slice(0, 18)}</text>
-                  </g>
-                ))}
-              </svg>
-            )}
+            <GraphView nodes={graphItems} edges={graphEdges} onOpen={openNoteById} />
           </div>
           <div className="graph-legend">
             <span><span className="graph-legend-dot" /> note</span>
             <span><span className="graph-legend-dot favorite" /> favorite</span>
-            <span className="graph-legend-hint">Click a node to open its note. Type [[ in a note to link notes.</span>
+            <span className="graph-legend-hint">Drag nodes with mouse or touchpad. Click a node to open its note.</span>
           </div>
         </div>
       ) : trashOpen ? (
@@ -1508,6 +1482,3 @@ function App() {
 }
 
 export default App;
-
-
-

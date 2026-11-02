@@ -12,7 +12,7 @@ export type WebClip = { title: string; markdown: string };
 /** Elements that never hold article content. */
 const STRIP_SELECTORS =
   "script,style,noscript,iframe,frame,svg,form,button,input,select,textarea," +
-  "canvas,video,audio,object,embed,link,meta,nav,footer,header,aside,figure," +
+  "canvas,video,audio,object,embed,link,meta,nav,footer,header,aside," +
   "template,dialog,amp-ad,ins";
 
 /** class / id fragments that mark ad or boilerplate containers. */
@@ -30,6 +30,30 @@ function stripJunk(root: Element) {
     const sig = ((el.className && typeof el.className === "string" ? el.className : "") + " " + (el.id || "")).toLowerCase();
     if (JUNK_ATTR.test(sig)) el.remove();
   });
+}
+
+/** v0.1.31: the page address of the clip in progress, set by
+ *  extractArticle. Relative image and link URLs resolve against it. */
+let pageBase = "";
+
+/** Best source URL for an <img>, checking common lazy-load attributes. */
+function imgSrc(el: Element): string {
+  for (const attr of ["src", "data-src", "data-lazy-src", "data-original", "data-echo", "data-lazy"]) {
+    const v = (el.getAttribute(attr) || "").trim();
+    if (v) return v;
+  }
+  const srcset = el.getAttribute("srcset") || el.getAttribute("data-srcset") || "";
+  const first = srcset.split(",").map((s) => s.trim().split(/\s+/)[0]).find((s) => !!s);
+  return first || "";
+}
+
+/** Absolute image URL, resolving relative paths against the page. */
+function absImgSrc(el: Element): string {
+  const raw = imgSrc(el);
+  if (!raw) return "";
+  if (/^(https?:|data:)/i.test(raw)) return raw;
+  if (!pageBase) return "";
+  try { return new URL(raw, pageBase).href; } catch { return ""; }
 }
 
 /** Inline node → markdown text (bold, italic, code, links, images). */
@@ -50,9 +74,9 @@ function inlineToMd(node: Node): string {
     else if (tag === "code") out += "`" + inner() + "`";
     else if (tag === "br") out += "\n";
     else if (tag === "img") {
-      const src = el.getAttribute("src") || "";
+      const src = absImgSrc(el);
       const alt = el.getAttribute("alt") || "image";
-      if (/^(https?:|data:)/.test(src)) out += "![" + alt + "](" + src + ")";
+      if (src) out += "![" + alt + "](" + src + ")";
     } else if (tag === "a") {
       const href = el.getAttribute("href") || "";
       const text = inner();
@@ -85,8 +109,8 @@ function blockToMd(el: Element): string {
 
     if (/^h[1-6]$/.test(tag)) {
       const level = Number(tag.slice(1));
-      push("#".repeat(Math.min(level + 1, 6)) + " " + inlineToMd(c).trim());
-    } else if (tag === "p" || tag === "div" || tag === "section" || tag === "article" || tag === "span") {
+      push("#".repeat(Math.min(level, 6)) + " " + inlineToMd(c).trim());
+    } else if (tag === "p" || tag === "div" || tag === "section" || tag === "article" || tag === "span" || tag === "figure" || tag === "picture") {
       // Container: recurse. A div that only wraps text stays a paragraph.
       if (c.querySelector("p,h1,h2,h3,h4,h5,h6,ul,ol,blockquote,pre,table,img,div")) {
         const inner = blockToMd(c);
@@ -120,9 +144,9 @@ function blockToMd(el: Element): string {
     } else if (tag === "hr") {
       push("---");
     } else if (tag === "img") {
-      const src = c.getAttribute("src") || "";
+      const src = absImgSrc(c);
       const alt = c.getAttribute("alt") || "image";
-      if (/^(https?:|data:)/.test(src)) push("![" + alt + "](" + src + ")");
+      if (src) push("![" + alt + "](" + src + ")");
     } else {
       const t = inlineToMd(c).trim();
       if (t) push(t);
@@ -143,9 +167,12 @@ function candidateScore(el: Element): number {
   return text + Math.min(ps.length, 40) * 20;
 }
 
-/** Extract the readable article from raw HTML as clean markdown. */
-export function extractArticle(html: string): WebClip {
+/** Extract the readable article from raw HTML as clean markdown.
+ *  v0.1.31: baseUrl lets relative image URLs resolve to absolute ones,
+ *  and headings/images keep their real markdown shape. */
+export function extractArticle(html: string, baseUrl?: string): WebClip {
   const doc = new DOMParser().parseFromString(html, "text/html");
+  pageBase = baseUrl || "";
 
   const title =
     (doc.querySelector("meta[property='og:title']") as HTMLMetaElement | null)?.content ||
@@ -194,7 +221,7 @@ export async function clipUrlToMarkdown(rawUrl: string): Promise<WebClip> {
   });
   if (!res.ok) throw new Error("Fetch failed: HTTP " + res.status);
   const html = await res.text();
-  const clip = extractArticle(html);
+  const clip = extractArticle(html, url);
   if (!clip.markdown || clip.markdown.length < 40) throw new Error("No readable content found");
   return clip;
 }
