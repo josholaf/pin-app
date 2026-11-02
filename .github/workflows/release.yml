@@ -77,10 +77,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.31' }}
-          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.31' }}"
+          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.32' }}
+          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.32' }}"
           releaseBody: |
-            **Pin v0.1.31** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
+            **Pin v0.1.32** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
+
+            ## What's new in v0.1.32
+
+            - **Code blocks no longer disappear when you type below them** — the preview's live renderer used a fragile text placeholder for fenced code blocks: click a note that ends with a code block (the caret lands right after the closing fence) and type, and the whole block vanished from the preview; the placeholder now uses an untypeable marker, so a code block survives no matter where the next text lands
 
             ## What's new in v0.1.31
 

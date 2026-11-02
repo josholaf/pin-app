@@ -321,10 +321,17 @@ function tableAligns(sep: string): string[] {
 export function markdownToHtml(md: string): string {
   if (!md.trim()) return "";
 
+  // v0.1.32: code-block placeholders are wrapped in untypeable private-use
+  // markers. The old " CB0 " text token only rendered when it sat alone
+  // with single spaces around it, so text typed right next to a fence (the
+  // preview's click-to-edit puts the caret at the very end) glued itself to
+  // the token and the whole code block vanished from the preview.
+  const CB_OPEN = "\uE000";
+  const CB_CLOSE = "\uE001";
   const codeBlocks: string[] = [];
   let text = md.replace(/```([\w#+.-]*)\n?([\s\S]*?)```/g, function (_all: string, lang: string, code: string) {
     codeBlocks.push(lang + " LANG" + code.replace(/\n+$/, ""));
-    return " CB" + (codeBlocks.length - 1) + " ";
+    return CB_OPEN + (codeBlocks.length - 1) + CB_CLOSE;
   });
   text = escapeHtml(text);
 
@@ -343,7 +350,7 @@ export function markdownToHtml(md: string): string {
   while (i < lines.length) {
     const line = lines[i];
 
-    const cb = line.match(/^ CB(\d+) $/);
+    const cb = line.match(/^\uE000(\d+)\uE001$/);
     if (cb) {
       closeAllLists();
       out.push(cb[0]);
@@ -476,7 +483,7 @@ export function markdownToHtml(md: string): string {
   }
   closeAllLists();
 
-  return out.join("").replace(/ CB(\d+) $/g, function (_all: string, idx: string) {
+  return out.join("").replace(/\uE000(\d+)\uE001/g, function (_all: string, idx: string) {
     const raw = codeBlocks[Number(idx)];
     const sep = raw.indexOf(" LANG");
     const lang = sep >= 0 ? raw.slice(0, sep) : "";
