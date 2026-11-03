@@ -1502,13 +1502,125 @@ body {
   padding: 2px 6px 0;
 }
 
-/* In-note audio players ([[audio|...]] recordings). */
+/* In-note audio players ([[audio|...]] recordings) — v0.1.32 decorated card.
+ * The native <audio> is hidden; a play button, an animated waveform and a
+ * progress bar drive it. The bars ripple only while data-state="playing". */
 .note-content-preview .md-audio {
-  width: 100%;
-  margin: 4px 0;
-  border-radius: 8px;
-  outline: none;
-  height: 36px;
+  display: none;
+}
+.md-audio-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 6px 0;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent) 6%, var(--input-bg));
+  cursor: pointer;
+  user-select: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.md-audio-card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}
+.md-audio-card[data-state="playing"] {
+  border-color: var(--accent);
+}
+.md-audio-btn {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 50%;
+  background: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+.md-audio-card:hover .md-audio-btn {
+  transform: scale(1.08);
+}
+.md-audio-icon {
+  display: block;
+  width: 0;
+  height: 0;
+  margin-left: 3px;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-left: 8px solid #ffffff;
+}
+/* While playing the triangle becomes pause bars. */
+.md-audio-card[data-state="playing"] .md-audio-icon {
+  width: 10px;
+  height: 12px;
+  margin-left: 0;
+  border: none;
+  background:
+    linear-gradient(#ffffff, #ffffff) left/3px 12px no-repeat,
+    linear-gradient(#ffffff, #ffffff) right/3px 12px no-repeat;
+}
+.md-audio-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.md-audio-bars {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 22px;
+}
+.md-audio-bars span {
+  width: 3px;
+  border-radius: 2px;
+  background: var(--accent);
+  opacity: 0.4;
+  transform: scaleY(0.35);
+  transform-origin: center;
+}
+.md-audio-card[data-state="playing"] .md-audio-bars span {
+  opacity: 0.9;
+  animation: md-audio-wave 0.8s ease-in-out infinite alternate;
+}
+@keyframes md-audio-wave {
+  from { transform: scaleY(0.3); }
+  to { transform: scaleY(1); }
+}
+.md-audio-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.md-audio-progress {
+  flex: 1;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--pomodoro-track);
+  overflow: hidden;
+}
+.md-audio-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 2px;
+  background: var(--accent);
+  transition: width 0.25s linear;
+}
+.md-audio-time {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  min-width: 28px;
+  text-align: right;
+}
+.md-audio-card[data-state="playing"] .md-audio-time {
+  color: var(--accent);
 }
 
 /* Recording indicator in the toolbar: red pulse + elapsed time. */

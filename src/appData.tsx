@@ -274,8 +274,25 @@ function inlineMd(s: string): string {
     .replace(/&lt;span style=&quot;color:\s*([^&]+)&quot;&gt;([\s\S]*?)&lt;\/span&gt;/g, '<span style="color:$1">$2</span>')
     // v0.1.10: ==text== marker highlight, MacDown/Obsidian style.
     .replace(/==([^=\n]+)==/g, '<mark class="md-highlight">$1</mark>')
-    // v0.1.11: [[audio|<src>]] renders as an inline audio player kept in the note (issue #26).
-    .replace(/\[\[audio\|([^\]\n]+)\]\]/g, '<audio class="md-audio" controls preload="metadata" src="$1"></audio>')
+    // v0.1.11: [[audio|<src>]] recordings render as an inline audio player kept
+    // in the note. v0.1.32: decorated interactive player card — the native
+    // controls are hidden and a play button + animated waveform + progress
+    // bar + time counter drive the hidden <audio> element instead.
+    .replace(/\[\[audio\|([^\]\n]+)\]\]/g, function (_all: string, src: string): string {
+      return (
+        '<div class="md-audio-card" data-state="idle">' +
+        '<button class="md-audio-btn" type="button" title="Play recording"><span class="md-audio-icon"></span></button>' +
+        '<div class="md-audio-body">' +
+        '<div class="md-audio-bars">' + AUDIO_BARS_HTML + '</div>' +
+        '<div class="md-audio-row">' +
+        '<div class="md-audio-progress"><div class="md-audio-fill"></div></div>' +
+        '<span class="md-audio-time">0:00</span>' +
+        "</div>" +
+        "</div>" +
+        '<audio class="md-audio" preload="metadata" src="' + src + '"></audio>' +
+        "</div>"
+      );
+    })
     // v0.1.14: [[note name]] renders as a clickable wiki-link (issue #34).
     .replace(/\[\[([^\]\n]+)\]\]/g, '<span class="md-wikilink" data-note="$1">[[$1]]</span>')
     .replace(/`([^`\n]+)`/g, '<code class="md-code">$1</code>')
@@ -318,6 +335,13 @@ function tableAligns(sep: string): string[] {
  *  checkboxes, blockquotes (multi-line merged), pipe tables with alignment,
  *  images (http and uploaded data URIs), audio players, column grids,
  *  links and horizontal rules. */
+/** v0.1.32: the decorative bars of the custom audio player card. Staggered
+ *  negative animation delays make the wave ripple while the audio plays. */
+const AUDIO_BARS_HTML = Array.from({ length: 16 }, function (_v, i) {
+  const heights = [10, 16, 8, 18, 12, 20, 9, 14, 19, 11, 17, 8, 15, 20, 10, 13];
+  return '<span style="height:' + heights[i] + 'px;animation-delay:-' + (i * 0.09).toFixed(2) + 's"></span>';
+}).join("");
+
 export function markdownToHtml(md: string): string {
   if (!md.trim()) return "";
 
