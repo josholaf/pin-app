@@ -54,7 +54,8 @@ function App() {
   const [noteIcon, setNoteIcon] = useState("sticky-note");
   const [noteFolderId, setNoteFolderId] = useState<string | null>(null);
   const [noteFormat, setNoteFormat] = useState<"md" | "txt">("md");
-  const [showIconSidebar, setShowIconSidebar] = useState(false);
+  // v0.1.33: tags of the open note (restored after the list cleanup).
+  const [noteTags, setNoteTags] = useState<string[]>([]);
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [streak, setStreak] = useState(0);
   const [lastActiveDate, setLastActiveDate] = useState<string | null>(null);
@@ -177,6 +178,7 @@ function App() {
         folderId: noteFolderId,
         createdAt: existing?.createdAt ?? Date.now(),
         format: noteFormat,
+        tags: noteTags,
       };
       await store.set(noteKey(openNoteId), updated);
       const ids = (await store.get<string[]>("noteIds")) || [];
@@ -186,7 +188,7 @@ function App() {
       if (noteContent.trim() || noteTitle.trim()) recordActivity();
     }, 400);
     return () => clearTimeout(t);
-  }, [noteTitle, noteContent, noteColor, noteIcon, noteFolderId, noteFormat, openNoteId, store]);
+  }, [noteTitle, noteContent, noteColor, noteIcon, noteFolderId, noteFormat, noteTags, openNoteId, store]);
 
   useEffect(() => {
     if (isRunning && secondsLeft > 0) {
@@ -251,13 +253,39 @@ function App() {
     setNoteIcon(note.icon || "sticky-note");
     setNoteFolderId(note.folderId ?? null);
     setNoteFormat(note.format || "md");
-    setShowIconSidebar(false);
+    setNoteTags(note.tags ?? []);
     setOpenNoteId(note.id);
     setContextMenu(null);
   };
   const backToList = () => {
     setOpenNoteId(null);
-    setShowIconSidebar(false);
+  };
+
+  // v0.1.33: tag add/remove for the open note. The debounced save effect
+  // persists them onto the note.
+  const addTag = (tag: string) => {
+    const t = tag.trim().replace(/^#/, "");
+    if (!t) return;
+    setNoteTags((prev) => (prev.includes(t) ? prev : [...prev, t]));
+  };
+  const removeTag = (tag: string) => {
+    setNoteTags((prev) => prev.filter((t) => t !== tag));
+  };
+
+  // v0.1.33: [[wiki-links]] keep working — open the target note, or
+  // create it on the fly when nothing matches the title.
+  const openWikiLink = (title: string) => {
+    const t = title.trim();
+    if (!t) return;
+    const existing = notes.find((n) => (n.title || "Untitled").toLowerCase() === t.toLowerCase());
+    if (existing) { openNote(existing); return; }
+    const note: Note = {
+      id: crypto.randomUUID(), title: t, content: "", color: "yellow",
+      icon: "sticky-note", folderId: null, createdAt: Date.now(), format: "md", tags: [],
+    };
+    setNotes([note, ...notes]);
+    persistNote(note);
+    openNote(note);
   };
 
   const createFolder = () => {
@@ -290,7 +318,7 @@ function App() {
   };
   const createNoteInFolder = (folderId: string | null) => {
     const id = crypto.randomUUID();
-    const note: Note = { id, title: "Untitled", content: "", color: "yellow", icon: "sticky-note", folderId, createdAt: Date.now(), format: "md" };
+    const note: Note = { id, title: "Untitled", content: "", color: "yellow", icon: "sticky-note", folderId, createdAt: Date.now(), format: "md", tags: [] };
     setNotes([note, ...notes]);
     if (folderId) setExpandedFolders(new Set([...expandedFolders, folderId]));
     persistNote(note);
@@ -391,8 +419,11 @@ function App() {
         setNoteIcon={setNoteIcon}
         noteFormat={noteFormat}
         setNoteFormat={setNoteFormat}
-        showIconSidebar={showIconSidebar}
-        setShowIconSidebar={setShowIconSidebar}
+        noteTags={noteTags}
+        onAddTag={addTag}
+        onRemoveTag={removeTag}
+        allNotes={notes.map((n) => ({ id: n.id, title: n.title || "Untitled" }))}
+        onOpenWikiLink={openWikiLink}
         toggleTheme={toggleTheme}
         closeWindow={closeWindow}
       />
