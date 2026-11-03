@@ -77,14 +77,16 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.32' }}
-          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.32' }}"
+          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.33' }}
+          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.33' }}"
           releaseBody: |
-            **Pin v0.1.32** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
+            **Pin v0.1.33** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
 
-            ## What's new in v0.1.32
+            ## What's new in v0.1.33
 
-            - **Decorated audio player for recordings** — in-note voice recordings no longer show the plain browser audio strip. Each recording is now an interactive card: a circular play button that morphs into pause bars, an animated waveform that ripples while the audio plays, a progress bar that fills as it plays and a live time counter. Tap the card anywhere to play or pause
+            - **Release build fixed** — the note list cleanup left the note editor with a stale prop set, which broke the type-check on every platform and blocked the release. Tags, the "/tags" picker and wiki-links work again in the editor
+            - **Cleaner list** — inline pencil/delete buttons are gone from note and folder rows; right-click a row for Edit, New note (folders) and Delete
+            - **Decorated audio player for recordings** — in-note voice recordings are interactive cards: a circular play button that morphs into pause bars, an animated waveform that ripples while playing, a progress bar and a live time counter. Tap the card to play or pause
             - The player card follows your theme and accent color, in light and dark mode
             - **PDF export stays clean** — embedded recordings and data-URI images are skipped when exporting to PDF instead of dumping their base64 into the document
 
@@ -102,7 +104,6 @@ jobs:
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
-
 
       - name: Diagnose Windows bundle failure
         if: failure() && matrix.platform == 'windows-latest'
