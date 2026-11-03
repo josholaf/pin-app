@@ -77,33 +77,26 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.32' }}
-          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.32' }}"
+          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.31' }}
+          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.31' }}"
           releaseBody: |
-            **Pin v0.1.32** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
-
-            ## What's new in v0.1.32
-
-            - **Code blocks no longer disappear when you type below them** — the preview's live renderer used a fragile text placeholder for fenced code blocks: click a note that ends with a code block (the caret lands right after the closing fence) and type, and the whole block vanished from the preview; the placeholder now uses an untypeable marker, so a code block survives no matter where the next text lands
+            **Pin v0.1.31** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
 
             ## What's new in v0.1.31
 
-            - **Animated graph view** — the graph is no longer a static ring: notes now sit in a live force-directed layout that keeps moving and settling, and every node can be dragged with the mouse or touchpad; drop it anywhere and the graph re-settles around it
-            - **Web clipper keeps markdown structure** — a heading 3 on the page now clips as `###` (not `####`), and images survive clipping: `<figure>`/`<picture>` images are kept, lazy-loaded images (`data-src`, `srcset`) are picked up, and relative image URLs are resolved to absolute ones
+            - **Export notes as PDF** — a new PDF button in the note toolbar (next to the download button) saves the note as a real A4 PDF: title header and date, headings, bullets, task checkboxes, code blocks in monospace, automatic line wrapping, multi-page support and page numbers. No external dependencies, no internet needed
+            - Works for both markdown and plain-text notes; emphasis markers (**bold**, *italic*, ==highlight==) are stripped so the PDF shows clean text
 
             ### Fixes (v0.1.30)
-            - **Auto-pairing brackets** — typing `(`, `[`, `{` or `"` in a note now automatically inserts the closing character with the caret inside: `(` becomes `(|)`, and selecting text first wraps it in the pair
-            - **`[[ ]]` auto-pairs too** — typing `[` right after another `[` completes it into `[[|]]` ready for a note link
-            - **Typing a closer skips over it** — if the closing character is already at the caret, typing it again just moves past instead of doubling up
-            - **Wiki-links work in plain-text notes** — `[[note]]` links were only clickable in markdown notes; they now render as clickable links in TXT notes as well, and clicking a link whose brackets were passed as plain text no longer fails
+            - **Auto-pairing brackets** — typing `(`, `[`, `{` or `"` automatically inserts the closing character with the caret inside; `[` right after another `[` completes into `[[ ]]`; typing a closer that is already at the caret skips over it
+            - **Wiki-links work in plain-text notes** — `[[note]]` links are now clickable in TXT notes as well, and the click fallback strips the brackets
 
             ### Fixes (v0.1.29)
             - **Graph view button in the titlebar** — the graph view existed but was only reachable through the command palette; there is now a visible Graph button next to the palette button
 
             ### Fixes (v0.1.28)
-            - **External links open the browser** — clicking a link in a note now opens it in the default web browser, Obsidian-style; previously target="_blank" did nothing inside the app window
+            - **External links open the browser** — clicking a link in a note now opens it in the default web browser, Obsidian-style
             - **Web clipper works** — the http plugin grants no origins by default, so every page fetch was denied; the Web Clips fetch now allows https and http URLs
-            - Wiki-links ([[note]]) keep behaving like Obsidian: clicking opens the target note, creating it if missing
 
             ## Downloads
             - **Windows**: `.msi` or `.exe` (NSIS)

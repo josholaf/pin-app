@@ -2,10 +2,11 @@ import { useEffect, useRef, useState, type MouseEvent, type KeyboardEvent, type 
 import {
   Moon, Sun, X, Bold, Italic, List, ListOrdered, CheckSquare,
   Heading, Code, TextQuote, Link as LinkIcon, Strikethrough, ArrowLeft,
-  Pin, Download, Copy, Table, Highlighter, Palette, ImagePlus, Mic, Square, LayoutGrid, Link2, Maximize2,
+  Pin, Download, Copy, Table, Highlighter, Palette, ImagePlus, Mic, Square, LayoutGrid, Link2, Maximize2, FileText,
 } from "lucide-react";
 import { save } from "@tauri-apps/plugin-dialog";
-import { writeTextFile } from "@tauri-apps/plugin-fs";
+import { writeTextFile, writeFile } from "@tauri-apps/plugin-fs";
+import { noteToPdf } from "./pdf";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import {
   NOTE_COLORS, ICON_BANK, markdownToHtml, plainToHtml, getIcon, tagColor,
@@ -180,6 +181,21 @@ export function MarkdownNote(p: Props) {
       await writeTextFile(path, p.noteContent);
       flashMessage("Exported as ." + ext);
     } catch { flashMessage("Export failed"); }
+  };
+
+  /** v0.1.31: export the note as a real PDF file (issue #68) — A4 layout,
+   *  headings, bullets, task checkboxes, code blocks and page numbers. */
+  const exportPdf = async () => {
+    try {
+      const safe = (p.noteTitle || "note").replace(/[<>:"/\\|?*]+/g, "-").trim() || "note";
+      const path = await save({
+        defaultPath: safe + ".pdf",
+        filters: [{ name: "PDF document", extensions: ["pdf"] }],
+      });
+      if (!path) return;
+      await writeFile(path, noteToPdf(p.noteTitle || "Note", p.noteContent));
+      flashMessage("Exported as .pdf");
+    } catch { flashMessage("PDF export failed"); }
   };
 
   /** Copy the note body as plain text (issue #7). */
@@ -640,6 +656,7 @@ export function MarkdownNote(p: Props) {
                 <button onClick={p.onPin} className="icon-btn" title="Pin to desktop"><Pin size={16} /></button>
               )}
               <button onClick={() => { exportNote(); }} className="icon-btn" title={"Export as ." + (isMd ? "md" : "txt")}><Download size={16} /></button>
+              <button onClick={() => { exportPdf(); }} className="icon-btn" title="Export as PDF"><FileText size={16} /></button>
               <button onClick={() => { copyPlainText(); }} className="icon-btn" title="Copy as text"><Copy size={16} /></button>
               <div className="color-picker-wrapper">
                 <button className="color-btn" style={{ background: bgColor }} title="Note color" onClick={() => setShowColorPicker((v) => !v)} />
