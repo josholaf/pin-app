@@ -113,3 +113,5 @@ jobs:
           npm run tauri build -- --bundles msi > diag-msi.log 2>&1 || true
           { grep -iE "error|failed|panicked" diag-nsis.log | tail -n 25; grep -iE "error|failed|panicked" diag-msi.log | tail -n 25; tail -n 20 diag-msi.log; } > hits.txt || true
           awk 'length($0)>0' hits.txt | tail -n 10 | while IFS= read -r line; do echo "::error::${line}"; done
+
+# run #94 failed with a GitHub-side internal server error; this commit re-triggers the release
