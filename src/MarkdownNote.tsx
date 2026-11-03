@@ -119,6 +119,8 @@ export function MarkdownNote(p: Props) {
   // v0.1.16: focus mode — distraction-free overlay on the open note (issue #38)
   const [focusMode, setFocusMode] = useState(false);
   const focusRef = useRef<HTMLTextAreaElement | null>(null);
+  /** v0.1.32: the read-only preview, so the audio player cards can be wired up. */
+  const previewRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const goOnline = () => setOnline(true);
@@ -148,6 +150,44 @@ export function MarkdownNote(p: Props) {
   const words = p.noteContent.trim() ? p.noteContent.trim().split(/\s+/).length : 0;
   /** v0.1.8: one gutter number per content line, like VS Code (issue #20). */
   const lineCount = p.noteContent.split("\n").length;
+
+  // v0.1.32: wire every audio player card in the preview to its hidden
+  // <audio> element — progress fill, time counter and the idle/playing state.
+  // The preview re-renders via dangerouslySetInnerHTML, so re-wire on change.
+  useEffect(() => {
+    const root = previewRef.current;
+    if (!root) return;
+    const fmtTime = (t: number) => {
+      if (!isFinite(t) || t < 0) return "0:00";
+      const m = Math.floor(t / 60);
+      const s = Math.floor(t % 60);
+      return m + ":" + String(s).padStart(2, "0");
+    };
+    root.querySelectorAll<HTMLAudioElement>("audio.md-audio").forEach((a) => {
+      const card = a.closest(".md-audio-card") as HTMLElement | null;
+      if (!card) return;
+      const fill = card.querySelector<HTMLElement>(".md-audio-fill");
+      const time = card.querySelector<HTMLElement>(".md-audio-time");
+      const update = () => {
+        if (fill && a.duration && isFinite(a.duration)) {
+          fill.style.width = Math.min(100, (a.currentTime / a.duration) * 100) + "%";
+        }
+        if (time) time.textContent = fmtTime(a.currentTime);
+      };
+      const onPlay = () => { card.dataset.state = "playing"; };
+      const onPause = () => { card.dataset.state = "paused"; };
+      const onEnded = () => {
+        card.dataset.state = "idle";
+        if (fill) fill.style.width = "0%";
+        if (time) time.textContent = "0:00";
+      };
+      a.addEventListener("timeupdate", update);
+      a.addEventListener("play", onPlay);
+      a.addEventListener("pause", onPause);
+      a.addEventListener("ended", onEnded);
+      update();
+    });
+  }, [liveHtml]);
 
   /** v0.1.9: slash items matching what was typed after the "/". */
   const slashFiltered = SLASH_ITEMS.filter((it) =>
@@ -415,8 +455,22 @@ export function MarkdownNote(p: Props) {
       flipTask(Number(box.dataset.task), box.dataset.done !== "1");
       return;
     }
-    // v0.1.11: clicks inside audio players play/pause, they do not open the editor (issue #26)
-    if ((e.target as HTMLElement).closest("audio")) return;
+    // v0.1.11: clicks inside audio players play/pause, they do not open the
+    // editor (issue #26). v0.1.32: the decorated player card toggles playback
+    // and the bars/progress animate while it plays.
+    const card = (e.target as HTMLElement).closest(".md-audio-card") as HTMLElement | null;
+    if (card) {
+      const a = card.querySelector("audio");
+      if (a) {
+        if (a.paused) {
+          a.play().then(() => { card.dataset.state = "playing"; }).catch(() => { /* ignore */ });
+        } else {
+          a.pause();
+          card.dataset.state = "paused";
+        }
+      }
+      return;
+    }
     const link = (e.target as HTMLElement).closest("a") as HTMLAnchorElement | null;
     if (link) {
       // v0.1.28: external links open the system browser, Obsidian-style
@@ -821,6 +875,7 @@ export function MarkdownNote(p: Props) {
               </div>
             ) : (
               <div
+                ref={previewRef}
                 className="note-content note-content-preview"
                 onClick={onPreviewClick}
                 dangerouslySetInnerHTML={{ __html: liveHtml || '<span class="md-placeholder">Tap to write…</span>' }}

@@ -77,26 +77,23 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.31' }}
-          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.31' }}"
+          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.32' }}
+          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.32' }}"
           releaseBody: |
-            **Pin v0.1.31** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
+            **Pin v0.1.32** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
 
-            ## What's new in v0.1.31
+            ## What's new in v0.1.32
 
-            - **Export notes as PDF** — a new PDF button in the note toolbar (next to the download button) saves the note as a real A4 PDF: title header and date, headings, bullets, task checkboxes, code blocks in monospace, automatic line wrapping, multi-page support and page numbers. No external dependencies, no internet needed
-            - Works for both markdown and plain-text notes; emphasis markers (**bold**, *italic*, ==highlight==) are stripped so the PDF shows clean text
+            - **Decorated audio player for recordings** — in-note voice recordings no longer show the plain browser audio strip. Each recording is now an interactive card: a circular play button that morphs into pause bars, an animated waveform that ripples while the audio plays, a progress bar that fills as it plays and a live time counter. Tap the card anywhere to play or pause
+            - The player card follows your theme and accent color, in light and dark mode
+            - **PDF export stays clean** — embedded recordings and data-URI images are skipped when exporting to PDF instead of dumping their base64 into the document
+
+            ### Fixes (v0.1.31)
+            - **Export notes as PDF** — a PDF button in the note toolbar saves the note as a real A4 PDF: title header and date, headings, bullets, task checkboxes, code blocks, wrapping, page numbers
 
             ### Fixes (v0.1.30)
-            - **Auto-pairing brackets** — typing `(`, `[`, `{` or `"` automatically inserts the closing character with the caret inside; `[` right after another `[` completes into `[[ ]]`; typing a closer that is already at the caret skips over it
-            - **Wiki-links work in plain-text notes** — `[[note]]` links are now clickable in TXT notes as well, and the click fallback strips the brackets
-
-            ### Fixes (v0.1.29)
-            - **Graph view button in the titlebar** — the graph view existed but was only reachable through the command palette; there is now a visible Graph button next to the palette button
-
-            ### Fixes (v0.1.28)
-            - **External links open the browser** — clicking a link in a note now opens it in the default web browser, Obsidian-style
-            - **Web clipper works** — the http plugin grants no origins by default, so every page fetch was denied; the Web Clips fetch now allows https and http URLs
+            - **Auto-pairing brackets** — typing `(`, `[`, `{` or `"` automatically inserts the closing character; `[` after `[` completes into `[[ ]]`; typing an existing closer skips over it
+            - **Wiki-links work in plain-text notes** — `[[note]]` links are clickable in TXT notes as well
 
             ## Downloads
             - **Windows**: `.msi` or `.exe` (NSIS)

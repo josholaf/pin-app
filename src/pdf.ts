@@ -123,6 +123,9 @@ function parse(content: string): Segment[] {
     if (inCode) { segs.push({ kind: "code", level: 0, text: raw }); continue; }
     const t = raw.trim();
     if (!t) continue;
+    // v0.1.32: skip embedded recordings and data-URI images — they are
+    // megabytes of base64 that has no place in a text layout.
+    if (t.startsWith("[[audio|") || /^!\[[^\]]*\]\(data:/.test(t)) continue;
     const h = t.match(/^(#{1,6})\s+(.*)$/);
     if (h) { segs.push({ kind: "heading", level: h[1].length, text: stripInline(h[2]) }); continue; }
     const task = t.match(/^[-*]\s+\[([ xX])\]\s+(.*)$/);
