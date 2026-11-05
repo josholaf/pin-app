@@ -1,86 +1,137 @@
-# Pin
+<div align="center">
 
-Lightweight sticky-note style task & note app built with **Tauri + React**.
+# 📌 Pin
 
-Small floating windows that stay on top (or on the desktop layer) so you can keep what you're working on always visible.
+**A tiny, always-on-top sticky note & focus app for your desktop.**
 
-## Features
+Write tasks, pin notes, stay focused — without leaving your workflow.
 
-- **Sticky-note windows** — frameless, always-on-top or desktop layer
-- **Folders** — organize notes under folders
-- **Lucide icons** — assign icons to notes and folders
-- **Per-note colors** — pick from the right-click menu or the note title bar
-- **Markdown notes** — headings, lists, interactive task checkboxes, tables, quotes, images, links, `==highlight==` and colored text
-- **Web clipper** — paste a page URL (command palette → Clip webpage) and Pin saves just the article as a clean markdown note: ads, scripts, navigation, cookie banners, share bars, sidebars, comments and other boilerplate are stripped out, and the page address is kept out of the note
-- **Clip selected text** — copy text anywhere in the OS, then press **Ctrl+Shift+C** and the clipboard becomes a note; both kinds of clips land in a Web Clips folder that is created automatically
-- **macOS-style code blocks** — every fenced code block renders as a little Mac window: red / yellow / green traffic lights and the language name on the right side
-- **Code language detection** — fence tags accept any language (````html`, ````rust`, ````c++` ...), and untagged blocks get their language auto-detected from the code itself
-- **Syntax highlighting** — keywords, strings, numbers, comments and functions colored in light and dark themes
-- **Coding fonts** — JetBrains Mono, Fira Code and Source Code Pro bundled for offline use, plus system, serif, rounded and casual fonts
-- **Smart font dropdown** — each font previews in its own typeface with an "Aa 123" sample, live search, keyboard navigation
-- **Quick Note capture window** — press **Ctrl+Shift+N** from anywhere in the OS and a Spotlight-style black composer pops up. Full markdown inside it, slash commands (/ heading, to-do, bullet, quote, highlight, table, code), and a mic button that records a voice note into the note with a pulsing accent-colored animation. Enter saves into the Quick Notes folder (created automatically) without opening the main app
-- **Quick note titles** — Settings → Quick note title: Custom (a leading `*` at the intro marks the title) or Date (DD-MM-YY; `*` overrides it)
-- **Tray icon** — Pin lives in the system tray (Show Pin / Quick Note / Quit); closing the main window hides it to the tray instead of quitting
-- **Wiki-links** — type `[[` to autocomplete note titles, click a link in the preview to open (or create) the target note, with a "Linked mentions" backlinks section
-- **Graph view** — an SVG map of notes (nodes) and wiki-links (edges); click a node to open its note, search filters nodes by title or content
-- **Quick capture** — global Ctrl+Shift+P hotkey from anywhere in the OS opens a small capture box; type, hit Enter, the note saves instantly (first line becomes the title)
-- **Focus mode** — distraction-free overlay on the open note: just the title and your words, typewriter scrolling keeps the caret centered, quiet word count at the bottom, Esc exits
-- **Reminders** — right-click a note → Reminder, pick a date and time; get a beep + in-app toast when due, with a clock badge on the note (red when due)
-- **Library export / import** — command palette: export all notes as a ZIP of Markdown files, import .md files or .zip archives back into Pin
-- **Clean note list** — rows are just icon + title; every action lives in the right-click menu: Edit, Rename, Pin to desktop, Favorite, Reminder, Change color, Change icon, Delete
-- **Tags** — Obsidian-style colored tags added with the `/tags` picker, searchable across notes
-- **Photos & audio** — upload photos (soft 12px radius), lay them out in 1–4 column grids, record audio straight into a note
-- **Editor extras** — line numbers, slash command menu (`/`), live markdown preview, `Ctrl+S` save flash and `Ctrl+Z` undo, themed cursor and selection that follow your accent color
-- **Trash** — deleted notes, folders and tasks land in trash first, restore or purge from there
-- **Command palette** — `Ctrl+K` for everything, `Ctrl+Shift+P` quick capture, `Ctrl+Shift+N` Quick Note window and `Ctrl+Shift+C` clip selected text from anywhere
-- **Pomodoro timer** (25 min focus / 5 min break) with sound + auto-switch, and a daily focus-session counter
-- **Daily writing streak** — fire icon in the title bar that grows when you create or write notes
-- **Settings** — font size, font style, accent color, quick note title mode, always-on-top vs stay on desktop
-- **Dark mode** — instant flip, themed controls
-- Local-only storage (no cloud)
+[![Release](https://img.shields.io/github/v/release/josholaf/pin-app?style=flat-square&label=release)](https://github.com/josholaf/pin-app/releases)
+[![CI](https://img.shields.io/github/actions/workflow/status/josholaf/pin-app/release.yml?style=flat-square&label=CI)](https://github.com/josholaf/pin-app/actions/workflows/release.yml)
+[![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Linux-4caf50?style=flat-square)](https://github.com/josholaf/pin-app/releases)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
+[![Built with Tauri](https://img.shields.io/badge/built%20with-Tauri%202%20%2B%20React-ff8800?style=flat-square)](https://tauri.app)
 
-## Usage
+<img width="284" height="410" alt="Pin — main window" src="https://github.com/user-attachments/assets/cb08b959-9c86-43df-9077-af5501631579" />
+<img width="249" height="343" alt="Pin — note editor" src="https://github.com/user-attachments/assets/3a3d05dc-9367-4ff3-81c6-ca6634a872aa" />
+<img width="269" height="393" alt="Pin — dark mode" src="https://github.com/user-attachments/assets/6a5b829a-6a42-46de-b127-432997dabcc2" />
 
-### Main window
-- **+** → new sticky note
-- **⚡ (Zap)** → quick capture box (same as global Ctrl+Shift+P)
-- **Folder+** → create a folder
-- **Click a note** → open it in the editor
-- **Right-click a note** → full menu: Edit, Rename, Pin to desktop, Favorite, Reminder, Change color, Change icon, Delete
-- **Right-click a folder** → Rename, New note, Delete
-- **Search box** → live search across titles, content and tags
-- **Ctrl+K** → command palette (graph view, quick capture, Quick Note window, clip webpage, clip selected text, export library, import notes, everything else)
-- Gear icon → Settings (fonts, accent, quick note title mode, window behavior)
-- Fire badge (top right) → your current daily writing streak
-- Closing the window hides Pin to the tray; use the tray menu (Show Pin / Quick Note / Quit) to bring it back
-<img width="284" height="410" alt="Screenshot 2026-10-25 202521" src="https://github.com/user-attachments/assets/cb08b959-9c86-43df-9077-af5501631579" />
-<img width="249" height="343" alt="Screenshot 2026-10-25 202627" src="https://github.com/user-attachments/assets/3a3d05dc-9367-4ff3-81c6-ca6634a872aa" />
-<img width="269" height="393" alt="Screenshot 2026-10-25 203017" src="https://github.com/user-attachments/assets/5a829a9a-6a42-46de-b127-432997dabcc2" />
-
-
-
-
-### Web clipper (Ctrl+K → Clip webpage, or Ctrl+Shift+C)
-- **Clip a page**: open the command palette → Clip webpage, paste a URL, hit Enter. Pin fetches the page and keeps only the article: headings, paragraphs, lists, quotes, code, tables and images. Ads, cookie banners, share bars, related posts and the page address are left out
-- **Clip selected text**: select text in any app, copy it (Ctrl+C), then press Ctrl+Shift+C. The clipboard text becomes a note
-- Both clips save into the **Web Clips** folder (created automatically), tagged `web` or `clip`, ready for your own tags and wiki-links
-
-### Quick Note window (Ctrl+Shift+N)
-- Black Spotlight-style composer that opens from anywhere in the OS
-- Markdown works (`##`, `[[links]]`, tables, code), plus slash commands: `/` heading, to-do, bullet, quote, highlight, table, code block
-- Start with `*` to make the first line the title (or use the Date title mode in Settings)
-- Mic button records a voice note into the note (accent-colored pulsing bars while recording)
-- Enter saves to the Quick Notes folder and hides the window; Shift+Enter makes a new line; Esc hides without saving
-
-### Note editor
-- Markdown with live preview, toolbar shortcuts, line numbers and slash commands
-- Expand button (or focus mode) → distraction-free writing with typewriter scrolling; Esc exits
-- Type ````html` (or any language) to get a macOS-style code window with syntax coloring
-- Type `[[` to link another note; the "Linked mentions" section under the preview lists notes linking here
-- `/tags` → tag picker; `==text==` → highlight; upload photos and record audio from the toolbar
-- Auto-saves as you type, `Ctrl+S` for an instant save, `Ctrl+Z` to undo
-
+</div>
 
 ---
 
-Made for focus.
+## ✨ Features
+
+### Notes
+- **Sticky notes in a single window** — click a note and it opens inline, no extra tabs or windows to manage
+- **Folders** — group notes, expand/collapse, per-folder note counts
+- **Markdown editor** — live preview, formatting toolbar (bold, italic, strikethrough, headings, code, lists, tasks, quotes, links), tables, images, macOS-style code blocks with language labels
+- **Per-note format** — switch any note between Markdown (`MD`) and plain text (`TXT`)
+- **Colors & icons** — pick a note color from the circle in the title bar, and a Lucide icon from the sidebar
+- **Status bar** — live `Ln x, Col y` caret position and word count at the bottom of every note
+- **Auto-save** — notes save as you type, debounce included
+
+### Capture & find
+- **Live search** — search across titles *and* note content, with match count
+- **Global quick capture** — press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> (macOS: <kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>) from *any* app: Pin jumps to the front with a fresh note ready
+
+### Focus
+- **Pomodoro timer** — 25 min focus / 5 min break cycle with a progress bar, sound cue and auto-switch
+- **Daily streak** — a flame badge counts consecutive days you've written
+- **Task list** — quick one-line tasks; check them off and they're gone
+
+### App
+- **Dark mode** — instant theme flip, applied everywhere
+- **Right-click menus** — clean note rows (icon + title); **Edit**, **Delete** (and **New note** on folders) live in the context menu
+- **Settings window** — font family & size, accent color, always-on-top vs stay-on-desktop
+- **Storage management** — see where your data lives, counts of notes/tasks/folders, **export** / **import** your entire library as a JSON backup, or clear all data
+- **Local-only storage** — no cloud, no account, no telemetry; your notes never leave your machine
+
+## ⌨️ Keyboard shortcuts
+
+| Shortcut | Action |
+| --- | --- |
+| <kbd>Ctrl/Cmd</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> | Quick capture from anywhere in the OS |
+| <kbd>Ctrl/Cmd</kbd>+<kbd>B</kbd> | Bold (in note editor) |
+| <kbd>Ctrl/Cmd</kbd>+<kbd>I</kbd> | Italic (in note editor) |
+| <kbd>Esc</kbd> | Exit edit mode → preview |
+| <kbd>Enter</kbd> | Add task / confirm rename |
+
+## 📥 Install
+
+Grab the latest build from the [**Releases**](https://github.com/josholaf/pin-app/releases) page:
+
+| Platform | Download |
+| --- | --- |
+| Windows | `.msi` or `.exe` (NSIS) |
+| macOS | `.dmg` |
+| Linux | `.deb` or `.AppImage` |
+
+## 🛠️ Build from source
+
+**Prerequisites:** [Node.js](https://nodejs.org) 20+, [Rust](https://rustup.rs) (stable), and platform build tools ([Linux requirements](https://tauri.app/start/prerequisites/)).
+
+```bash
+git clone https://github.com/josholaf/pin-app.git
+cd pin-app
+
+npm install
+
+# run in dev mode
+npm run tauri dev
+
+# produce installers in src-tauri/target/release/bundle/
+npm run tauri build
+```
+
+> Tip: after pulling changes that add dependencies, re-run `npm install` and `cargo build` will fetch any new Rust crates automatically.
+
+## 🧱 Tech stack & structure
+
+Built with [Tauri 2](https://tauri.app), React 18, TypeScript and [Lucide icons](https://lucide.dev). Data is persisted locally via `tauri-plugin-store`.
+
+```
+├── src/                    # React frontend
+│   ├── App.tsx             # Main window: notes, folders, search, pomodoro
+│   ├── MarkdownNote.tsx    # Inline note editor (markdown, colors, status bar)
+│   ├── SettingsWindow.tsx  # Settings + storage management
+│   ├── appData.tsx         # Types, theme, icons, markdown renderer
+│   └── App.css             # Theming (CSS variables, light/dark)
+├── src-tauri/              # Rust backend (Tauri config, capabilities)
+│   └── capabilities/       # Permission allow-list (window, store, fs, dialog, shortcuts)
+└── .github/workflows/      # CI: type-check + build installers for all platforms
+```
+
+## 🗺️ Roadmap
+
+- [ ] Trash / undo delete
+- [ ] Tags
+- [ ] Wiki-links between notes (`[[like this]]`) and a graph view
+- [ ] Web clipper (save articles as markdown notes)
+- [ ] System tray icon
+- [ ] Reminders on notes
+- [ ] Distraction-free focus mode
+- [ ] Photos & audio in notes
+
+## 🤝 Contributing
+
+Contributions are welcome! The CI runs a TypeScript type-check (`tsc --noEmit`) and builds all three platforms on every push — please keep the type-check green.
+
+1. Fork the repo and create a branch: `git checkout -b feat/my-feature`
+2. Make your change, keep it small and focused
+3. Test locally with `npm run tauri dev`
+4. Open a Pull Request describing **what** changed and **why**
+
+Good first issues: anything in the [Roadmap](#-roadmap), UI polish, dark-mode contrast fixes, or improving the markdown renderer in `appData.tsx`.
+
+## 📄 License
+
+Released under the [MIT License](LICENSE) — © 2026 josholaf.
+
+---
+
+<div align="center">
+
+**Made for focus.** ⭐ Star the repo if Pin helps you ship.
+
+</div>
