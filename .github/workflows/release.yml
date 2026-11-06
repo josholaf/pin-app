@@ -77,25 +77,19 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.33' }}
-          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.33' }}"
+          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.34' }}
+          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.34' }}"
           releaseBody: |
-            **Pin v0.1.33** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
+            **Pin v0.1.34** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
 
-            ## What's new in v0.1.33
+            ## What's new in v0.1.34
 
-            - **Release build fixed** — the note list cleanup left the note editor with a stale prop set, which broke the type-check on every platform and blocked the release. Tags, the "/tags" picker and wiki-links work again in the editor
-            - **Cleaner list** — inline pencil/delete buttons are gone from note and folder rows; right-click a row for Edit, New note (folders) and Delete
-            - **Decorated audio player for recordings** — in-note voice recordings are interactive cards: a circular play button that morphs into pause bars, an animated waveform that ripples while playing, a progress bar and a live time counter. Tap the card to play or pause
-            - The player card follows your theme and accent color, in light and dark mode
-            - **PDF export stays clean** — embedded recordings and data-URI images are skipped when exporting to PDF instead of dumping their base64 into the document
-
-            ### Fixes (v0.1.31)
-            - **Export notes as PDF** — a PDF button in the note toolbar saves the note as a real A4 PDF: title header and date, headings, bullets, task checkboxes, code blocks, wrapping, page numbers
-
-            ### Fixes (v0.1.30)
-            - **Auto-pairing brackets** — typing `(`, `[`, `{` or `"` automatically inserts the closing character; `[` after `[` completes into `[[ ]]`; typing an existing closer skips over it
-            - **Wiki-links work in plain-text notes** — `[[note]]` links are clickable in TXT notes as well
+            - **Reminders on notes** — right-click a note → pick a date & time → **Set**. When it's due, Pin plays a sound cue and pops a toast with an **Open** button. Each scheduled note wears a clock badge that turns red and pulses while the reminder is due. **Clear** removes it
+            - **Inbox folder** — a virtual folder pinned at the top of the note list where every scheduled note appears, sorted by what's due next, so you always know what to work on
+            - **6 more note colors (12 total)** — red, mint, teal, indigo, lavender and slate join the palette, in light and dark variants, in a tidier 4-column picker
+            - **README now shows the app logo** — the black rounded square with the green pin replaces the emoji in the hero
+            - **Bug fix:** editing a note no longer wipes its reminder — the auto-save used to rebuild the note without `reminderAt`/`reminderFiredAt`
+            - **UI polish:** no underline when hovering a note title (the row highlight is enough), and the search input's border keeps its color when focused instead of switching to the highlight yellow
 
             ## Downloads
             - **Windows**: `.msi` or `.exe` (NSIS)
@@ -113,5 +107,3 @@ jobs:
           npm run tauri build -- --bundles msi > diag-msi.log 2>&1 || true
           { grep -iE "error|failed|panicked" diag-nsis.log | tail -n 25; grep -iE "error|failed|panicked" diag-msi.log | tail -n 25; tail -n 20 diag-msi.log; } > hits.txt || true
           awk 'length($0)>0' hits.txt | tail -n 10 | while IFS= read -r line; do echo "::error::${line}"; done
-
-# run #94 failed with a GitHub-side internal server error; this commit re-triggers the release

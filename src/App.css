@@ -370,7 +370,8 @@ body {
   white-space: nowrap;
 }
 
-.note-open-btn:hover { text-decoration: underline; }
+/* v0.1.34: no underline on hover — the row highlight is enough. */
+.note-open-btn:hover { text-decoration: none; }
 
 .input-area { padding: 12px; }
 
@@ -672,7 +673,8 @@ body {
   color: var(--accent);
 }
 
-/* Note color circle picker (sticky note titlebar) */
+/* Note color circle picker (sticky note titlebar).
+   v0.1.34: four columns now — the palette grew to 12 colors. */
 .color-picker-wrapper {
   position: relative;
   display: inline-flex;
@@ -696,7 +698,7 @@ body {
   border-radius: 8px;
   padding: 6px;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 6px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
   z-index: 50;
@@ -772,8 +774,9 @@ body {
   font-size: 12px;
   outline: none;
 }
+/* v0.1.34: the search border keeps its color when focused — no highlight. */
 .note-search-input:focus {
-  border-color: var(--input-focus);
+  border-color: var(--input-border);
 }
 .search-count {
   font-size: 11px;
@@ -2537,3 +2540,27 @@ body {
   margin-bottom: 6px;
 }
 .clip-spin { animation: rec-pulse 1s ease-in-out infinite; }
+
+/* ===== v0.1.34: Inbox — scheduled notes to work on ===== */
+
+/* The Inbox sits at the very top of the folder list: every note with a
+   reminder scheduled, soonest first, with a clock badge per note (red
+   and pulsing once the reminder is due). */
+.inbox-block {
+  margin-bottom: 6px;
+  border-bottom: 1px dashed var(--border);
+  padding-bottom: 4px;
+}
+.inbox-row {
+  color: var(--text-muted);
+}
+.inbox-row .folder-name {
+  font-weight: 600;
+}
+.inbox-icon {
+  color: var(--accent);
+}
+/* Clear button in the reminder picker: neutral gray next to Set. */
+.reminder-clear-btn {
+  background: rgba(128, 128, 128, 0.25);
+}

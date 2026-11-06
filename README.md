@@ -1,6 +1,8 @@
 <div align="center">
 
-# 📌 Pin
+<img src="src-tauri/icons/icon.svg" width="112" alt="Pin logo" />
+
+# Pin
 
 **A tiny, always-on-top sticky note & focus app for your desktop.**
 
@@ -25,9 +27,11 @@ Write tasks, pin notes, stay focused — without leaving your workflow.
 ### Notes
 - **Sticky notes in a single window** — click a note and it opens inline, no extra tabs or windows to manage
 - **Folders** — group notes, expand/collapse, per-folder note counts
+- **Reminders** — right-click a note → pick a date & time → **Set**. When it's due you get a sound cue and a toast with an **Open** button, and the note wears a clock badge that turns red while it's due
+- **Inbox** — a virtual folder pinned at the top of the list where every scheduled note appears, sorted by what's due next
 - **Markdown editor** — live preview, formatting toolbar (bold, italic, strikethrough, headings, code, lists, tasks, quotes, links), tables, images, macOS-style code blocks with language labels
 - **Per-note format** — switch any note between Markdown (`MD`) and plain text (`TXT`)
-- **Colors & icons** — pick a note color from the circle in the title bar, and a Lucide icon from the sidebar
+- **Colors & icons** — 12 note colors (yellow, pink, blue, green, purple, orange, red, mint, teal, indigo, lavender, slate) from the circle in the title bar, and a Lucide icon from the sidebar
 - **Status bar** — live `Ln x, Col y` caret position and word count at the bottom of every note
 - **Auto-save** — notes save as you type, debounce included
 
@@ -92,7 +96,7 @@ Built with [Tauri 2](https://tauri.app), React 18, TypeScript and [Lucide icons]
 
 ```
 ├── src/                    # React frontend
-│   ├── App.tsx             # Main window: notes, folders, search, pomodoro
+│   ├── App.tsx             # Main window: notes, folders, search, reminders, pomodoro
 │   ├── MarkdownNote.tsx    # Inline note editor (markdown, colors, status bar)
 │   ├── SettingsWindow.tsx  # Settings + storage management
 │   ├── appData.tsx         # Types, theme, icons, markdown renderer
@@ -105,13 +109,11 @@ Built with [Tauri 2](https://tauri.app), React 18, TypeScript and [Lucide icons]
 ## 🗺️ Roadmap
 
 - [ ] Trash / undo delete
-- [ ] Tags
-- [ ] Wiki-links between notes (`[[like this]]`) and a graph view
+- [ ] Tags in the note list
+- [ ] Graph view of `[[wiki-links]]` between notes
 - [ ] Web clipper (save articles as markdown notes)
 - [ ] System tray icon
-- [ ] Reminders on notes
-- [ ] Distraction-free focus mode
-- [ ] Photos & audio in notes
+- [ ] Recurring reminders (daily / weekly)
 
 ## 🤝 Contributing
 

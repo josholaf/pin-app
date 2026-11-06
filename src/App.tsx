@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type MouseEvent } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { Store } from "@tauri-apps/plugin-store";
@@ -6,7 +6,7 @@ import { register, unregister, isRegistered } from "@tauri-apps/plugin-global-sh
 import {
   Pin, Moon, Sun, Plus, X, Play, Pause, RotateCcw, Search,
   ChevronDown, ChevronRight, FolderPlus, Flame, Folder, FolderOpen,
-  Coffee, Settings,
+  Coffee, Settings, Inbox, Bell, AlarmClock,
 } from "lucide-react";
 import {
   DEFAULT_SETTINGS,
@@ -28,6 +28,20 @@ async function loadNotes(s: Store): Promise<Note[]> {
   }
   out.sort((a, b) => b.createdAt - a.createdAt);
   return out;
+}
+
+/** v0.1.34: readable reminder time for menus and badges. */
+function fmtReminder(ms: number): string {
+  return new Date(ms).toLocaleString(undefined, {
+    weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
+  });
+}
+
+/** v0.1.34: note reminder timestamp → value for <input type="datetime-local">. */
+function toLocalInput(ms: number): string {
+  const d = new Date(ms);
+  const p = (n: number) => String(n).padStart(2, "0");
+  return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) + "T" + p(d.getHours()) + ":" + p(d.getMinutes());
 }
 
 function App() {
@@ -62,6 +76,9 @@ function App() {
   const [pomodoroMode, setPomodoroMode] = useState<PomodoroMode>("focus");
   const [secondsLeft, setSecondsLeft] = useState(FOCUS_SECONDS);
   const [isRunning, setIsRunning] = useState(false);
+  // v0.1.34: reminders — draft value for the context menu picker + toast.
+  const [reminderDraft, setReminderDraft] = useState("");
+  const [reminderToast, setReminderToast] = useState<{ id: string; title: string } | null>(null);
   const timerRef = useRef<number | null>(null);
   const justFinishedRef = useRef(false);
   const totalSeconds = pomodoroMode === "focus" ? FOCUS_SECONDS : BREAK_SECONDS;
@@ -165,6 +182,8 @@ function App() {
 
   // Inline note editor: automatic debounced save of the open note,
   // plus a local list update so the icon/title show immediately in the UI.
+  // v0.1.34: reminders set from the list are preserved — the editor used
+  // to rebuild the note without reminderAt/reminderFiredAt and wipe them.
   useEffect(() => {
     if (!store || !openNoteId) return;
     const t = setTimeout(async () => {
@@ -179,6 +198,8 @@ function App() {
         createdAt: existing?.createdAt ?? Date.now(),
         format: noteFormat,
         tags: noteTags,
+        reminderAt: existing?.reminderAt,
+        reminderFiredAt: existing?.reminderFiredAt,
       };
       await store.set(noteKey(openNoteId), updated);
       const ids = (await store.get<string[]>("noteIds")) || [];
@@ -342,6 +363,32 @@ function App() {
     setInput("");
   };
 
+  /** v0.1.34: right-click a note row — opens the menu with the reminder
+   *  draft pre-filled from the note's current reminder. */
+  const openNoteContextMenu = (note: Note, e: MouseEvent) => {
+    e.preventDefault();
+    setReminderDraft(note.reminderAt ? toLocalInput(note.reminderAt) : "");
+    setContextMenu({ type: "note", id: note.id, x: e.clientX, y: e.clientY });
+  };
+
+  /** v0.1.34: set or clear a note's reminder from the context menu.
+   *  `when` is a datetime-local string, or null to clear. */
+  const setReminder = (id: string, when: string | null) => {
+    const n = notes.find((x) => x.id === id);
+    if (!n) { setContextMenu(null); return; }
+    let updated: Note;
+    if (when) {
+      const ms = new Date(when).getTime();
+      if (!isFinite(ms) || ms <= 0) { setContextMenu(null); return; }
+      updated = { ...n, reminderAt: ms, reminderFiredAt: undefined };
+    } else {
+      updated = { ...n, reminderAt: undefined, reminderFiredAt: undefined };
+    }
+    setNotes(notes.map((x) => (x.id === id ? updated : x)));
+    persistNote(updated);
+    setContextMenu(null);
+  };
+
   /** Local mirror of "Clear all data" from Settings → Storage. */
   const resetAllData = () => {
     setTasks([]);
@@ -379,6 +426,37 @@ function App() {
     return () => { unregister("CommandOrControl+Shift+P").catch(() => {}); };
   }, [windowLabel]);
 
+  // v0.1.34: reminder watchdog — every 20s (and once right away) check
+  // for notes whose reminder is due but has not fired yet. A due note
+  // plays the beep, pops the toast and is marked fired so it never
+  // rings twice; the red badge stays on until the reminder is changed.
+  const notesRef = useRef<Note[]>([]);
+  notesRef.current = notes;
+  const toastTimerRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (!ready || !store || windowLabel !== "main") return;
+    const check = async () => {
+      const now = Date.now();
+      const due = notesRef.current
+        .filter((n) => n.reminderAt && n.reminderAt <= now && (n.reminderFiredAt ?? 0) < n.reminderAt)
+        .sort((a, b) => (a.reminderAt ?? 0) - (b.reminderAt ?? 0));
+      if (due.length === 0) return;
+      playBeep();
+      for (const n of due) {
+        const updated = { ...n, reminderFiredAt: now };
+        setNotes((prev) => prev.map((x) => (x.id === n.id ? updated : x)));
+        await persistNote(updated);
+      }
+      const first = due[0];
+      setReminderToast({ id: first.id, title: first.title || "Untitled" });
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+      toastTimerRef.current = window.setTimeout(() => setReminderToast(null), 10000);
+    };
+    check();
+    const id = setInterval(check, 20000);
+    return () => clearInterval(id);
+  }, [ready, store, windowLabel]);
+
   // ----- Note search (titles + content, live) -----
   const q = search.trim().toLowerCase();
   const noteMatches = (n: Note) =>
@@ -387,6 +465,10 @@ function App() {
 
   const unfiledNotes = notes.filter((n) => !n.folderId && noteMatches(n));
   const activeTasks = tasks.filter((t) => !t.done);
+  // v0.1.34: Inbox — every note with a scheduled reminder, soonest first.
+  const inboxNotes = notes
+    .filter((n) => n.reminderAt && noteMatches(n))
+    .sort((a, b) => (a.reminderAt ?? 0) - (b.reminderAt ?? 0));
 
   if (windowLabel === "settings") {
     return (
@@ -472,6 +554,33 @@ function App() {
           </div>
         )}
         <div className="folder-list">
+          {/* v0.1.34: Inbox — scheduled notes to work on, soonest first. */}
+          <div className="folder-block inbox-block">
+            <div className="folder-row inbox-row">
+              <Inbox size={14} className="inbox-icon" />
+              <span className="folder-name">Inbox</span>
+              <span className="folder-count">{inboxNotes.length}</span>
+            </div>
+            {inboxNotes.length > 0 && (
+              <div className="folder-notes">
+                {inboxNotes.map((note) => {
+                  const NoteIcon = getIcon(note.icon).Icon;
+                  return (
+                    <div key={note.id} className="note-row" onContextMenu={(e) => openNoteContextMenu(note, e)}>
+                      <NoteIcon size={13} />
+                      <button className="note-open-btn" onClick={() => openNote(note)}>{note.title || "Untitled"}</button>
+                      <span
+                        className={"reminder-badge" + (note.reminderAt && note.reminderAt <= Date.now() ? " due" : "")}
+                        title={"Reminder: " + fmtReminder(note.reminderAt ?? 0)}
+                      >
+                        <AlarmClock size={12} />
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
           {folders.map((folder) => {
             const folderNotes = notes.filter((n) => n.folderId === folder.id && noteMatches(n));
             const isExpanded = q ? true : expandedFolders.has(folder.id);
@@ -494,12 +603,20 @@ function App() {
                     {folderNotes.map((note) => {
                       const NoteIcon = getIcon(note.icon).Icon;
                       return (
-                        <div key={note.id} className="note-row" onContextMenu={(e) => { e.preventDefault(); setContextMenu({ type: "note", id: note.id, x: e.clientX, y: e.clientY }); }}>
+                        <div key={note.id} className="note-row" onContextMenu={(e) => openNoteContextMenu(note, e)}>
                           <NoteIcon size={13} />
                           {renamingId === note.id ? (
                             <input className="rename-input" value={renameText} autoFocus onChange={(e) => setRenameText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") renameNote(note.id, renameText); if (e.key === "Escape") setRenamingId(null); }} onBlur={() => renameNote(note.id, renameText)} />
                           ) : (
                             <button className="note-open-btn" onClick={() => openNote(note)}>{note.title || "Untitled"}</button>
+                          )}
+                          {note.reminderAt && (
+                            <span
+                              className={"reminder-badge" + (note.reminderAt <= Date.now() ? " due" : "")}
+                              title={"Reminder: " + fmtReminder(note.reminderAt)}
+                            >
+                              <AlarmClock size={12} />
+                            </span>
                           )}
                         </div>
                       );
@@ -512,12 +629,20 @@ function App() {
           {unfiledNotes.map((note) => {
             const NoteIcon = getIcon(note.icon).Icon;
             return (
-              <div key={note.id} className="note-row" onContextMenu={(e) => { e.preventDefault(); setContextMenu({ type: "note", id: note.id, x: e.clientX, y: e.clientY }); }}>
+              <div key={note.id} className="note-row" onContextMenu={(e) => openNoteContextMenu(note, e)}>
                 <NoteIcon size={13} />
                 {renamingId === note.id ? (
                   <input className="rename-input" value={renameText} autoFocus onChange={(e) => setRenameText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") renameNote(note.id, renameText); if (e.key === "Escape") setRenamingId(null); }} onBlur={() => renameNote(note.id, renameText)} />
                 ) : (
                   <button className="note-open-btn" onClick={() => openNote(note)}>{note.title || "Untitled"}</button>
+                )}
+                {note.reminderAt && (
+                  <span
+                    className={"reminder-badge" + (note.reminderAt <= Date.now() ? " due" : "")}
+                    title={"Reminder: " + fmtReminder(note.reminderAt)}
+                  >
+                    <AlarmClock size={12} />
+                  </span>
                 )}
               </div>
             );
@@ -558,6 +683,47 @@ function App() {
               else deleteNoteFromList(contextMenu.id);
               setContextMenu(null);
             }}>Delete</button>
+            {/* v0.1.34: reminder picker — right-click a note to schedule it. */}
+            {contextMenu.type === "note" && (() => {
+              const n = notes.find((x) => x.id === contextMenu.id);
+              if (!n) return null;
+              return (
+                <div className="context-menu-reminder" onClick={(e) => e.stopPropagation()}>
+                  <span className="reminder-when">
+                    {n.reminderAt ? "Reminder: " + fmtReminder(n.reminderAt) : "No reminder yet"}
+                  </span>
+                  <input
+                    className="reminder-input"
+                    type="datetime-local"
+                    value={reminderDraft}
+                    onChange={(e) => setReminderDraft(e.target.value)}
+                  />
+                  <div className="reminder-actions">
+                    <button className="reminder-set-btn" onClick={() => setReminder(contextMenu.id, reminderDraft || null)}>Set</button>
+                    <button className="reminder-set-btn reminder-clear-btn" onClick={() => setReminder(contextMenu.id, null)}>Clear</button>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      )}
+
+      {/* v0.1.34: due-reminder toast with a beep, Open and Dismiss. */}
+      {reminderToast && (
+        <div className="reminder-toast">
+          <Bell size={14} className="reminder-toast-icon" />
+          <span className="reminder-toast-text">{"⏰ " + reminderToast.title}</span>
+          <div className="reminder-toast-actions">
+            <button
+              className="reminder-toast-open"
+              onClick={() => {
+                const n = notes.find((x) => x.id === reminderToast.id);
+                if (n) openNote(n);
+                setReminderToast(null);
+              }}
+            >Open</button>
+            <button className="reminder-toast-dismiss" onClick={() => setReminderToast(null)}>Dismiss</button>
           </div>
         </div>
       )}

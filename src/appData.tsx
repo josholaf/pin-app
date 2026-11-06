@@ -9,7 +9,8 @@ import {
 
 export type Task = { id: string; text: string; done: boolean; createdAt: number; deletedAt?: number };
 export type Theme = "light" | "dark";
-export type NoteColor = "yellow" | "pink" | "blue" | "green" | "purple" | "orange";
+/** v0.1.34: six new colors — red, mint, teal, indigo, lavender, slate (12 total). */
+export type NoteColor = "yellow" | "pink" | "blue" | "green" | "purple" | "orange" | "red" | "mint" | "teal" | "indigo" | "lavender" | "slate";
 export type PomodoroMode = "focus" | "break";
 /** v0.1.17: how the Quick Note capture window names notes (issue #40).
  *  "custom" = a leading * marks the title, "date" = DD-MM-YY. */
@@ -50,6 +51,12 @@ export const NOTE_COLORS: { id: NoteColor; label: string; light: string; dark: s
   { id: "green", label: "Green", light: "#e8f5e9", dark: "#1f3d24" },
   { id: "purple", label: "Purple", light: "#f3e5f5", dark: "#2a1f3d" },
   { id: "orange", label: "Orange", light: "#fff3e0", dark: "#3d2a1f" },
+  { id: "red", label: "Red", light: "#ffebee", dark: "#3d1f22" },
+  { id: "mint", label: "Mint", light: "#e0f2f1", dark: "#1f3a33" },
+  { id: "teal", label: "Teal", light: "#e0f7fa", dark: "#1f363d" },
+  { id: "indigo", label: "Indigo", light: "#e8eaf6", dark: "#22273d" },
+  { id: "lavender", label: "Lavender", light: "#ede7f6", dark: "#2e2440" },
+  { id: "slate", label: "Slate", light: "#eceff1", dark: "#2b3238" },
 ];
 
 export const ICON_BANK: { id: string; Icon: ComponentType<LucideProps>; label: string }[] = [
