@@ -77,19 +77,30 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.34' }}
-          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.34' }}"
+          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.35' }}
+          releaseName: "Pin ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v0.1.35' }}"
           releaseBody: |
-            **Pin v0.1.34** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
+            **Pin v0.1.35** — lightweight sticky-note style task & note app for Windows, macOS and Linux.
 
-            ## What's new in v0.1.34
+            ## What's new in v0.1.35
 
-            - **Reminders on notes** — right-click a note → pick a date & time → **Set**. When it's due, Pin plays a sound cue and pops a toast with an **Open** button. Each scheduled note wears a clock badge that turns red and pulses while the reminder is due. **Clear** removes it
-            - **Inbox folder** — a virtual folder pinned at the top of the note list where every scheduled note appears, sorted by what's due next, so you always know what to work on
-            - **6 more note colors (12 total)** — red, mint, teal, indigo, lavender and slate join the palette, in light and dark variants, in a tidier 4-column picker
-            - **README now shows the app logo** — the black rounded square with the green pin replaces the emoji in the hero
-            - **Bug fix:** editing a note no longer wipes its reminder — the auto-save used to rebuild the note without `reminderAt`/`reminderFiredAt`
-            - **UI polish:** no underline when hovering a note title (the row highlight is enough), and the search input's border keeps its color when focused instead of switching to the highlight yellow
+            **Restores the features accidentally dropped by the v0.1.32–v0.1.34 list cleanup:**
+            - **Command palette** — <kbd>Ctrl/Cmd</kbd>+<kbd>K</kbd> to run any command: new note/folder, toggle theme, settings, trash, export/import, quick capture, graph view, Quick Note, web clipper, open or pin any note
+            - **Graph view** — animated force-directed map of your notes and their `[[wiki-links]]`; drag nodes, search to dim non-matches; opens from the titlebar button
+            - **Trash with restore** — deleting notes, folders and tasks is now a soft delete; restore or purge from the trash view
+            - **Favorites** — star notes from the right-click menu; favorites sort to the top
+            - **Pin note to desktop** — float any note as its own tiny always-on-top window
+            - **Quick capture box** — the Zap button / <kbd>Ctrl/Cmd</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> overlay; first line becomes the title
+            - **Quick Note window** — Spotlight-style capture via <kbd>Ctrl/Cmd</kbd>+<kbd>Shift</kbd>+<kbd>N</kbd>
+            - **Web clipper** — paste a URL to save the clean article, or clip selected text with <kbd>Ctrl/Cmd</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd>
+            - **Tray icon + hide to tray** — closing the main window hides it to the tray (Show Pin / Quick Note / Quit)
+            - **Stats bar + focus counter** — live notes/tasks/words/trash counts and today's focus sessions
+            - **Save safety net** — <kbd>Ctrl/Cmd</kbd>+<kbd>S</kbd> saves now, <kbd>Ctrl/Cmd</kbd>+<kbd>Z</kbd> undoes content (60-step history)
+            - **ZIP export / import** — back up the whole library as .md files in a ZIP
+            - **Icon & color pickers** back in the right-click note menu (now with 12 colors)
+            - Note rows stay clean (icon + title only) — all actions remain in the right-click menu
+
+            Everything from v0.1.34 is kept: reminders with beep + toast + red due badge, the Inbox folder for scheduled notes, 12 note colors, README logo, hover/search polish.
 
             ## Downloads
             - **Windows**: `.msi` or `.exe` (NSIS)

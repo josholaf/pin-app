@@ -1112,7 +1112,7 @@ body {
 [data-theme="dark"] .palette { --palette-bg: #2b2b2b; --palette-fg: #eee; }
 .palette-input { border: none; border-bottom: 1px solid rgba(128, 128, 128, 0.3); padding: 10px 12px; font-size: 13px; background: transparent; color: inherit; outline: none; }
 .palette-items { overflow-y: auto; flex: 1; }
-.palette-item { display: block; width: 100%;; text-align: left; border: none; background: none; padding: 7px 12px; cursor: pointer; color: inherit; }
+.palette-item { display: block; width: 100%; text-align: left; border: none; background: none; padding: 7px 12px; cursor: pointer; color: inherit; }
 .palette-item:hover { background: rgba(76, 175, 80, 0.16); }
 .palette-item-title { font-size: 13px; }
 .palette-item-sub { font-size: 11px; opacity: 0.6; }
@@ -2563,4 +2563,28 @@ body {
 /* Clear button in the reminder picker: neutral gray next to Set. */
 .reminder-clear-btn {
   background: rgba(128, 128, 128, 0.25);
+}
+
+/* ===== v0.1.35: restored features back in place ===== */
+
+/* Reminder toast: "Reminder" label over the note title. */
+.reminder-toast-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+  min-width: 0;
+}
+.reminder-toast-text strong {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+.reminder-toast-text span {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
