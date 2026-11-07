@@ -1384,3 +1384,129 @@ function App() {
             {contextMenu.type === "folder" && <button onClick={() => { createNoteInFolder(contextMenu.id); setContextMenu(null); }}>New note</button>}
             {contextMenu.type === "note" && (
               <button onClick={() => {
+                const n = notes.find((x) => x.id === contextMenu.id);
+                if (n) pinNoteToDesktop(n);
+              }}>Pin to desktop</button>
+            )}
+            {contextMenu.type === "note" && (
+              <button onClick={() => toggleFavorite(contextMenu.id)}>{notes.find((x) => x.id === contextMenu.id)?.favorite ? "Remove favorite" : "Add favorite"}</button>
+            )}
+            <button className="danger" onClick={() => {
+              if (contextMenu.type === "folder") deleteFolder(contextMenu.id);
+              else deleteNoteFromList(contextMenu.id);
+              setContextMenu(null);
+            }}>Delete</button>
+            {contextMenu.type === "note" && (() => {
+              const n = notes.find((x) => x.id === contextMenu.id);
+              return (
+                <div className="context-menu-reminder">
+                  <div className="context-menu-icons-title">Reminder</div>
+                  <input
+                    type="datetime-local"
+                    className="reminder-input"
+                    value={reminderDraft}
+                    onChange={(e) => setReminderDraft(e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                  <div className="reminder-actions">
+                    <button className="small-btn reminder-set-btn" onClick={() => setReminderFor(contextMenu.id)}>Set</button>
+                    {n?.reminderAt !== undefined && (
+                      <button className="small-btn trash-back-btn" onClick={() => clearReminderFor(contextMenu.id)}>Clear</button>
+                    )}
+                  </div>
+                  {n?.reminderAt !== undefined && (
+                    <div className="reminder-when">{n.reminderAt <= Date.now() ? "Due / fired" : new Date(n.reminderAt).toLocaleString()}</div>
+                  )}
+                </div>
+              );
+            })()}
+            {contextMenu.type === "note" && (
+              <div className="context-menu-icons">
+                <div className="context-menu-icons-title">Change icon</div>
+                <div className="icon-grid context-icon-grid">
+                  {ICON_BANK.map(({ id, Icon, label }) => (
+                    <button
+                      key={id}
+                      className={"icon-grid-item " + (notes.find((x) => x.id === contextMenu.id)?.icon === id ? "active" : "")}
+                      title={label}
+                      onClick={() => setNoteIconFor(contextMenu.id, id)}
+                    >
+                      <Icon size={16} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {contextMenu.type === "note" && (
+              <div className="context-menu-icons">
+                <div className="context-menu-icons-title">Change color</div>
+                <div className="context-color-grid">
+                  {NOTE_COLORS.map((c) => (
+                    <button
+                      key={c.id}
+                      className={"color-option " + (notes.find((x) => x.id === contextMenu.id)?.color === c.id ? "active" : "")}
+                      style={{ background: c.light }}
+                      title={c.label}
+                      onClick={() => setNoteColorFor(contextMenu.id, c.id)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {reminderToast && (
+        <div className="reminder-toast">
+          <Clock size={14} className="reminder-toast-icon" />
+          <div className="reminder-toast-text">
+            <strong>Reminder</strong>
+            <span>{reminderToast.title}</span>
+          </div>
+          <button
+            className="small-btn"
+            onClick={() => {
+              const n = notes.find((x) => x.id === reminderToast.id);
+              setReminderToast(null);
+              if (n) openNote(n);
+            }}
+          >Open</button>
+          <button className="icon-btn" title="Dismiss" onClick={() => setReminderToast(null)}><X size={14} /></button>
+        </div>
+      )}
+
+      {windowLabel === "main" && (
+        <div className="stats-bar" title="Live library stats">
+          <span title="Active notes">{activeNotes.length} {activeNotes.length === 1 ? "note" : "notes"}</span>
+          <span title="Open tasks">{activeTasks.length} {activeTasks.length === 1 ? "task" : "tasks"}</span>
+          <span title="Total words across active notes">{totalWords} {totalWords === 1 ? "word" : "words"}</span>
+          <span title="Items in trash">{trashCount} in trash</span>
+        </div>
+      )}
+
+      <div className="pomodoro-bar pomodoro-bottom">
+        <div className="pomodoro-bottom-row">
+          <span className="pomodoro-timer-sm">{formatTime(secondsLeft)}</span>
+          {focusDone && focusDone.count > 0 && (
+            <span className="focus-count" title="Focus sessions completed today">{focusDone.count}/4</span>
+          )}
+          <div className="pomodoro-progress-track pomodoro-progress-sm">
+            <div className="pomodoro-progress-fill" style={{ width: progress + "%" }} />
+          </div>
+          <div className="pomodoro-controls-sm">
+            <button onClick={() => { setIsRunning(false); setSecondsLeft(pomodoroMode === "focus" ? FOCUS_SECONDS : BREAK_SECONDS); }} className="icon-btn" title="Reset"><RotateCcw size={16} /></button>
+            <button onClick={() => { setIsRunning(false); setPomodoroMode("break"); setSecondsLeft(BREAK_SECONDS); }} className={"icon-btn " + (pomodoroMode === "break" ? "active-mode" : "")} title="Break"><Coffee size={16} /></button>
+            {isRunning ? (
+              <button onClick={() => setIsRunning(false)} className="icon-btn" title="Pause"><Pause size={16} /></button>
+            ) : (
+              <button onClick={() => setIsRunning(true)} className="icon-btn" title="Start"><Play size={16} /></button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default App;
